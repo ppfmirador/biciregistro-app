@@ -87,12 +87,8 @@ export const createBike = onCall({
     const ownerProfile = await admin
       .firestore().collection("users").doc(ownerId).get();
 
-    // Defensive check for user profile.
-    if (!ownerProfile.exists()) {
-        console.error(`User profile not found for UID: ${ownerId}. Cannot create bike.`);
-        throw new HttpsError("not-found", "User profile could not be found. Please complete your profile and try again.");
-    }
-    const ownerData = ownerProfile.data();
+    // Defensive check for user profile. Now it's not a blocking check.
+    const ownerData = ownerProfile.exists() ? ownerProfile.data() : null;
 
     // Defensive check for auth token email.
     if (!req.auth.token.email) {
