@@ -79,7 +79,8 @@ export default function RegisterBikePage() {
       
       const finalBrand = data.brand === OTHER_BRAND_VALUE ? data.otherBrand || '' : data.brand;
 
-      const newBikeData = {
+      // Construct a clean data object to send to the Cloud Function
+      const newBikeData: { [key: string]: any } = {
         serialNumber: data.serialNumber,
         brand: finalBrand,
         model: data.model,
@@ -92,6 +93,13 @@ export default function RegisterBikePage() {
         ownershipDocumentUrl: ownershipDocumentUrl,
         ownershipDocumentName: ownershipDocumentName,
       };
+
+      // Clean up optional fields so we don't send undefined/null if not needed
+      Object.keys(newBikeData).forEach(key => {
+        if (newBikeData[key] === undefined || newBikeData[key] === null || newBikeData[key] === '') {
+          delete newBikeData[key];
+        }
+      });
       
       const functions = getFunctions(app, 'us-central1');
       const createBikeCallable = httpsCallable<{ bikeData: any }, { bikeId: string }>(functions, 'createBike');

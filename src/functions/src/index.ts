@@ -1,6 +1,6 @@
-// functions/src/index.ts
 
-import {onCall, HttpsError} from "firebase-functions/v2/https";
+// functions/src/index.ts
+import { onCall, HttpsError } from "firebase-functions/v2/https";
 import * as admin from "firebase-admin";
 
 // Initialize Firebase Admin SDK
@@ -80,7 +80,7 @@ export const createBike = onCall({
     if (!serialNumberSnapshot.empty) {
       throw new HttpsError(
         "already-exists",
-        `A bike with serial number ${serialNumber} is already registered.`
+        `Ya existe una bicicleta registrada con el número de serie: ${serialNumber}`
       );
     }
 
@@ -145,9 +145,10 @@ export const createBike = onCall({
     if (error instanceof HttpsError) {
       throw error;
     }
+    // Throw with the original error message for better client-side debugging
     throw new HttpsError(
       "internal",
-      "An internal error occurred while creating the bike."
+      error.message || "An internal error occurred while creating the bike."
     );
   }
 });
@@ -218,7 +219,7 @@ export const getPublicBikeBySerial = onCall({
   try {
     const bikesRef = admin.firestore().collection("bikes");
     const q = bikesRef.where("serialNumber", "==", serialNumber).limit(1);
-    const querySnapshot = await q.get();
+    const querySnapshot = await getDocs(q);
 
     if (querySnapshot.empty) {
       return null;
