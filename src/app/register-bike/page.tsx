@@ -6,7 +6,8 @@ import { BikeForm } from '@/components/bike/BikeForm';
 import type { BikeFormValues } from '@/lib/schemas';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { useAuth } from '@/context/AuthContext';
-import { addBike } from '@/lib/db';
+import { getFunctions, httpsCallable, type HttpsCallable } from 'firebase/functions';
+import { app } from '@/lib/firebase';
 import { useRouter } from 'next/navigation';
 import { useToast } from '@/hooks/use-toast';
 import { ArrowLeft, PlusCircle } from 'lucide-react';
@@ -91,8 +92,11 @@ export default function RegisterBikePage() {
         ownershipDocumentUrl: ownershipDocumentUrl,
         ownershipDocumentName: ownershipDocumentName,
       };
-
-      await addBike(newBikeData);
+      
+      const functions = getFunctions(app, 'us-central1');
+      const createBikeCallable = httpsCallable<{ bikeData: any }, { bikeId: string }>(functions, 'createBike');
+      await createBikeCallable({ bikeData: newBikeData });
+      
       toast({ title: '¡Bicicleta Registrada!', description: `${finalBrand} ${data.model} ha sido registrada exitosamente.` });
       router.push(`/bike/${encodeURIComponent(data.serialNumber)}/qr`);
 

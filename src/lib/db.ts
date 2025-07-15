@@ -370,6 +370,10 @@ export const addBike = async (
     return result.data;
   } catch (error: any) {
     console.error("Error calling createBike function:", error);
+    // Rethrow with a more specific message if available
+    if (error.details && error.details.message) {
+      throw new Error(error.details.message);
+    }
     throw new Error(error.message || "No se pudo crear la bicicleta.");
   }
 };
@@ -1008,6 +1012,7 @@ export const getNgoAnalytics = async (ngoId: string, dateRange?: { from?: Date; 
         console.error("Detailed Firestore Error in getNgoAnalytics:", {
             code: firestoreError.code,
             message: firestoreError.message,
+            stack: firestoreError.stack,
         });
         throw new Error(`No se pudieron cargar las analíticas. Verifica los permisos de la base de datos (Code: ${firestoreError.code || 'unknown'}).`);
     }
