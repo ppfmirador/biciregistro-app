@@ -16,6 +16,10 @@ const allowedOrigins = [
   "http://localhost:3000",
 ];
 
+const callOptions = {
+  region: "us-central1",
+  cors: allowedOrigins,
+};
 
 // ───────────────────────────
 //     Cloud Functions
@@ -26,32 +30,37 @@ const allowedOrigins = [
  * This function performs a server-side check for duplicate serial numbers
  * and sanitizes all incoming data.
  */
-export const createBike = onCall({
-  region: "us-central1",
-  cors: allowedOrigins,
-}, async (req) => {
+export const createBike = onCall(callOptions, async (req) => {
   if (!req.auth) {
     throw new HttpsError(
       "unauthenticated",
       "You must be logged in to create a bike."
     );
   }
-  const {bikeData} = req.data;
+  const { bikeData } = req.data;
   const ownerId = req.auth.uid;
 
   // --- Start of Robust Validation ---
   if (!bikeData) {
-    throw new HttpsError(
-      "invalid-argument", "Bike data object is missing."
-    );
+    throw new HttpsError("invalid-argument", "Bike data object is missing.");
   }
   const {
-    serialNumber, brand, model, color, description, country, state,
-    bikeType, photoUrls, ownershipDocumentUrl, ownershipDocumentName,
+    serialNumber,
+    brand,
+    model,
+    color,
+    description,
+    country,
+    state,
+    bikeType,
+    photoUrls,
+    ownershipDocumentUrl,
+    ownershipDocumentName,
   } = bikeData;
 
   if (
-    !serialNumber || typeof serialNumber !== "string" ||
+    !serialNumber ||
+    typeof serialNumber !== "string" ||
     serialNumber.trim() === ""
   ) {
     throw new HttpsError(
@@ -61,19 +70,24 @@ export const createBike = onCall({
   }
   if (!brand || typeof brand !== "string" || brand.trim() === "") {
     throw new HttpsError(
-      "invalid-argument", "Bike data must include a valid 'brand'."
+      "invalid-argument",
+      "Bike data must include a valid 'brand'."
     );
   }
   if (!model || typeof model !== "string" || model.trim() === "") {
     throw new HttpsError(
-      "invalid-argument", "Bike data must include a valid 'model'."
+      "invalid-argument",
+      "Bike data must include a valid 'model'."
     );
   }
   // --- End of Robust Validation ---
 
   const bikesRef = admin.firestore().collection("bikes");
-  const serialNumberCheckQuery = bikesRef
-    .where("serialNumber", "==", serialNumber.trim());
+  const serialNumberCheckQuery = bikesRef.where(
+    "serialNumber",
+    "==",
+    serialNumber.trim()
+  );
 
   try {
     const serialNumberSnapshot = await serialNumberCheckQuery.get();
@@ -85,15 +99,23 @@ export const createBike = onCall({
     }
 
     const ownerProfile = await admin
-      .firestore().collection("users").doc(ownerId).get();
+      .firestore()
+      .collection("users")
+      .doc(ownerId)
+      .get();
 
     // Defensive check for user profile. Now it's not a blocking check.
     const ownerData = ownerProfile.exists() ? ownerProfile.data() : null;
 
     // Defensive check for auth token email.
     if (!req.auth.token.email) {
-        console.error(`User token for UID: ${ownerId} is missing an email address.`);
-        throw new HttpsError("unauthenticated", "Your user token is missing a valid email address.");
+      console.error(
+        `User token for UID: ${ownerId} is missing an email address.`
+      );
+      throw new HttpsError(
+        "unauthenticated",
+        "Your user token is missing a valid email address."
+      );
     }
 
     // --- Start of Defensive Data Construction ---
@@ -109,11 +131,13 @@ export const createBike = onCall({
       ownerWhatsappPhone: ownerData?.whatsappPhone ?? "",
       status: "En Regla",
       registrationDate: admin.firestore.FieldValue.serverTimestamp(),
-      statusHistory: [{
-        status: "En Regla",
-        timestamp: admin.firestore.FieldValue.serverTimestamp(),
-        notes: "Registro inicial por ciclista",
-      }],
+      statusHistory: [
+        {
+          status: "En Regla",
+          timestamp: admin.firestore.FieldValue.serverTimestamp(),
+          notes: "Registro inicial por ciclista",
+        },
+      ],
       theftDetails: null,
       // Optional fields are explicitly checked and defaulted to null/[]
       color: color ?? null,
@@ -129,18 +153,19 @@ export const createBike = onCall({
 
     const docRef = await bikesRef.add(dataToSave);
 
-    return {bikeId: docRef.id};
+    return { bikeId: docRef.id };
   } catch (error: any) {
     // Improved logging
     console.error(`Error in createBike for user ${req.auth?.uid}:`, {
-        errorMessage: error.message,
-        errorCode: error.code,
-        bikeData: { // Log the data that caused the issue, but be careful with sensitive info
-            serialNumber: bikeData.serialNumber,
-            brand: bikeData.brand,
-            model: bikeData.model,
-        },
-        fullError: error,
+      errorMessage: error.message,
+      errorCode: error.code,
+      bikeData: {
+        // Log the data that caused the issue, but be careful with sensitive info
+        serialNumber: bikeData.serialNumber,
+        brand: bikeData.brand,
+        model: bikeData.model,
+      },
+      fullError: error,
     });
     if (error instanceof HttpsError) {
       throw error;
@@ -156,10 +181,7 @@ export const createBike = onCall({
 /**
  * Fetches all bikes owned by the currently authenticated user.
  */
-export const getMyBikes = onCall({
-  region: "us-central1",
-  cors: allowedOrigins,
-}, async (req) => {
+export const getMyBikes = onCall(callOptions, async (req) => {
   if (!req.auth) {
     throw new HttpsError(
       "unauthenticated",
@@ -180,7 +202,7 @@ export const getMyBikes = onCall({
         (entry: { timestamp: admin.firestore.Timestamp }) => ({
           ...entry,
           timestamp: entry.timestamp?.toDate().toISOString(),
-        }),
+        })
       );
 
       return {
@@ -190,7 +212,7 @@ export const getMyBikes = onCall({
         statusHistory: statusHistory,
       };
     });
-    return {bikes};
+    return { bikes };
   } catch (error) {
     console.error("Error fetching user's bikes:", error);
     throw new HttpsError(
@@ -204,11 +226,8 @@ export const getMyBikes = onCall({
  * Fetches a bike's details by its serial number.
  * Returns full details for the owner, and public details for others.
  */
-export const getPublicBikeBySerial = onCall({
-  region: "us-central1",
-  cors: allowedOrigins,
-}, async (req) => {
-  const {serialNumber} = req.data;
+export const getPublicBikeBySerial = onCall(callOptions, async (req) => {
+  const { serialNumber } = req.data;
   if (!serialNumber || typeof serialNumber !== "string") {
     throw new HttpsError(
       "invalid-argument",
@@ -241,10 +260,12 @@ export const getPublicBikeBySerial = onCall({
       })
     );
 
-    const theftDetails = bikeData.theftDetails ? {
-      ...bikeData.theftDetails,
-      reportedAt: toISO(bikeData.theftDetails.reportedAt),
-    } : null;
+    const theftDetails = bikeData.theftDetails
+      ? {
+          ...bikeData.theftDetails,
+          reportedAt: toISO(bikeData.theftDetails.reportedAt),
+        }
+      : null;
 
     // Base public data available to everyone
     const publicData = {
@@ -290,28 +311,26 @@ export const getPublicBikeBySerial = onCall({
   }
 });
 
-
 /**
  * Reports a bike as stolen. Only the owner can call this.
  * @param {string} bikeId The ID of the bike to report as stolen.
  * @param {object} theftData Details about the theft incident.
  */
-export const reportBikeStolen = onCall({
-  region: "us-central1",
-  cors: allowedOrigins,
-}, async (req) => {
+export const reportBikeStolen = onCall(callOptions, async (req) => {
   if (!req.auth) {
     throw new HttpsError(
       "unauthenticated",
       "You must be logged in to report a theft."
     );
   }
-  const {bikeId, theftData} = req.data;
-  const {uid} = req.auth;
+  const { bikeId, theftData } = req.data;
+  const { uid } = req.auth;
 
   if (
-    !bikeId || typeof bikeId !== "string" ||
-    !theftData || typeof theftData !== "object"
+    !bikeId ||
+    typeof bikeId !== "string" ||
+    !theftData ||
+    typeof theftData !== "object"
   ) {
     throw new HttpsError(
       "invalid-argument",
@@ -341,9 +360,10 @@ export const reportBikeStolen = onCall({
     const newStatusEntry = {
       status: "Robada",
       timestamp: admin.firestore.FieldValue.serverTimestamp(),
-      notes: theftData.generalNotes ||
+      notes:
+        theftData.generalNotes ||
         `Reportada como robada en ${theftData.theftLocationState}, ` +
-        `${theftData.theftLocationCountry}.`,
+          `${theftData.theftLocationCountry}.`,
     };
 
     await bikeRef.update({
@@ -369,15 +389,12 @@ export const reportBikeStolen = onCall({
  * Marks a stolen bike as recovered. Only the owner can call this.
  * @param {string} bikeId The ID of the bike to mark as recovered.
  */
-export const markBikeRecovered = onCall({
-  region: "us-central1",
-  cors: allowedOrigins,
-}, async (req) => {
+export const markBikeRecovered = onCall(callOptions, async (req) => {
   if (!req.auth) {
     throw new HttpsError("unauthenticated", "You must be logged in.");
   }
-  const {bikeId} = req.data;
-  const {uid} = req.auth;
+  const { bikeId } = req.data;
+  const { uid } = req.auth;
 
   if (!bikeId || typeof bikeId !== "string") {
     throw new HttpsError("invalid-argument", "A valid bikeId is required.");
@@ -427,10 +444,7 @@ export const markBikeRecovered = onCall({
 /**
  * Initiates an ownership transfer request for a bike.
  */
-export const initiateTransferRequest = onCall({
-  region: "us-central1",
-  cors: allowedOrigins,
-}, async (req) => {
+export const initiateTransferRequest = onCall(callOptions, async (req) => {
   if (!req.auth || !req.auth.token.email) {
     throw new HttpsError(
       "unauthenticated",
@@ -438,9 +452,12 @@ export const initiateTransferRequest = onCall({
     );
   }
   const {
-    bikeId, recipientEmail, transferDocumentUrl, transferDocumentName,
+    bikeId,
+    recipientEmail,
+    transferDocumentUrl,
+    transferDocumentName,
   } = req.data;
-  const {uid} = req.auth;
+  const { uid } = req.auth;
   const fromOwnerEmail = req.auth.token.email;
 
   if (!bikeId || !recipientEmail) {
@@ -464,7 +481,8 @@ export const initiateTransferRequest = onCall({
     }
 
     const requestsRef = admin.firestore().collection("transferRequests");
-    const q = requestsRef.where("bikeId", "==", bikeId)
+    const q = requestsRef
+      .where("bikeId", "==", bikeId)
       .where("status", "==", "pending");
     const existingRequests = await q.get();
     if (!existingRequests.empty) {
@@ -489,7 +507,7 @@ export const initiateTransferRequest = onCall({
     };
 
     await requestsRef.add(newRequest);
-    return {success: true, message: "Transfer request initiated."};
+    return { success: true, message: "Transfer request initiated." };
   } catch (error) {
     console.error("Error initiating transfer request:", error);
     if (error instanceof HttpsError) throw error;
@@ -500,23 +518,20 @@ export const initiateTransferRequest = onCall({
   }
 });
 
-
 /**
  * Responds to an ownership transfer request.
  */
-export const respondToTransferRequest = onCall({
-  region: "us-central1",
-  cors: allowedOrigins,
-}, async (req) => {
+export const respondToTransferRequest = onCall(callOptions, async (req) => {
   if (!req.auth || !req.auth.token.email) {
     throw new HttpsError("unauthenticated", "You must be logged in.");
   }
-  const {requestId, action} = req.data;
-  const {uid} = req.auth;
+  const { requestId, action } = req.data;
+  const { uid } = req.auth;
   const respondingUserEmail = req.auth.token.email;
 
   if (
-    !requestId || !action ||
+    !requestId ||
+    !action ||
     !["accepted", "rejected", "cancelled"].includes(action)
   ) {
     throw new HttpsError(
@@ -525,8 +540,10 @@ export const respondToTransferRequest = onCall({
     );
   }
 
-  const requestRef = admin.firestore()
-    .collection("transferRequests").doc(requestId);
+  const requestRef = admin
+    .firestore()
+    .collection("transferRequests")
+    .doc(requestId);
 
   return admin.firestore().runTransaction(async (transaction) => {
     const requestDoc = await transaction.get(requestRef);
@@ -550,7 +567,8 @@ export const respondToTransferRequest = onCall({
           "Only the sender can cancel the request."
         );
       }
-    } else { // "accepted" or "rejected"
+    } else {
+      // "accepted" or "rejected"
       if (
         requestData.toUserEmail.toLowerCase() !==
         respondingUserEmail.toLowerCase()
@@ -569,7 +587,9 @@ export const respondToTransferRequest = onCall({
     });
 
     if (action === "accepted") {
-      const bikeRef = admin.firestore().collection("bikes")
+      const bikeRef = admin
+        .firestore()
+        .collection("bikes")
         .doc(requestData.bikeId);
       const bikeDoc = await transaction.get(bikeRef);
       if (
@@ -582,8 +602,11 @@ export const respondToTransferRequest = onCall({
         );
       }
 
-      const newOwnerDoc = await admin.firestore().collection("users")
-        .doc(uid).get();
+      const newOwnerDoc = await admin
+        .firestore()
+        .collection("users")
+        .doc(uid)
+        .get();
       if (!newOwnerDoc.exists) {
         throw new HttpsError(
           "not-found",
@@ -592,7 +615,8 @@ export const respondToTransferRequest = onCall({
       }
       const newOwnerProfile = newOwnerDoc.data();
 
-      const transferNote = "Propiedad transferida de " +
+      const transferNote =
+        "Propiedad transferida de " +
         `${requestData.fromOwnerEmail} a ${requestData.toUserEmail}.`;
       const historyEntry = {
         status: "Transferida",
@@ -613,6 +637,9 @@ export const respondToTransferRequest = onCall({
       });
     }
 
-    return {success: true, message: "Request successfully " + action + "."};
+    return {
+      success: true,
+      message: "Request successfully " + action + ".",
+    };
   });
 });
