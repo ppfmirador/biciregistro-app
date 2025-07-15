@@ -1,0 +1,57 @@
+
+rules_version = '2';
+
+service cloud.firestore {
+  match /databases/{database}/documents {
+    
+    function isAuthOwner(resourceId) {
+      return request.auth.uid == resourceId;
+    }
+    
+    function isAuthAdmin() {
+      return request.auth.token.admin == true;
+    }
+
+    function isBikeShop() {
+      return get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role == 'bikeshop';
+    }
+
+    function isNgo() {
+      return get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role == 'ngo';
+    }
+
+    match /users/{userId} {
+      allow read, write: if isAuthOwner(userId) || isAuthAdmin();
+      // Allow NGOs to perform the specific query needed for their analytics dashboard.
+      // This does NOT allow them to read individual user documents.
+      allow list: if isNgo();
+    }
+
+    match /bikes/{bikeId} {
+      allow read: if true;
+      allow create: if request.auth != null && request.resource.data.ownerId == request.auth.uid;
+      allow update: if isAuthOwner(resource.data.ownerId) || isAuthAdmin();
+      allow delete: if isAuthAdmin();
+    }
+
+    match /transferRequests/{requestId} {
+      allow read, create: if request.auth != null;
+      allow update, delete: if isAuthOwner(resource.data.fromOwnerId) || (request.auth.token.email == resource.data.toUserEmail);
+    }
+
+    match /bikeRides/{rideId} {
+        allow read: if true;
+        allow create: if isBikeShop() || isNgo();
+        allow update, delete: if isAuthOwner(resource.data.organizerId);
+    }
+    
+    match /homepage_content/{docId} {
+      allow read: if true;
+      allow write: if isAuthAdmin();
+    }
+
+    match /audit_logs/{logId} {
+        allow read, write: if isAuthAdmin();
+    }
+  }
+}

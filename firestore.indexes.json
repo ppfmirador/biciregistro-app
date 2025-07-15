@@ -1,0 +1,47 @@
+{
+  "indexes": [
+    {
+      "collectionGroup": "bikeRides",
+      "queryScope": "COLLECTION",
+      "fields": [
+        {
+          "fieldPath": "ngoId",
+          "order": "ASCENDING"
+        },
+        {
+          "fieldPath": "rideDate",
+          "order": "DESCENDING"
+        }
+      ]
+    },
+    {
+      "collectionGroup": "bikeRides",
+      "queryScope": "COLLECTION",
+      "fields": [
+        {
+          "fieldPath": "organizerId",
+          "order": "ASCENDING"
+        },
+        {
+          "fieldPath": "rideDate",
+          "order": "DESCENDING"
+        }
+      ]
+    },
+    {
+      "collectionGroup": "bikes",
+      "queryScope": "COLLECTION",
+      "fields": [
+        {
+          "fieldPath": "registeredByShopId",
+          "order": "ASCENDING"
+        },
+        {
+          "fieldPath": "registrationDate",
+          "order": "DESCENDING"
+        }
+      ]
+    }
+  ],
+  "fieldOverrides": []
+}

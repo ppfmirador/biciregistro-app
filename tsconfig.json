@@ -1,0 +1,46 @@
+
+{
+  "compilerOptions": {
+    /* ####### General ####### */
+    "target": "ES2017",
+    "lib": ["dom", "dom.iterable", "esnext"],
+    "allowJs": true,
+    "skipLibCheck": true,
+    "strict": true,
+    "noEmit": true,
+
+    /* #######  módulos  ####### */
+    "module": "esnext",
+    "moduleResolution": "bundler",
+    "esModuleInterop": true,
+    "resolveJsonModule": true,
+    "isolatedModules": true,
+
+    /* #######  React / Next ####### */
+    "jsx": "preserve",
+    "plugins": [{ "name": "next" }],
+
+    /* #######  Paths & baseUrl  ####### */
+    "baseUrl": ".",                     // ←  NECESARIO para que “paths” funcione
+    "paths": {
+      "@/*": ["./src/*"]
+    },
+
+    /* #######  Incremental build ####### */
+    "incremental": true
+  },
+
+  "include": [
+    "next-env.d.ts",
+    "**/*.ts",
+    "**/*.tsx",
+    ".next/types/**/*.ts"
+  ],
+
+  "exclude": [
+    "node_modules",
+    ".next",
+    "functions/**/*",
+    "src/functions/**/*"
+  ]
+}

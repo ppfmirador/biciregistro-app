@@ -1,0 +1,6 @@
+{
+  "projects": {
+    "default": "bike-guardian-hbbg6",
+    "staging": "bike-guardian-staging"
+  }
+}
