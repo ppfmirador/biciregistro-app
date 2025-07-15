@@ -216,7 +216,6 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
   };
 
   const signInWithGoogle = async (referrerId?: string | null): Promise<void> => {
-    setIsGoogleSubmitting(true);
     const provider = new GoogleAuthProvider();
     try {
       const result = await signInWithPopup(auth, provider);
@@ -280,8 +279,6 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
         });
         console.error("Error signing in with Google:", error);
       }
-    } finally {
-      setIsGoogleSubmitting(false);
     }
   };
 
