@@ -19,29 +19,21 @@ type ToasterToast = ToastProps & {
   action?: ToastActionElement
 }
 
-const actionTypes = { // FIX: lint issue - This is no longer used, but kept for historical context if needed.
-  ADD_TOAST: "ADD_TOAST",
-  UPDATE_TOAST: "UPDATE_TOAST",
-  DISMISS_TOAST: "DISMISS_TOAST",
-  REMOVE_TOAST: "REMOVE_TOAST",
-} as const;
-
-
 type Action =
   | {
-      type: typeof actionTypes.ADD_TOAST
+      type: "ADD_TOAST"
       toast: ToasterToast
     }
   | {
-      type: typeof actionTypes.UPDATE_TOAST
-      toast: Partial
+      type: "UPDATE_TOAST"
+      toast: Partial<ToasterToast>
     }
   | {
-      type: typeof actionTypes.DISMISS_TOAST
+      type: "DISMISS_TOAST"
       toastId?: ToasterToast["id"]
     }
   | {
-      type: typeof actionTypes.REMOVE_TOAST
+      type: "REMOVE_TOAST"
       toastId?: ToasterToast["id"]
     }
 
@@ -49,7 +41,7 @@ interface State {
   toasts: ToasterToast[]
 }
 
-const toastTimeouts = new Map()
+const toastTimeouts = new Map<string, ReturnType<typeof setTimeout>>()
 
 const addToRemoveQueue = (toastId: string) => {
   if (toastTimeouts.has(toastId)) {
@@ -122,7 +114,7 @@ export const reducer = (state: State, action: Action): State => {
   }
 }
 
-const listeners: Array = []
+const listeners: Array<(state: State) => void> = []
 
 let memoryState: State = { toasts: [] }
 
@@ -133,7 +125,15 @@ function dispatch(action: Action) {
   })
 }
 
-type Toast = Omit
+type Toast = Omit<ToasterToast, "id">
+
+// FIX: lint issue - Added the missing genId function.
+let count = 0
+function genId() {
+  count = (count + 1) % Number.MAX_SAFE_INTEGER;
+  return count.toString();
+}
+
 
 function toast({ ...props }: Toast) {
   const id = genId()
@@ -165,7 +165,7 @@ function toast({ ...props }: Toast) {
 }
 
 function useToast() {
-  const [state, setState] = React.useState(memoryState)
+  const [state, setState] = React.useState<State>(memoryState)
 
   React.useEffect(() => {
     listeners.push(setState)
