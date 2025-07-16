@@ -154,7 +154,7 @@ export const createBike = onCall(callOptions, async (req) => {
     const docRef = await bikesRef.add(dataToSave);
 
     return { bikeId: docRef.id };
-  } catch (error: unknown) { // FIX: lint issue
+  } catch (error: unknown) {
     const isHttpsError = error instanceof HttpsError;
     // Improved logging
     console.error(`Error in createBike for user ${req.auth?.uid}:`, {
