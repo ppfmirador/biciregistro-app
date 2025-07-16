@@ -26,7 +26,7 @@ interface ReportTheftDialogProps {
   children: React.ReactNode; 
 }
 
-const ReportTheftDialog: React.FC<ReportTheftDialogProps> = ({ bike, onReportTheft, children }) => {
+const ReportTheftDialog: React.FC = ({ bike, onReportTheft, children }) => {
   const [theftLocationCountry, setTheftLocationCountry] = useState('');
   const [theftLocationState, setTheftLocationState] = useState('');
   const [theftPerpetratorDetails, setTheftPerpetratorDetails] = useState('');
@@ -34,7 +34,7 @@ const ReportTheftDialog: React.FC<ReportTheftDialogProps> = ({ bike, onReportThe
   const [generalNotes, setGeneralNotes] = useState('');
   const [isLoading, setIsLoading] = useState(false);
   const [isOpen, setIsOpen] = useState(false);
-  const [errors, setErrors] = useState<{ [key: string]: string }>({});
+  const [errors, setErrors] = useState({});
 
   useEffect(() => {
     if (isOpen) {
@@ -96,94 +96,94 @@ const ReportTheftDialog: React.FC<ReportTheftDialogProps> = ({ bike, onReportThe
   };
 
   return (
-    <Dialog open={isOpen} onOpenChange={setIsOpen}>
-      <DialogTrigger asChild>{children}</DialogTrigger>
-      <DialogContent className="sm:max-w-md">
-        <DialogHeader>
-          <DialogTitle className="flex items-center">
-            <AlertTriangle className="h-5 w-5 mr-2 text-destructive" />
+    Dialog open={isOpen} onOpenChange={setIsOpen}>
+      DialogTrigger asChild>{children}DialogTrigger>
+      DialogContent className="sm:max-w-md">
+        DialogHeader>
+          DialogTitle className="flex items-center">
+            AlertTriangle className="h-5 w-5 mr-2 text-destructive" />
             Reportar Bicicleta Robada
-          </DialogTitle>
-          <DialogDescription>
+          DialogTitle>
+          DialogDescription>
             Reportar tu {bike.brand} {bike.model} (N/S: {bike.serialNumber}) como robada. Proporciona los detalles del incidente.
-          </DialogDescription>
-        </DialogHeader>
-        <div className="grid gap-4 py-4 max-h-[60vh] overflow-y-auto pr-2">
-          <div className="space-y-2">
-            <Label htmlFor="theftLocationCountry">País donde ocurrió el robo</Label>
-            <Select value={theftLocationCountry} onValueChange={setTheftLocationCountry}>
-                <SelectTrigger id="theftLocationCountry" className={errors.theftLocationCountry ? 'border-destructive' : ''}>
-                    <SelectValue placeholder="Selecciona un país" />
-                </SelectTrigger>
-                <SelectContent>
+          DialogDescription>
+        DialogHeader>
+        div className="grid gap-4 py-4 max-h-[60vh] overflow-y-auto pr-2">
+          div className="space-y-2">
+            Label htmlFor="theftLocationCountry">País donde ocurrió el roboLabel>
+            Select value={theftLocationCountry} onValueChange={setTheftLocationCountry}>
+                SelectTrigger id="theftLocationCountry" className={errors.theftLocationCountry ? 'border-destructive' : ''}>
+                    SelectValue placeholder="Selecciona un país" />
+                SelectTrigger>
+                SelectContent>
                     {LAT_AM_LOCATIONS.map(loc => (
-                    <SelectItem key={loc.country} value={loc.country}>{loc.country}</SelectItem>
+                    SelectItem key={loc.country} value={loc.country}>{loc.country}SelectItem>
                     ))}
-                </SelectContent>
-            </Select>
-            {errors.theftLocationCountry && <p className="text-sm text-destructive">{errors.theftLocationCountry}</p>}
-          </div>
+                SelectContent>
+            Select>
+            {errors.theftLocationCountry && p className="text-sm text-destructive">{errors.theftLocationCountry}p>}
+          div>
 
-          <div className="space-y-2">
-            <Label htmlFor="theftLocationState">Estado/Provincia donde ocurrió el robo</Label>
-            <Select value={theftLocationState} onValueChange={setTheftLocationState} disabled={!theftLocationCountry}>
-              <SelectTrigger id="theftLocationState" className={errors.theftLocationState ? 'border-destructive' : ''}>
-                <SelectValue placeholder={!theftLocationCountry ? "Selecciona un país primero" : "Selecciona un estado/provincia"} />
-              </SelectTrigger>
-              <SelectContent>
+          div className="space-y-2">
+            Label htmlFor="theftLocationState">Estado/Provincia donde ocurrió el roboLabel>
+            Select value={theftLocationState} onValueChange={setTheftLocationState} disabled={!theftLocationCountry}>
+              SelectTrigger id="theftLocationState" className={errors.theftLocationState ? 'border-destructive' : ''}>
+                SelectValue placeholder={!theftLocationCountry ? "Selecciona un país primero" : "Selecciona un estado/provincia"} />
+              SelectTrigger>
+              SelectContent>
                 {theftLocationCountry && LAT_AM_LOCATIONS.find(c => c.country === theftLocationCountry)?.states.map(stateName => (
-                  <SelectItem key={stateName} value={stateName}>{stateName}</SelectItem>
+                  SelectItem key={stateName} value={stateName}>{stateName}SelectItem>
                 ))}
-              </SelectContent>
-            </Select>
-            {errors.theftLocationState && <p className="text-sm text-destructive">{errors.theftLocationState}</p>}
-          </div>
+              SelectContent>
+            Select>
+            {errors.theftLocationState && p className="text-sm text-destructive">{errors.theftLocationState}p>}
+          div>
 
-          <div className="space-y-2">
-            <Label htmlFor="theftIncidentDetails">Detalles del incidente (Obligatorio)</Label>
-            <Textarea
+          div className="space-y-2">
+            Label htmlFor="theftIncidentDetails">Detalles del incidente (Obligatorio)Label>
+            Textarea
               id="theftIncidentDetails"
               value={theftIncidentDetails}
               onChange={(e) => setTheftIncidentDetails(e.target.value)}
               className={`min-h-[80px] ${errors.theftIncidentDetails ? 'border-destructive' : ''}`}
               placeholder="Describe cómo, cuándo y dónde ocurrió el robo, características específicas de la bici al momento del robo, etc."
             />
-            {errors.theftIncidentDetails && <p className="text-sm text-destructive">{typeof errors.theftIncidentDetails.message === 'string' ? errors.theftIncidentDetails.message : 'Error en los detalles del incidente'}</p>}
-          </div>
+            {errors.theftIncidentDetails && p className="text-sm text-destructive">{typeof errors.theftIncidentDetails.message === 'string' ? errors.theftIncidentDetails.message : 'Error en los detalles del incidente'}p>}
+          div>
           
-          <div className="space-y-2">
-            <Label htmlFor="theftPerpetratorDetails">Detalles del perpetrador (Opcional)</Label>
-            <Textarea
+          div className="space-y-2">
+            Label htmlFor="theftPerpetratorDetails">Detalles del perpetrador (Opcional)Label>
+            Textarea
               id="theftPerpetratorDetails"
               value={theftPerpetratorDetails}
               onChange={(e) => setTheftPerpetratorDetails(e.target.value)}
               className="min-h-[60px]"
               placeholder="Descripción del ladrón, vestimenta, vehículo utilizado, etc."
             />
-          </div>
+          div>
 
-          <div className="space-y-2">
-            <Label htmlFor="generalNotes">Notas generales adicionales (Opcional)</Label>
-            <Textarea
+          div className="space-y-2">
+            Label htmlFor="generalNotes">Notas generales adicionales (Opcional)Label>
+            Textarea
               id="generalNotes"
               value={generalNotes}
               onChange={(e) => setGeneralNotes(e.target.value)}
               className="min-h-[60px]"
               placeholder="Número de reporte policial, información de contacto adicional, etc."
             />
-          </div>
-        </div>
-        <DialogFooter>
-          <DialogClose asChild>
-            <Button variant="outline" disabled={isLoading}>Cancelar</Button>
-          </DialogClose>
-          <Button type="button" onClick={handleSubmit} disabled={isLoading} variant="destructive">
-            {isLoading && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+          div>
+        div>
+        DialogFooter>
+          DialogClose asChild>
+            Button variant="outline" disabled={isLoading}>CancelarButton>
+          DialogClose>
+          Button type="button" onClick={handleSubmit} disabled={isLoading} variant="destructive">
+            {isLoading && Loader2 className="mr-2 h-4 w-4 animate-spin" />}
             Confirmar Reporte de Robo
-          </Button>
-        </DialogFooter>
-      </DialogContent>
-    </Dialog>
+          Button>
+        DialogFooter>
+      DialogContent>
+    Dialog>
   );
 };
 

@@ -44,7 +44,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
   const [user, setUser] = useState<UserProfile | null>(null);
   const [loading, setLoading] = useState(true);
   const { toast } = useToast();
-  const router = useRouter(); // FIX: lint issue
+  const router = useRouter(); // FIX: lint issue - Now used
 
   useEffect(() => {
     // This check is to prevent App Check from trying to initialize on the server.
@@ -195,8 +195,10 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
   const signOut = async (): Promise<void> => {
     try {
       await firebaseSignOut(auth);
-    } catch (error) {
-      console.error("Error al cerrar sesión:", error);
+      router.push('/'); // FIX: lint issue - Now used
+    } catch (error: unknown) { // FIX: lint issue
+      const firebaseError = error as FirebaseError;
+      console.error("Error al cerrar sesión:", firebaseError.message);
       setLoading(false);
     }
   };
@@ -209,7 +211,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
         await fetchAndUpdateUserProfile(userCredential.user);
       }
       return user;
-    } catch (error: unknown) { // FIX: lint issue
+    } catch (error: unknown) {
       console.error("Error al iniciar sesión anónimamente:", error);
       setUser(null);
       setLoading(false);
@@ -252,7 +254,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
         await updateUserDoc(firebaseUser.uid, initialProfileData);
       }
     } catch (error: unknown) { // FIX: lint issue
-      const authError = error as { code?: string; message?: string };
+      const authError = error as FirebaseError;
       if (authError.code === 'auth/popup-closed-by-user') {
         console.log("Google sign-in pop-up closed by user.");
       } else if (authError.code === 'auth/unauthorized-domain') {
@@ -287,7 +289,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
   const sendPasswordReset = async (email: string): Promise<void> => {
     try {
       await firebaseSendPasswordResetEmail(auth, email);
-    } catch (error: unknown) { // FIX: lint issue
+    } catch (error: unknown) {
       console.warn("Error sending password reset email:", error);
       throw error;
     }
@@ -300,7 +302,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
     try {
       await firebaseUpdatePassword(auth.currentUser, newPassword);
     } catch (error: unknown) { // FIX: lint issue
-      const authError = error as { code?: string; message?: string };
+      const authError = error as FirebaseError;
       console.warn("Error updating password:", error);
       if (authError.code === 'auth/weak-password') {
         throw new Error('La nueva contraseña es demasiado débil. Debe tener al menos 6 caracteres.');

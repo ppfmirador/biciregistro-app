@@ -1,6 +1,5 @@
 
 
-
 // Updated to use Spanish status values directly, aligning with BIKE_STATUSES constant
 export type BikeStatus = 'En Regla' | 'Robada' | 'Transferida';
 
@@ -37,7 +36,7 @@ export interface TheftDetails {
   reportedAt: string; // ISO date string for when the theft was reported
 }
 
-export interface ReportTheftDialogData extends Omit<TheftDetails, 'reportedAt'> {
+export interface ReportTheftDialogData extends Omit {
   generalNotes?: string;
 }
 
@@ -130,7 +129,7 @@ export interface UserProfileData {
   whatsappGroupLink?: string | null;
 }
 
-export interface UserProfile extends AuthUser, Omit<UserProfileData, 'email'> {}
+export interface UserProfile extends AuthUser, Omit {}
 
 export interface TransferRequest {
   id:string;

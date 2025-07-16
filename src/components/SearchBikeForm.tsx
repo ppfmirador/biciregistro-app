@@ -39,7 +39,7 @@ const SearchBikeForm: React.FC<SearchBikeFormProps> = ({ initialSerialNumber }) 
     try {
       // Append ?from=home to indicate navigation from homepage search
       router.push(`/bike/${encodeURIComponent(data.serialNumber.trim())}?from=home`);
-    } catch (error: unknown) { // FIX: lint issue
+    } catch (error: unknown) {
        toast({
         title: 'Error en la Búsqueda',
         description: 'No se pudo procesar la búsqueda. Por favor, inténtalo de nuevo.',

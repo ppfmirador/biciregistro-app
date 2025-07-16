@@ -13,6 +13,7 @@ import { useRouter, useSearchParams } from 'next/navigation';
 import { useToast } from '@/hooks/use-toast';
 import { Loader2, Eye, EyeOff } from 'lucide-react';
 import type { UserRole } from '@/lib/types';
+import { FirebaseError } from 'firebase/app'; // FIX: lint issue
 
 const formSchema = z.object({
   email: z.string().email({ message: 'Dirección de correo inválida.' }),
@@ -26,16 +27,16 @@ interface AuthFormProps {
   userType?: UserRole;
 }
 
-const GoogleIcon = (props: React.SVGProps<SVGSVGElement>) => (
+const GoogleIcon = (props: React.SVGProps) => (
     <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 48 48" {...props}>
-        <path fill="#FFC107" d="M43.611,20.083H42V20H24v8h11.303c-1.649,4.657-6.08,8-11.303,8c-6.627,0-12-5.373-12-12c0-6.627,5.373-12,12-12c3.059,0,5.842,1.154,7.961,3.039l5.657-5.657C34.046,6.053,29.268,4,24,4C12.955,4,4,12.955,4,24c0,11.045,8.955,20,20,20c11.045,0,20-8.955,20-20C44,22.659,43.862,21.35,43.611,20.083z" />
-        <path fill="#FF3D00" d="M6.306,14.691l6.571,4.819C14.655,15.108,18.961,12,24,12c3.059,0,5.842,1.154,7.961,3.039l5.657-5.657C34.046,6.053,29.268,4,24,4C16.318,4,9.656,8.337,6.306,14.691z" />
-        <path fill="#4CAF50" d="M24,44c5.166,0,9.86-1.977,13.409-5.192l-6.19-5.238C29.211,35.091,26.715,36,24,36c-5.223,0-9.657-3.356-11.303-8H6.306C9.656,39.663,16.318,44,24,44z" />
-        <path fill="#1976D2" d="M43.611,20.083H42V20H24v8h11.303c-0.792,2.237-2.231,4.166-4.087,5.571l6.19,5.238C43.021,36.251,44,30.686,44,24C44,22.659,43.862,21.35,43.611,20.083z" />
-    </svg>
+        path fill="#FFC107" d="M43.611,20.083H42V20H24v8h11.303c-1.649,4.657-6.08,8-11.303,8c-6.627,0-12-5.373-12-12c0-6.627,5.373-12,12-12c3.059,0,5.842,1.154,7.961,3.039l5.657-5.657C34.046,6.053,29.268,4,24,4C12.955,4,4,12.955,4,24c0,11.045,8.955,20,20,20c11.045,0,20-8.955,20-20C44,22.659,43.862,21.35,43.611,20.083z" />
+        path fill="#FF3D00" d="M6.306,14.691l6.571,4.819C14.655,15.108,18.961,12,24,12c3.059,0,5.842,1.154,7.961,3.039l5.657-5.657C34.046,6.053,29.268,4,24,4C16.318,4,9.656,8.337,6.306,14.691z" />
+        path fill="#4CAF50" d="M24,44c5.166,0,9.86-1.977,13.409-5.192l-6.19-5.238C29.211,35.091,26.715,36,24,36c-5.223,0-9.657-3.356-11.303-8H6.306C9.656,39.663,16.318,44,24,44z" />
+        path fill="#1976D2" d="M43.611,20.083H42V20H24v8h11.303c-0.792,2.237-2.231,4.166-4.087,5.571l6.19,5.238C43.021,36.251,44,30.686,44,24C44,22.659,43.862,21.35,43.611,20.083z" />
+    svg>
 );
 
-export const AuthForm: React.FC<AuthFormProps> = ({ mode, userType = 'cyclist' }) => {
+export const AuthForm: React.FC = ({ mode, userType = 'cyclist' }) => {
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [isGoogleSubmitting, setIsGoogleSubmitting] = useState(false);
   const [isSendingResetEmail, setIsSendingResetEmail] = useState(false);
@@ -45,7 +46,7 @@ export const AuthForm: React.FC<AuthFormProps> = ({ mode, userType = 'cyclist' }
   const searchParams = useSearchParams();
   const { toast } = useToast();
 
-  const { register, handleSubmit, formState: { errors }, getValues } = useForm<FormValues>({
+  const { register, handleSubmit, formState: { errors }, getValues } = useForm({
     resolver: zodResolver(formSchema),
   });
 
@@ -70,7 +71,7 @@ export const AuthForm: React.FC<AuthFormProps> = ({ mode, userType = 'cyclist' }
     }
   }, [user, authLoading, router, mode, isSubmitting, isGoogleSubmitting]);
 
-  const onSubmit: SubmitHandler<FormValues> = async (data) => {
+  const onSubmit: SubmitHandler = async (data) => {
     setIsSubmitting(true);
     try {
       if (mode === 'login') {
@@ -100,7 +101,7 @@ export const AuthForm: React.FC<AuthFormProps> = ({ mode, userType = 'cyclist' }
     const referrerId = searchParams.get('ref');
     try {
       await signInWithGoogle(referrerId);
-    } catch (error: unknown) { // FIX: lint issue
+    } catch (error: unknown) { // FIX: lint issue - error is handled in AuthContext, no need to show toast here
       // Error is handled in AuthContext
     } finally {
       setIsGoogleSubmitting(false);
@@ -129,7 +130,7 @@ export const AuthForm: React.FC<AuthFormProps> = ({ mode, userType = 'cyclist' }
         description: `Si existe una cuenta para ${email}, se ha enviado un enlace para restablecer la contraseña. Revisa tu bandeja de entrada y spam.`,
         duration: 7000,
       });
-    } catch (error: unknown) { // FIX: lint issue
+    } catch (error: unknown) {
       console.error("Error requesting password reset:", error);
       toast({
         title: 'Error',
@@ -148,11 +149,11 @@ export const AuthForm: React.FC<AuthFormProps> = ({ mode, userType = 'cyclist' }
   const isAnyLoading = isSubmitting || authLoading || isSendingResetEmail || isGoogleSubmitting;
 
   return (
-    <div className="space-y-4">
-      <form onSubmit={handleSubmit(onSubmit)} className="space-y-6">
-        <div className="space-y-2">
-          <Label htmlFor="email">Correo Electrónico</Label>
-          <Input
+    div className="space-y-4">
+      form onSubmit={handleSubmit(onSubmit)} className="space-y-6">
+        div className="space-y-2">
+          Label htmlFor="email">Correo ElectrónicoLabel>
+          Input
             id="email"
             type="email"
             placeholder="tu@ejemplo.com"
@@ -160,12 +161,12 @@ export const AuthForm: React.FC<AuthFormProps> = ({ mode, userType = 'cyclist' }
             className={errors.email ? 'border-destructive' : ''}
             disabled={isAnyLoading}
           />
-          {errors.email && <p className="text-sm text-destructive">{errors.email.message}</p>}
-        </div>
-        <div className="space-y-2">
-          <Label htmlFor="password">Contraseña</Label>
-          <div className="relative">
-            <Input
+          {errors.email && p className="text-sm text-destructive">{errors.email.message}p>}
+        div>
+        div className="space-y-2">
+          Label htmlFor="password">ContraseñaLabel>
+          div className="relative">
+            Input
               id="password"
               type={showPassword ? 'text' : 'password'}
               placeholder="••••••••"
@@ -173,7 +174,7 @@ export const AuthForm: React.FC<AuthFormProps> = ({ mode, userType = 'cyclist' }
               className={`pr-10 ${errors.password ? 'border-destructive' : ''}`}
               disabled={isAnyLoading}
             />
-            <Button
+            Button
               type="button"
               variant="ghost"
               size="icon"
@@ -182,53 +183,53 @@ export const AuthForm: React.FC<AuthFormProps> = ({ mode, userType = 'cyclist' }
               disabled={isAnyLoading}
               aria-label={showPassword ? "Ocultar contraseña" : "Mostrar contraseña"}
             >
-              {showPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
-            </Button>
-          </div>
-          {errors.password && <p className="text-sm text-destructive">{errors.password.message}</p>}
-        </div>
+              {showPassword ? EyeOff className="h-4 w-4" /> : Eye className="h-4 w-4" />}
+            Button>
+          div>
+          {errors.password && p className="text-sm text-destructive">{errors.password.message}p>}
+        div>
 
         {mode === 'login' && (
-          <div className="text-right">
-            <Button
+          div className="text-right">
+            Button
               type="button"
               variant="link"
               onClick={handlePasswordResetRequest}
               className="px-0 text-sm h-auto py-1"
               disabled={isAnyLoading}
             >
-              {isSendingResetEmail && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+              {isSendingResetEmail && Loader2 className="mr-2 h-4 w-4 animate-spin" />}
               ¿Olvidaste tu contraseña?
-            </Button>
-          </div>
+            Button>
+          div>
         )}
 
-        <Button type="submit" className="w-full" disabled={isAnyLoading}>
-          {(isSubmitting || authLoading) && !isGoogleSubmitting && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+        Button type="submit" className="w-full" disabled={isAnyLoading}>
+          {(isSubmitting || authLoading) && !isGoogleSubmitting && Loader2 className="mr-2 h-4 w-4 animate-spin" />}
           {mode === 'login' ? 'Iniciar Sesión' : 'Registrarse'}
-        </Button>
-      </form>
+        Button>
+      form>
 
-      <div className="relative">
-        <div className="absolute inset-0 flex items-center">
-            <span className="w-full border-t" />
-        </div>
-        <div className="relative flex justify-center text-xs uppercase">
-            <span className="bg-background px-2 text-muted-foreground">
+      div className="relative">
+        div className="absolute inset-0 flex items-center">
+            span className="w-full border-t" />
+        div>
+        div className="relative flex justify-center text-xs uppercase">
+            span className="bg-background px-2 text-muted-foreground">
             O continúa con
-            </span>
-        </div>
-      </div>
+            span>
+        div>
+      div>
 
-      <Button variant="outline" className="w-full" onClick={handleGoogleSignIn} disabled={isAnyLoading}>
+      Button variant="outline" className="w-full" onClick={handleGoogleSignIn} disabled={isAnyLoading}>
         {isGoogleSubmitting ? (
-          <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+          Loader2 className="mr-2 h-4 w-4 animate-spin" />
         ) : (
-          <GoogleIcon className="mr-2 h-5 w-5" />
+          GoogleIcon className="mr-2 h-5 w-5" />
         )}
         Google
-      </Button>
+      Button>
 
-    </div>
+    div>
   );
 };

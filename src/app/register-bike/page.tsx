@@ -14,6 +14,7 @@ import { ArrowLeft, PlusCircle } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { uploadFileToStorage } from '@/lib/storage'; 
 import { OTHER_BRAND_VALUE } from '@/constants';
+import { FirebaseError } from 'firebase/app'; // FIX: lint issue
 
 export default function RegisterBikePage() {
   const [isLoading, setIsLoading] = useState(false);
@@ -108,9 +109,9 @@ export default function RegisterBikePage() {
       toast({ title: '¡Bicicleta Registrada!', description: `${finalBrand} ${data.model} ha sido registrada exitosamente.` });
       router.push(`/bike/${encodeURIComponent(data.serialNumber)}/qr`);
 
-    } catch (error: unknown) {
-      const err = error as FunctionsError;
-      const errorMessage = err.message || "No se pudo registrar la bicicleta. Revisa los datos e inténtalo de nuevo.";
+    } catch (error: unknown) { // FIX: lint issue
+      const err = error as FunctionsError | Error;
+      const errorMessage = 'message' in err ? err.message : "No se pudo registrar la bicicleta. Revisa los datos e inténtalo de nuevo.";
       toast({ 
         title: 'Registro Fallido', 
         description: errorMessage, 
@@ -123,29 +124,29 @@ export default function RegisterBikePage() {
 
   if (authLoading || !user || user.isAnonymous) {
     return (
-      <div className="flex justify-center items-center min-h-[calc(100vh-200px)]">
-        <p>Cargando detalles de autenticación...</p>
-      </div>
+      div className="flex justify-center items-center min-h-[calc(100vh-200px)]">
+        p>Cargando detalles de autenticación...p>
+      div>
     );
   }
 
   return (
-    <div className="space-y-6 sm:space-y-8">
-       <Button variant="outline" onClick={() => router.push('/dashboard')} className="mb-4 sm:mb-6">
-        <ArrowLeft className="mr-2 h-4 w-4" /> Volver al Panel
-      </Button>
-      <Card className="max-w-2xl mx-auto shadow-xl">
-        <CardHeader>
-          <div className="flex items-center gap-2 mb-2">
-            <PlusCircle className="h-7 w-7 sm:h-8 sm:w-8 text-primary" />
-            <CardTitle className="text-2xl sm:text-3xl font-headline">Registrar Nueva Bicicleta</CardTitle>
-          </div>
-          <CardDescription className="text-sm sm:text-base">Completa los detalles a continuación para agregar tu bicicleta al registro. Puedes subir hasta 3 fotos y un documento de propiedad desde tu dispositivo.</CardDescription>
-        </CardHeader>
-        <CardContent>
-          <BikeForm onSubmit={handleSubmit} isLoading={isLoading} submitButtonText="Registrar Bici" />
-        </CardContent>
-      </Card>
-    </div>
+    div className="space-y-6 sm:space-y-8">
+       Button variant="outline" onClick={() => router.push('/dashboard')} className="mb-4 sm:mb-6">
+        ArrowLeft className="mr-2 h-4 w-4" /> Volver al Panel
+      Button>
+      Card className="max-w-2xl mx-auto shadow-xl">
+        CardHeader>
+          div className="flex items-center gap-2 mb-2">
+            PlusCircle className="h-7 w-7 sm:h-8 sm:w-8 text-primary" />
+            CardTitle className="text-2xl sm:text-3xl font-headline">Registrar Nueva BicicletaCardTitle>
+          div>
+          CardDescription className="text-sm sm:text-base">Completa los detalles a continuación para agregar tu bicicleta al registro. Puedes subir hasta 3 fotos y un documento de propiedad desde tu dispositivo.CardDescription>
+        CardHeader>
+        CardContent>
+          BikeForm onSubmit={handleSubmit} isLoading={isLoading} submitButtonText="Registrar Bici" />
+        CardContent>
+      Card>
+    div>
   );
 }

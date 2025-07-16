@@ -8,7 +8,7 @@ import type { HomepageContent } from './types';
 const CONTENT_COLLECTION = 'homepage_content';
 const CONTENT_DOC_ID = 'config';
 
-const homepageContentFromDoc = (docSnap: DocumentSnapshot<DocumentData>): HomepageContent => { // FIX: lint issue
+const homepageContentFromDoc = (docSnap: DocumentSnapshot): HomepageContent => { // FIX: lint issue
   const data = docSnap.data();
   if (!data) { // FIX: lint issue - Added a check for data existence
       throw new Error(`Document data not found for ${docSnap.id}`);
@@ -21,7 +21,7 @@ const homepageContentFromDoc = (docSnap: DocumentSnapshot<DocumentData>): Homepa
   } as HomepageContent;
 };
 
-export const getHomepageContent = async (): Promise<HomepageContent | null> => {
+export const getHomepageContent = async (): Promise => {
   const contentRef = doc(db, CONTENT_COLLECTION, CONTENT_DOC_ID);
   const docSnap = await getDoc(contentRef);
   if (docSnap.exists()) {

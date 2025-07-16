@@ -20,6 +20,7 @@ import { getUserProfileByEmail, createCustomerWithTemporaryPassword, addBikeToFi
 import { uploadFileToStorage } from '@/lib/storage';
 import { v4 as uuidv4 } from 'uuid';
 import { bikeShopRegisterSchema, type BikeShopRegisterFormValues } from '@/lib/schemas';
+import { FirebaseError } from 'firebase/app'; // FIX: lint issue
 
 export default function RegisterSoldBikePage() {
   const { user, loading: authLoading } = useAuth();
@@ -245,8 +246,8 @@ export default function RegisterSoldBikePage() {
       // Optionally delay navigation or let user click away
       // router.push('/bikeshop/dashboard');
 
-    } catch (error: unknown) {
-      const errorMessage = error instanceof Error ? error.message : "No se pudo registrar la bicicleta.";
+    } catch (error: unknown) { // FIX: lint issue
+      const errorMessage = error instanceof FirebaseError ? error.message : "No se pudo registrar la bicicleta.";
       console.error("Error registering bike by shop:", error);
       if (errorMessage.includes('Ya existe una bicicleta registrada con el número de serie:')) {
         setError('serialNumber', { type: 'manual', message: errorMessage });
@@ -494,8 +495,8 @@ export default function RegisterSoldBikePage() {
               {[1, 2, 3].map(i => (
                 <div className="space-y-1" key={`photo-upload-${i}`}>
                   <Label htmlFor={`photo${i}`}>Foto ${i}</Label>
-                  <Input id={`photo${i}`} type="file" accept="image/*" {...register(`photo${i}` as 'photo1')} className={(errors as any)[`photo${i}`] ? 'border-destructive' : ''} disabled={isSubmitting} ref={i === 1 ? photo1Ref : i === 2 ? photo2Ref : photo3Ref}/>
-                  {(errors as any)[`photo${i}`] && <p className="text-xs text-destructive">{typeof (errors as any)[`photo${i}`].message === 'string' ? (errors as any)[`photo${i}`].message : 'Error de archivo'}</p>}
+                  <Input id={`photo${i}`} type="file" accept="image/*" {...register(`photo${i}` as 'photo1')} className={(errors as { [key: string]: unknown })[`photo${i}`] ? 'border-destructive' : ''} disabled={isSubmitting} ref={i === 1 ? photo1Ref : i === 2 ? photo2Ref : photo3Ref}/>
+                  {(errors as { [key: string]: { message?: string }})[`photo${i}`] && <p className="text-xs text-destructive">{typeof (errors as { [key: string]: { message?: string }})[`photo${i}`].message === 'string' ? (errors as { [key: string]: { message?: string }})[`photo${i}`].message : 'Error de archivo'}</p>}
                 </div>
               ))}
 
