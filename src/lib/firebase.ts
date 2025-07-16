@@ -1,8 +1,10 @@
+
 // src/lib/firebase.ts
 import { initializeApp, getApp, getApps, type FirebaseApp } from 'firebase/app';
 import { getAuth, type Auth } from 'firebase/auth';
 import { getFirestore, type Firestore } from 'firebase/firestore';
 import { getStorage, type FirebaseStorage } from 'firebase/storage';
+import { initializeAppCheck, ReCaptchaV3Provider } from 'firebase/app-check';
 
 // --- IMPORTANT ---
 // Using environment variables is the standard practice, but to ensure the deployed
@@ -23,6 +25,32 @@ const firebaseConfig = {
 // Initialize Firebase App
 // This pattern ensures that the app is initialized only once.
 const appInstance: FirebaseApp = getApps().length ? getApp() : initializeApp(firebaseConfig);
+
+// Initialize App Check
+if (typeof window !== "undefined") {
+  // Make sure you have the debug token in your .env.local file
+  // NEXT_PUBLIC_FIREBASE_APPCHECK_DEBUG_TOKEN=...
+  // You can find the debug token in the browser console on first run.
+  if (process.env.NEXT_PUBLIC_FIREBASE_APPCHECK_DEBUG_TOKEN) {
+    (self as any).FIREBASE_APPCHECK_DEBUG_TOKEN = process.env.NEXT_PUBLIC_FIREBASE_APPCHECK_DEBUG_TOKEN;
+  }
+  
+  try {
+    const reCaptchaSiteKey = process.env.NEXT_PUBLIC_RECAPTCHA_SITE_KEY;
+    if (!reCaptchaSiteKey) {
+        console.warn("Firebase App Check: reCAPTCHA site key is not defined. App Check will not be initialized.");
+    } else {
+        initializeAppCheck(appInstance, {
+          provider: new ReCaptchaV3Provider(reCaptchaSiteKey),
+          isTokenAutoRefreshEnabled: true,
+        });
+        console.log("Firebase App Check initialized with reCAPTCHA v3 provider.");
+    }
+  } catch (error) {
+    console.error("Error initializing Firebase App Check:", error);
+  }
+}
+
 
 // Export the initialized app and other Firebase services
 export const app: FirebaseApp = appInstance;
