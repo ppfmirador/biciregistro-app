@@ -19,7 +19,7 @@ import { Separator } from '@/components/ui/separator';
 import { ngoProfileSchema, type NgoProfileFormValues } from '@/lib/schemas';
 import { LAT_AM_LOCATIONS, DAYS_OF_WEEK } from '@/constants';
 import { Checkbox } from '@/components/ui/checkbox';
-import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '../ui/tooltip';
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
 
 function EditNgoProfilePageContent() {
   const router = useRouter();
@@ -80,7 +80,7 @@ function EditNgoProfilePageContent() {
             meetingDays: existingProfile.meetingDays || [] 
           } as NgoProfileFormValues);
         }
-      } catch (error: unknown) { // FIX: lint issue
+      } catch (error: unknown) {
         toast({ title: "Error", description: "No se pudo cargar tu perfil.", variant: "destructive" });
       } finally {
         setIsLoadingData(false);
@@ -97,7 +97,7 @@ function EditNgoProfilePageContent() {
       await updateUserDoc(user.uid, data);
       toast({ title: "¡Perfil Actualizado!", description: "La información de tu organización ha sido guardada." });
       router.push('/ngo/dashboard');
-    } catch (error: unknown) { // FIX: lint issue
+    } catch (error: unknown) {
       const errorMessage = error instanceof Error ? error.message : "No se pudo guardar el perfil.";
       toast({ title: "Error al Guardar Perfil", description: errorMessage, variant: "destructive" });
     } finally {
@@ -121,7 +121,7 @@ function EditNgoProfilePageContent() {
       toast({ title: "¡Contraseña Actualizada!", description: "Tu contraseña ha sido cambiada exitosamente." });
       setNewPassword('');
       setConfirmPassword('');
-    } catch (error: unknown) { // FIX: lint issue
+    } catch (error: unknown) {
       const errorMessage = error instanceof Error ? error.message : "No se pudo cambiar la contraseña.";
       setPasswordChangeError(errorMessage);
       toast({ title: "Error al Cambiar Contraseña", description: errorMessage, variant: "destructive" });

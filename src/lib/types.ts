@@ -1,5 +1,6 @@
 
 
+
 // Updated to use Spanish status values directly, aligning with BIKE_STATUSES constant
 export type BikeStatus = 'En Regla' | 'Robada' | 'Transferida';
 

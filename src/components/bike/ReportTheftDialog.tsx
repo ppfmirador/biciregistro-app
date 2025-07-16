@@ -148,7 +148,7 @@ const ReportTheftDialog: React.FC<ReportTheftDialogProps> = ({ bike, onReportThe
               className={`min-h-[80px] ${errors.theftIncidentDetails ? 'border-destructive' : ''}`}
               placeholder="Describe cómo, cuándo y dónde ocurrió el robo, características específicas de la bici al momento del robo, etc."
             />
-            {errors.theftIncidentDetails && <p className="text-sm text-destructive">{errors.theftIncidentDetails.message}</p>}
+            {errors.theftIncidentDetails && <p className="text-sm text-destructive">{typeof errors.theftIncidentDetails.message === 'string' ? errors.theftIncidentDetails.message : 'Error en los detalles del incidente'}</p>}
           </div>
           
           <div className="space-y-2">

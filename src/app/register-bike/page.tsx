@@ -6,7 +6,7 @@ import { BikeForm } from '@/components/bike/BikeForm';
 import type { BikeFormValues } from '@/lib/schemas';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { useAuth } from '@/context/AuthContext';
-import { getFunctions, httpsCallable } from 'firebase/functions';
+import { getFunctions, httpsCallable, type FunctionsError } from 'firebase/functions';
 import { app } from '@/lib/firebase';
 import { useRouter } from 'next/navigation';
 import { useToast } from '@/hooks/use-toast';
@@ -80,7 +80,7 @@ export default function RegisterBikePage() {
       const finalBrand = data.brand === OTHER_BRAND_VALUE ? data.otherBrand || '' : data.brand;
 
       // Construct a clean data object to send to the Cloud Function
-      const newBikeData: { [key: string]: unknown } = { // FIX: lint issue
+      const newBikeData: Record<string, unknown> = {
         serialNumber: data.serialNumber,
         brand: finalBrand,
         model: data.model,
@@ -102,14 +102,15 @@ export default function RegisterBikePage() {
       });
       
       const functions = getFunctions(app, 'us-central1');
-      const createBikeCallable = httpsCallable<{ bikeData: typeof newBikeData }, { bikeId: string }>(functions, 'createBike'); // FIX: lint issue
+      const createBikeCallable = httpsCallable<Record<string, unknown>, { bikeId: string }>(functions, 'createBike');
       await createBikeCallable({ bikeData: newBikeData });
       
       toast({ title: '¡Bicicleta Registrada!', description: `${finalBrand} ${data.model} ha sido registrada exitosamente.` });
       router.push(`/bike/${encodeURIComponent(data.serialNumber)}/qr`);
 
-    } catch (error: unknown) { // FIX: lint issue
-      const errorMessage = error instanceof Error ? error.message : "No se pudo registrar la bicicleta. Revisa los datos e inténtalo de nuevo.";
+    } catch (error: unknown) {
+      const err = error as FunctionsError;
+      const errorMessage = err.message || "No se pudo registrar la bicicleta. Revisa los datos e inténtalo de nuevo.";
       toast({ 
         title: 'Registro Fallido', 
         description: errorMessage, 

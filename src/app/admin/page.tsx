@@ -201,7 +201,7 @@ export default function AdminPage() {
       setBikeShops(shopsFromDb);
       setNgos(ngosFromDb);
 
-    } catch (error: unknown) { // FIX: lint issue
+    } catch (error: unknown) {
       toast({ title: "Error", description: "No se pudo cargar el contenido/usuarios del administrador.", variant: "destructive" });
     } finally {
       setIsFetchingAdminContent(false);
@@ -224,7 +224,7 @@ export default function AdminPage() {
       }
       fetchAdminPageData();
     }
-  }, [user, authLoading, router, toast, fetchAdminPageData]); // FIX: lint issue
+  }, [user, authLoading, router, toast, fetchAdminPageData]);
 
 
   const handleCommunityImageChange = (e: ChangeEvent<HTMLInputElement>) => {
@@ -358,7 +358,7 @@ export default function AdminPage() {
       setExistingCommunityImageUrl(finalCommunityImageUrl);
       setSponsors(finalSponsors.map(s => ({ ...s, existingLogoPath: getPathFromStorageUrl(s.logoUrl), newLogoPreview: undefined, logoFile: undefined })));
 
-    } catch (error: unknown) { // FIX: lint issue
+    } catch (error: unknown) {
       const errorMessage = error instanceof Error ? error.message : "No se pudo guardar el contenido.";
       toast({ title: "Error al Guardar", description: errorMessage, variant: "destructive" });
     } finally {
@@ -386,9 +386,9 @@ export default function AdminPage() {
         if (user?.uid === uid) {
             await refreshUserProfile();
         }
-    } catch (error: unknown) { // FIX: lint issue
-        const err = error as FunctionsError; // FIX: lint issue
-        const errorMessage = err.message || "Error desconocido al actualizar rol."; // FIX: lint issue
+    } catch (error: unknown) {
+        const err = error as FunctionsError;
+        const errorMessage = err.message || "Error desconocido al actualizar rol.";
         console.error("Error updating role:", error);
         toast({ title: "Error al Actualizar Rol", description: errorMessage, variant: "destructive" });
     } finally {
@@ -407,9 +407,9 @@ export default function AdminPage() {
 
       toast({ title: "Usuario Eliminado", description: result.data.message });
       await fetchAdminPageData();
-    } catch (error: unknown) { // FIX: lint issue
-      const err = error as FunctionsError; // FIX: lint issue
-      const errorMessage = err.message || "No se pudo eliminar el usuario."; // FIX: lint issue
+    } catch (error: unknown) {
+      const err = error as FunctionsError;
+      const errorMessage = err.message || "No se pudo eliminar el usuario.";
       console.error("Error object from deleteUserAccount callable:", error);
       toast({ title: "Error al Eliminar Usuario", description: errorMessage, variant: "destructive" });
     } finally {
@@ -452,7 +452,7 @@ export default function AdminPage() {
       setIsShopFormOpen(false);
       setEditingShop(null);
       await fetchAdminPageData(); // Refresh the list of shops
-    } catch (error: unknown) { // FIX: lint issue
+    } catch (error: unknown) {
       const errorMessage = error instanceof Error ? error.message : "Error desconocido al guardar tienda.";
       toast({ title: "Error al Guardar Tienda", description: errorMessage, variant: "destructive" });
     } finally {
@@ -481,7 +481,7 @@ export default function AdminPage() {
       setIsNgoFormOpen(false);
       setEditingNgo(null);
       await fetchAdminPageData(); // Refresh the list of NGOs
-    } catch (error: unknown) { // FIX: lint issue
+    } catch (error: unknown) {
       const errorMessage = error instanceof Error ? error.message : "Error desconocido al guardar ONG.";
       toast({ title: "Error al Guardar ONG", description: errorMessage, variant: "destructive" });
     } finally {
