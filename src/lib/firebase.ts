@@ -27,27 +27,35 @@ const firebaseConfig = {
 const appInstance: FirebaseApp = getApps().length ? getApp() : initializeApp(firebaseConfig);
 
 // Initialize App Check
+// This should only run on the client-side.
 if (typeof window !== "undefined") {
-  // Make sure you have the debug token in your .env.local file
-  // NEXT_PUBLIC_FIREBASE_APPCHECK_DEBUG_TOKEN=...
-  // You can find the debug token in the browser console on first run.
-  if (process.env.NEXT_PUBLIC_FIREBASE_APPCHECK_DEBUG_TOKEN) {
-    (self as any).FIREBASE_APPCHECK_DEBUG_TOKEN = process.env.NEXT_PUBLIC_FIREBASE_APPCHECK_DEBUG_TOKEN;
-  }
-  
-  try {
+  const debugToken = process.env.NEXT_PUBLIC_FIREBASE_APPCHECK_DEBUG_TOKEN;
+
+  if (debugToken) {
+    // Development mode: Use the debug token.
+    // This is the recommended approach for local development and CI environments.
+    console.log("Firebase App Check: Initializing with debug token.");
+    (self as any).FIREBASE_APPCHECK_DEBUG_TOKEN = debugToken;
+    initializeAppCheck(appInstance, {
+      provider: new ReCaptchaV3Provider('6LeIxAcTAAAAAJcZVRqyHh71UMIEGNQ_MXjiZKhI'), // Placeholder for debug provider
+      isTokenAutoRefreshEnabled: true,
+    });
+  } else {
+    // Production mode: Use reCAPTCHA v3.
     const reCaptchaSiteKey = process.env.NEXT_PUBLIC_RECAPTCHA_SITE_KEY;
-    if (!reCaptchaSiteKey) { // FIX: lint issue - Added validation for reCAPTCHA key.
-        console.warn("Firebase App Check: reCAPTCHA site key is not defined. App Check will not be initialized."); // FIX: lint issue - Added validation for reCAPTCHA key.
-    } else { // FIX: lint issue - Added validation for reCAPTCHA key.
+    if (reCaptchaSiteKey) {
+      try {
+        console.log("Firebase App Check: Initializing with reCAPTCHA v3 provider.");
         initializeAppCheck(appInstance, {
-          provider: new ReCaptchaV3Provider(process.env.NEXT_PUBLIC_RECAPTCHA_SITE_KEY!),
+          provider: new ReCaptchaV3Provider(reCaptchaSiteKey),
           isTokenAutoRefreshEnabled: true,
         });
-        console.log("Firebase App Check initialized with reCAPTCHA v3 provider.");
-    } // FIX: lint issue - Added validation for reCAPTCHA key.
-  } catch (error) {
-    console.error("Error initializing Firebase App Check:", error);
+      } catch (error) {
+        console.error("Error initializing Firebase App Check with reCAPTCHA:", error);
+      }
+    } else {
+      console.warn("Firebase App Check: Production mode detected but NEXT_PUBLIC_RECAPTCHA_SITE_KEY is not defined. App Check will not be initialized.");
+    }
   }
 }
 

@@ -21,7 +21,7 @@ const homepageContentFromDoc = (docSnap: DocumentSnapshot): HomepageContent => {
   } as HomepageContent;
 };
 
-export const getHomepageContent = async (): Promise => {
+export const getHomepageContent = async (): Promise<HomepageContent | null> => {
   const contentRef = doc(db, CONTENT_COLLECTION, CONTENT_DOC_ID);
   const docSnap = await getDoc(contentRef);
   if (docSnap.exists()) {
