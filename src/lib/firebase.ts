@@ -41,7 +41,7 @@ if (typeof window !== "undefined") {
         console.warn("Firebase App Check: reCAPTCHA site key is not defined. App Check will not be initialized.");
     } else {
         initializeAppCheck(appInstance, {
-          provider: new ReCaptchaV3Provider(reCaptchaSiteKey),
+          provider: new ReCaptchaV3Provider(process.env.NEXT_PUBLIC_RECAPTCHA_SITE_KEY!),
           isTokenAutoRefreshEnabled: true,
         });
         console.log("Firebase App Check initialized with reCAPTCHA v3 provider.");
