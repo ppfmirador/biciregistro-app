@@ -13,6 +13,7 @@ import type { Bike, BikeType } from '@/lib/types';
 import { useToast } from '@/hooks/use-toast';
 import { ArrowLeft, Edit, Loader2 } from 'lucide-react';
 import { BIKE_BRANDS, OTHER_BRAND_VALUE } from '@/constants';
+import { FirebaseError } from 'firebase/app';
 
 function EditBikePageContent() {
   const params = useParams();
@@ -34,14 +35,15 @@ function EditBikePageContent() {
         router.push('/dashboard');
         return;
       }
-      if (bikeData.ownerId !== user?.uid) { // FIX: lint issue - Added optional chaining
+      if (bikeData.ownerId !== user?.uid) {
         toast({ title: "Acceso Denegado", description: "No tienes permiso para editar esta bicicleta.", variant: "destructive" });
         router.push(`/bike/${serialNumber}`);
         return;
       }
       setBike(bikeData);
-    } catch (error: unknown) { // FIX: lint issue
-      toast({ title: "Error", description: "No se pudo cargar la información de la bicicleta.", variant: "destructive" });
+    } catch (error: unknown) {
+      const errorMessage = error instanceof Error ? error.message : "No se pudo cargar la información de la bicicleta.";
+      toast({ title: "Error", description: errorMessage, variant: "destructive" });
       console.error(error);
       router.push('/dashboard');
     } finally {
@@ -77,7 +79,7 @@ function EditBikePageContent() {
       await updateBike(bike.id, updates);
       toast({ title: "¡Bicicleta Actualizada!", description: "Los detalles de tu bicicleta han sido actualizados." });
       router.push(`/bike/${encodeURIComponent(data.serialNumber || bike.serialNumber)}`); 
-    } catch (error: unknown) { // FIX: lint issue
+    } catch (error: unknown) {
       const errorMessage = error instanceof Error ? error.message : "No se pudo actualizar la bicicleta.";
       toast({ title: "Error al Actualizar", description: errorMessage, variant: "destructive" });
     } finally {

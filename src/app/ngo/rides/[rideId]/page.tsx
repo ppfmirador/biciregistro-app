@@ -23,7 +23,7 @@ import { es } from 'date-fns/locale';
 import { cn } from '@/lib/utils';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { BIKE_TYPES, PLACEHOLDER_NONE_VALUE, LAT_AM_LOCATIONS, RIDE_LEVELS } from '@/constants';
-import { FirebaseError } from 'firebase/app'; // FIX: lint issue
+import { FirebaseError } from 'firebase/app';
 
 function ManageRidePageContent() {
     const router = useRouter();
@@ -87,8 +87,9 @@ function ManageRidePageContent() {
                         cost: ride.cost || undefined,
                         level: ride.level || undefined,
                     });
-                } catch (error: unknown) { // FIX: lint issue
-                    toast({ title: "Error", description: "No se pudo cargar el evento.", variant: "destructive" });
+                } catch (error: unknown) {
+                    const errorMessage = error instanceof Error ? error.message : "No se pudo cargar el evento.";
+                    toast({ title: "Error", description: errorMessage, variant: "destructive" });
                 } finally {
                     setIsLoading(false);
                 }
@@ -108,7 +109,7 @@ function ManageRidePageContent() {
                 description: `El evento "${data.title}" ha sido guardado.`,
             });
             router.push('/ngo/dashboard');
-        } catch (error: unknown) { // FIX: lint issue
+        } catch (error: unknown) {
             const errorMessage = error instanceof FirebaseError ? error.message : "Error desconocido al guardar.";
             toast({ title: "Error al Guardar", description: errorMessage, variant: "destructive" });
         } finally {
@@ -183,7 +184,7 @@ function ManageRidePageContent() {
                                                     }}
                                                     initialFocus
                                                 />
-                                            PopoverContent>
+                                            </PopoverContent>
                                         </Popover>
                                         <Input
                                             type="time"
@@ -250,94 +251,94 @@ function ManageRidePageContent() {
                                             }}
                                             value={field.value || ''}
                                         >
-                                            SelectTrigger className={errors.country ? 'border-destructive' : ''}>
+                                            <SelectTrigger className={errors.country ? 'border-destructive' : ''}>
                                                 <SelectValue placeholder="Selecciona un país" />
-                                            SelectTrigger>
+                                            </SelectTrigger>
                                             <SelectContent>
-                                                {LAT_AM_LOCATIONS.map(c => <SelectItem key={c.country} value={c.country}>{c.country}SelectItem>)}
-                                            SelectContent>
-                                        Select>
+                                                {LAT_AM_LOCATIONS.map(c => <SelectItem key={c.country} value={c.country}>{c.country}</SelectItem>)}
+                                            </SelectContent>
+                                        </Select>
                                     )}
                                 />
-                                {errors.country && <p className="text-xs text-destructive">{errors.country.message}p>}
-                            div>
-                            div className="space-y-1">
-                                Label htmlFor="state">Estado/Provincia del EventoLabel>
-                                Controller
+                                {errors.country && <p className="text-xs text-destructive">{errors.country.message}</p>}
+                            </div>
+                            <div className="space-y-1">
+                                <Label htmlFor="state">Estado/Provincia del Evento</Label>
+                                <Controller
                                     name="state"
                                     control={control}
                                     render={({ field }) => (
-                                        Select onValueChange={field.onChange} value={field.value || ''} disabled={!watchedCountry}>
-                                            SelectTrigger className={errors.state ? 'border-destructive' : ''}>
-                                                SelectValue placeholder={!watchedCountry ? "Selecciona país primero" : "Selecciona un estado"} />
-                                            SelectTrigger>
-                                            SelectContent>
-                                                {LAT_AM_LOCATIONS.find(c => c.country === watchedCountry)?.states.map(s => SelectItem key={s} value={s}>{s}SelectItem>)}
-                                            SelectContent>
-                                        Select>
+                                        <Select onValueChange={field.onChange} value={field.value || ''} disabled={!watchedCountry}>
+                                            <SelectTrigger className={errors.state ? 'border-destructive' : ''}>
+                                                <SelectValue placeholder={!watchedCountry ? "Selecciona país primero" : "Selecciona un estado"} />
+                                            </SelectTrigger>
+                                            <SelectContent>
+                                                {LAT_AM_LOCATIONS.find(c => c.country === watchedCountry)?.states.map(s => <SelectItem key={s} value={s}>{s}</SelectItem>)}
+                                            </SelectContent>
+                                        </Select>
                                     )}
                                 />
-                                {errors.state && p className="text-xs text-destructive">{errors.state.message}p>}
-                            div>
-                        div>
+                                {errors.state && <p className="text-xs text-destructive">{errors.state.message}</p>}
+                            </div>
+                        </div>
                         
-                        div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                            div className="space-y-1">
-                                Label htmlFor="modality">Modalidad (Opcional)Label>
-                                Controller
+                        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                            <div className="space-y-1">
+                                <Label htmlFor="modality">Modalidad (Opcional)</Label>
+                                <Controller
                                     name="modality"
                                     control={control}
                                     render={({ field }) => (
-                                        Select
+                                        <Select
                                             onValueChange={(value) => field.onChange(value === PLACEHOLDER_NONE_VALUE ? undefined : value as BikeType)}
                                             value={field.value || ''}
                                         >
-                                            SelectTrigger className={errors.modality ? 'border-destructive' : ''}>
-                                                SelectValue placeholder="Selecciona una modalidad" />
-                                            SelectTrigger>
-                                            SelectContent>
-                                                SelectItem value={PLACEHOLDER_NONE_VALUE}>-- Ninguna --SelectItem>
-                                                {BIKE_TYPES.map(bt => SelectItem key={bt.value} value={bt.value}>{bt.label}SelectItem>)}
-                                            SelectContent>
-                                        Select>
+                                            <SelectTrigger className={errors.modality ? 'border-destructive' : ''}>
+                                                <SelectValue placeholder="Selecciona una modalidad" />
+                                            </SelectTrigger>
+                                            <SelectContent>
+                                                <SelectItem value={PLACEHOLDER_NONE_VALUE}>-- Ninguna --</SelectItem>
+                                                {BIKE_TYPES.map(bt => <SelectItem key={bt.value} value={bt.value}>{bt.label}</SelectItem>)}
+                                            </SelectContent>
+                                        </Select>
                                     )}
                                 />
-                                {errors.modality && p className="text-xs text-destructive">{errors.modality.message}p>}
-                            div>
-                             div className="space-y-1">
-                                Label htmlFor="cost">Costo (MXN, si no aplica dejar en 0)Label>
-                                Input id="cost" type="number" step="0.01" {...register('cost')} className={errors.cost ? 'border-destructive' : ''} placeholder="0.00"/>
-                                {errors.cost && p className="text-xs text-destructive">{errors.cost.message}p>}
-                            div>
-                        div>
+                                {errors.modality && <p className="text-xs text-destructive">{errors.modality.message}</p>}
+                            </div>
+                             <div className="space-y-1">
+                                <Label htmlFor="cost">Costo (MXN, si no aplica dejar en 0)</Label>
+                                <Input id="cost" type="number" step="0.01" {...register('cost')} className={errors.cost ? 'border-destructive' : ''} placeholder="0.00"/>
+                                {errors.cost && <p className="text-xs text-destructive">{errors.cost.message}</p>}
+                            </div>
+                        </div>
 
-                        div className="space-y-1">
-                            Label htmlFor="meetingPoint">Punto de EncuentroLabel>
-                            Input id="meetingPoint" {...register('meetingPoint')} className={errors.meetingPoint ? 'border-destructive' : ''} />
-                            {errors.meetingPoint && p className="text-xs text-destructive">{errors.meetingPoint.message}p>}
-                        div>
+                        <div className="space-y-1">
+                            <Label htmlFor="meetingPoint">Punto de Encuentro</Label>
+                            <Input id="meetingPoint" {...register('meetingPoint')} className={errors.meetingPoint ? 'border-destructive' : ''} />
+                            {errors.meetingPoint && <p className="text-xs text-destructive">{errors.meetingPoint.message}</p>}
+                        </div>
                         
-                        div className="space-y-1">
-                            Label htmlFor="meetingPointMapsLink">Enlace de Google Maps (Opcional)Label>
-                            Input id="meetingPointMapsLink" type="url" {...register('meetingPointMapsLink')} placeholder="https://maps.app.goo.gl/..." className={errors.meetingPointMapsLink ? 'border-destructive' : ''} />
-                            {errors.meetingPointMapsLink && p className="text-xs text-destructive">{errors.meetingPointMapsLink.message}p>}
-                        div>
+                        <div className="space-y-1">
+                            <Label htmlFor="meetingPointMapsLink">Enlace de Google Maps (Opcional)</Label>
+                            <Input id="meetingPointMapsLink" type="url" {...register('meetingPointMapsLink')} placeholder="https://maps.app.goo.gl/..." className={errors.meetingPointMapsLink ? 'border-destructive' : ''} />
+                            {errors.meetingPointMapsLink && <p className="text-xs text-destructive">{errors.meetingPointMapsLink.message}</p>}
+                        </div>
 
-                        Button type="submit" disabled={isSubmitting} className="w-full sm:w-auto">
-                            {isSubmitting && Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+                        <Button type="submit" disabled={isSubmitting} className="w-full sm:w-auto">
+                            {isSubmitting && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
                             {isCreating ? 'Crear Evento' : 'Guardar Cambios'}
-                        Button>
-                    form>
-                CardContent>
-            Card>
-        div>
+                        </Button>
+                    </form>
+                </CardContent>
+            </Card>
+        </div>
     );
 }
 
 export default function ManageRidePage() {
     return (
-        Suspense fallback={div className="flex justify-center items-center min-h-screen">Loader2 className="h-16 w-16 animate-spin" />div>}>
-            ManageRidePageContent />
-        Suspense>
+        <Suspense fallback={<div className="flex justify-center items-center min-h-screen"><Loader2 className="h-16 w-16 animate-spin" /></div>}>
+            <ManageRidePageContent />
+        </Suspense>
     );
 }

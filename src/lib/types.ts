@@ -36,7 +36,7 @@ export interface TheftDetails {
   reportedAt: string; // ISO date string for when the theft was reported
 }
 
-export interface ReportTheftDialogData extends Omit {
+export interface ReportTheftDialogData extends Omit<TheftDetails, 'reportedAt'> {
   generalNotes?: string;
 }
 
@@ -129,7 +129,7 @@ export interface UserProfileData {
   whatsappGroupLink?: string | null;
 }
 
-export interface UserProfile extends AuthUser, Omit {}
+export interface UserProfile extends AuthUser, Omit<UserProfileData, 'email'> {}
 
 export interface TransferRequest {
   id:string;

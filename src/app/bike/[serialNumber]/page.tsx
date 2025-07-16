@@ -102,7 +102,7 @@ function BikeDetailsPageContent() {
             setBike(bikeData); // Set the public data for non-owners
         }
 
-      } catch (err: unknown) { // FIX: lint issue
+      } catch (err: unknown) {
         const error = err as Error;
         console.error("Error in fetchBike:", error);
         let message = 'Error al obtener los detalles de la bicicleta.';
@@ -126,7 +126,6 @@ function BikeDetailsPageContent() {
     if (serialNumberParam) {
       fetchBike();
     }
-    // FIX: lint issue
   }, [serialNumberParam, user, authLoading, fetchBike]);
 
   // Early return if serialNumberParam is definitively null
@@ -184,8 +183,8 @@ function BikeDetailsPageContent() {
       await updateBike(bike.id, { photoUrls: finalPhotoUrls });
       toast({ title: 'Foto Actualizada', description: `La foto ${index + 1} ha sido actualizada.` });
       fetchBike(); // Re-fetch bike data
-    } catch (uploadError: unknown) { // FIX: lint issue
-      const error = uploadError as Error; // FIX: lint issue
+    } catch (uploadError: unknown) {
+      const error = uploadError as Error;
       console.error(`Error uploading photo ${index + 1}:`, error);
       toast({ title: 'Error al Subir Foto', description: error.message || `No se pudo subir la foto ${index + 1}.`, variant: 'destructive' });
     } finally {
@@ -218,8 +217,8 @@ function BikeDetailsPageContent() {
       toast({ title: 'Foto Eliminada', description: `La foto ${index + 1} ha sido eliminada.` });
       setCurrentImageIndex(0);
       fetchBike(); // Re-fetch bike data
-    } catch (error: unknown) { // FIX: lint issue
-      const err = error as Error; // FIX: lint issue
+    } catch (error: unknown) {
+      const err = error as Error;
       console.error(`Error removing photo ${index + 1}:`, error);
       toast({ title: 'Error al Eliminar Foto', description: err.message || `No se pudo eliminar la foto ${index + 1}.`, variant: 'destructive' });
     } finally {
@@ -243,8 +242,8 @@ function BikeDetailsPageContent() {
       await updateBike(bike.id, { ownershipDocumentUrl: downloadURL, ownershipDocumentName: file.name });
       toast({ title: 'Documento Subido', description: `El documento "${file.name}" ha sido subido.` });
       fetchBike(); // Re-fetch bike data
-    } catch (uploadError: unknown) { // FIX: lint issue
-      const error = uploadError as Error; // FIX: lint issue
+    } catch (uploadError: unknown) {
+      const error = uploadError as Error;
       console.error('Error uploading document:', error);
       toast({ title: 'Error al Subir Documento', description: error.message || 'No se pudo subir el documento.', variant: 'destructive' });
     } finally {
@@ -264,8 +263,8 @@ function BikeDetailsPageContent() {
       await updateBike(bike.id, { ownershipDocumentUrl: null, ownershipDocumentName: null });
       toast({ title: 'Documento Eliminado', description: 'El documento de propiedad ha sido eliminado del registro.' });
       fetchBike(); // Re-fetch bike data
-    } catch (error: unknown) { // FIX: lint issue
-      const err = error as Error; // FIX: lint issue
+    } catch (error: unknown) {
+      const err = error as Error;
       console.error('Error removing document:', err);
       toast({ title: 'Error al Eliminar Documento', description: err.message || 'No se pudo eliminar el documento.', variant: 'destructive' });
     } finally {
@@ -280,7 +279,7 @@ function BikeDetailsPageContent() {
       await markBikeRecovered(bike.id);
       toast({ title: '¡Bicicleta Recuperada!', description: 'El estado de la bicicleta ha sido actualizado a "En Regla".' });
       fetchBike(); // Re-fetch bike data
-    } catch (error: unknown) { // FIX: lint issue
+    } catch (error: unknown) {
       const errorMessage = error instanceof Error ? error.message : 'No se pudo actualizar el estado.';
       toast({ title: 'Error al Marcar como Recuperada', description: errorMessage, variant: 'destructive' });
     } finally {
@@ -557,8 +556,9 @@ function BikeDetailsPageContent() {
                           <Image
                             src={bike.photoUrls[index]}
                             alt={`Foto ${index + 1}`}
-                            layout="fill"
-                            objectFit="cover"
+                            fill
+                            sizes="(max-width: 640px) 100vw, (max-width: 768px) 50vw, 33vw"
+                            style={{ objectFit: 'cover' }}
                             onError={(e) => {
                                 const target = e.target as HTMLImageElement;
                                 target.onerror = null;

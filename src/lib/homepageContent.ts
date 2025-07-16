@@ -25,7 +25,12 @@ export const getHomepageContent = async (): Promise<HomepageContent | null> => {
   const contentRef = doc(db, CONTENT_COLLECTION, CONTENT_DOC_ID);
   const docSnap = await getDoc(contentRef);
   if (docSnap.exists()) {
-    return homepageContentFromDoc(docSnap);
+    try {
+      return homepageContentFromDoc(docSnap);
+    } catch(error) {
+       console.error("Error processing homepage content document:", error);
+       return null;
+    }
   }
   return null;
 };
