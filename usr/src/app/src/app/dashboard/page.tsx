@@ -87,13 +87,13 @@ export default function DashboardPage() {
       setIsLoading(true);
       setIsFetchingReferralMessage(true);
       try {
-        const [userBikesResult, userRequests, homepageContent] = await Promise.all([
+        const [userBikesResult, userRequestsResult, homepageContent] = await Promise.all([
           getMyBikes(),
           getUserTransferRequests(user.uid, user.email),
           getHomepageContent(),
         ]);
         setBikes(userBikesResult);
-        setTransferRequests(userRequests);
+        setTransferRequests(userRequestsResult);
 
         if (homepageContent?.referralMessage) {
           setReferralMessageTemplate(homepageContent.referralMessage);

@@ -22,6 +22,7 @@ import {
   increment,
   type QueryConstraint,
   type FirestoreError,
+  type DocumentData, // FIX: lint issue
 } from 'firebase/firestore';
 import { getFunctions, httpsCallable } from 'firebase/functions';
 import type {
@@ -366,7 +367,7 @@ export const addBike = async (
   try {
     const result = await createBikeCallable({ bikeData });
     return result.data;
-  } catch (error: unknown) {
+  } catch (error) {
     const err = error as Error & { details?: { message?: string } };
     console.error("Error calling createBike function:", err);
     // Rethrow with a more specific message if available
@@ -382,7 +383,7 @@ export const markBikeRecovered = async (bikeId: string): Promise<void> => {
   const markBikeRecoveredCallable = httpsCallable<{ bikeId: string }, { success: boolean }>(functions, 'markBikeRecovered');
   try {
     await markBikeRecoveredCallable({ bikeId });
-  } catch (error: unknown) {
+  } catch (error) {
     const err = error as Error;
     console.error("Error calling markBikeRecovered function:", err);
     throw new Error(err.message || "Could not mark bike as recovered.");
@@ -412,7 +413,7 @@ export const initiateTransferRequest = async (
       transferDocumentUrl,
       transferDocumentName,
     });
-  } catch (error: unknown) {
+  } catch (error) {
     const err = error as Error;
     console.error("Error calling initiateTransferRequest function:", err);
     throw new Error(err.message || "Could not initiate transfer request.");
@@ -469,7 +470,7 @@ export const respondToTransferRequest = async (
 
   try {
     await respondToTransferCallable({ requestId, action });
-  } catch (error: unknown) {
+  } catch (error) {
     const err = error as Error;
     console.error("Error calling respondToTransferRequest function:", err);
     throw new Error(err.message || "Could not respond to transfer request.");
@@ -660,7 +661,7 @@ export const createBikeShopAccountByAdmin = async (shopData: BikeShopAdminFormVa
     await createAuditLog(adminId, 'createBikeShop', { shopId: newUser.uid, shopName: shopData.shopName, adminEmail: adminAuth.currentUser?.email });
 
     return { uid: newUser.uid };
-  } catch (error: unknown) {
+  } catch (error) {
     const authError = error as { code?: string, message?: string };
     if (authError.code === 'auth/email-already-in-use') {
       throw new Error('Este correo electrónico ya está registrado. Asigna el rol de "Tienda de Bicis" al usuario existente si es necesario, o verifica si ya es una tienda.');
@@ -713,7 +714,7 @@ export const createNgoAccountByAdmin = async (ngoData: NgoAdminFormValues, admin
     await createAuditLog(adminId, 'createNGO', { ngoId: newUser.uid, ngoName: ngoData.ngoName, adminEmail: adminAuth.currentUser?.email });
 
     return { uid: newUser.uid };
-  } catch (error: unknown) {
+  } catch (error) {
     const authError = error as { code?: string, message?: string };
     if (authError.code === 'auth/email-already-in-use') {
       throw new Error('Este correo electrónico ya está registrado. Asigna el rol de "ONG/Colectivo" al usuario existente si es necesario.');
@@ -761,7 +762,7 @@ export const createCustomerWithTemporaryPassword = async (
     await updateUserDoc(newUser.uid, userProfileData);
 
     return { uid: newUser.uid, temporaryPassword: tempPassword };
-  } catch (error: unknown) {
+  } catch (error) {
     const authError = error as { code?: string, message?: string };
     if (authError.code === 'auth/email-already-in-use') {
       throw new Error('Este correo electrónico ya está registrado para un cliente. Considera buscarlo por su correo y registrar la bici para el usuario existente.');
@@ -1002,7 +1003,7 @@ export const getNgoAnalytics = async (ngoId: string, dateRange?: { from?: Date; 
 
         return results;
 
-    } catch (error: unknown) {
+    } catch (error) {
         const firestoreError = error as FirestoreError;
         console.error("Raw error in getNgoAnalytics:", error);
         console.error("Detailed Firestore Error in getNgoAnalytics:", {
@@ -1065,7 +1066,7 @@ export const getOrganizerRides = async (organizerId: string): Promise<BikeRide[]
 
         return combinedRides;
 
-    } catch (error: unknown) {
+    } catch (error) {
         const firestoreError = error as FirestoreError;
         console.error("Firestore Error in getOrganizerRides:", {
             code: firestoreError.code,
