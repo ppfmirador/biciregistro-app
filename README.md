@@ -62,10 +62,10 @@ This diagram explains the high-level interaction between the system components.
 | # | Feature                    | User Roles Involved      | Description                                                                                              | Key Files / Modules                                                                                                             |
 |---|----------------------------|--------------------------|----------------------------------------------------------------------------------------------------------|---------------------------------------------------------------------------------------------------------------------------------|
 | 1 | **User Authentication**    | All                      | Email/Password and Google sign-in. Role-based access control (cyclist, bikeshop, ngo, admin).             | `src/context/AuthContext.tsx`, `src/app/auth/page.tsx`                                                                          |
-| 2 | **Bike Registration**      | Cyclist, Bike Shop       | Register a bike with serial number, brand, model, photos, and optional ownership document.               | `src/app/register-bike/page.tsx`, `src/components/bike/BikeForm.tsx`, `functions/src/bikeFunctions.ts` (createBike)           |
+| 2 | **Bike Registration**      | Cyclist, Bike Shop       | Register a bike with serial number, brand, model, photos, and optional ownership document.               | `src/app/register-bike/page.tsx`, `src/components/bike/BikeForm.tsx`, `functions/src/index.ts` (createBike)           |
 | 3 | **Bike Details View**      | All                      | Public view shows status and basic details. Owner view includes private info and management tools.         | `src/app/bike/[serialNumber]/page.tsx`                                                                                            |
-| 4 | **Theft Reporting**        | Cyclist (Owner)          | Mark a bike as "Stolen" with incident details, alerting the community.                                     | `src/components/bike/ReportTheftDialog.tsx`, `functions/src/bikeFunctions.ts` (reportBikeStolen)                               |
-| 5 | **Ownership Transfer**     | Cyclist (Owner)          | Initiate a transfer request to another registered user via email.                                          | `src/components/bike/TransferOwnershipDialog.tsx`, `functions/src/bikeFunctions.ts` (initiateTransferRequest, respondToTransferRequest) |
+| 4 | **Theft Reporting**        | Cyclist (Owner)          | Mark a bike as "Stolen" with incident details, alerting the community.                                     | `src/components/bike/ReportTheftDialog.tsx`, `functions/src/index.ts` (reportBikeStolen)                               |
+| 5 | **Ownership Transfer**     | Cyclist (Owner)          | Initiate a transfer request to another registered user via email.                                          | `src/components/bike/TransferOwnershipDialog.tsx`, `functions/src/index.ts` (initiateTransferRequest, respondToTransferRequest) |
 | 6 | **Dashboard**              | Cyclist                  | View personal bikes and manage incoming/outgoing transfer requests.                                        | `src/app/dashboard/page.tsx`, `src/components/bike/BikeCard.tsx`                                                                |
 | 7 | **Admin Panel**            | Admin                    | Manage users, roles, homepage content, and create Bike Shop/NGO accounts.                                | `src/app/admin/page.tsx`, `functions/src/index.ts` (admin functions)                                                          |
 | 8 | **Bike Shop Portal**       | Bike Shop, Admin         | Shops can register bikes for customers, view their registration history, and create public events.    | `src/app/bikeshop/dashboard/page.tsx`, `src/app/bikeshop/register-sold-bike/page.tsx`                                             |
@@ -122,6 +122,7 @@ This project uses `npm` for its scripts.
 npm install
 cd functions && npm install && cd ..
 ```
+The Firebase Cloud Functions entry point is located at `functions/src/index.ts`.
 
 **3. Configure Firebase**
 The project uses Firebase for its backend services.
