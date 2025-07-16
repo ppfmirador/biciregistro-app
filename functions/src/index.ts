@@ -1,3 +1,4 @@
+
 // functions/src/index.ts
 import { onCall, HttpsError } from "firebase-functions/v2/https";
 import * as admin from "firebase-admin";
@@ -82,7 +83,7 @@ export const createBike = onCall(callOptions, async (req) => {
   if (!model || typeof model !== "string" || model.trim() === "") {
     throw new HttpsError(
       "invalid-argument",
-      "Bike data must include a valid 'model'.",
+      "Bike data must include a valid 'model'."
     );
   }
   // --- End of Robust Validation ---
@@ -99,7 +100,7 @@ export const createBike = onCall(callOptions, async (req) => {
     if (!serialNumberSnapshot.empty) {
       throw new HttpsError(
         "already-exists",
-        `A bike with serial number ${serialNumber} is already registered.`,
+        `Ya existe una bicicleta registrada con el número de serie: ${serialNumber}`,
       );
     }
 
@@ -109,18 +110,8 @@ export const createBike = onCall(callOptions, async (req) => {
       .doc(ownerId)
       .get();
 
-    // Defensive check for user profile.
-    if (!ownerProfile.exists) {
-      console.error(
-        `User profile not found for UID: ${ownerId}. Cannot create bike.`,
-      );
-      throw new HttpsError(
-        "not-found",
-        "User profile could not be found. " +
-          "Please complete your profile and try again.",
-      );
-    }
-    const ownerData = ownerProfile.data();
+    // Defensive check for user profile. Now it's not a blocking check.
+    const ownerData = ownerProfile.exists() ? ownerProfile.data() : null;
 
     // Defensive check for auth token email.
     if (!req.auth.token.email) {
@@ -171,10 +162,12 @@ export const createBike = onCall(callOptions, async (req) => {
     return { bikeId: docRef.id };
   } catch (error: unknown) {
     const isHttpsError = error instanceof HttpsError;
+    // Improved logging
     console.error(`Error in createBike for user ${req.auth?.uid}:`, {
       errorMessage: error instanceof Error ? error.message : "Unknown error",
       errorCode: isHttpsError ? (error as HttpsError).code : undefined,
       bikeData: {
+        // Log the data that caused the issue, but be careful with sensitive info
         serialNumber: bikeData.serialNumber,
         brand: bikeData.brand,
         model: bikeData.model,
@@ -184,10 +177,12 @@ export const createBike = onCall(callOptions, async (req) => {
     if (isHttpsError) {
       throw error;
     }
-    throw new HttpsError(
-      "internal",
-      "An internal error occurred while creating the bike.",
-    );
+    // Throw with the original error message for better client-side debugging
+    const errorMessage =
+      error instanceof Error
+        ? error.message
+        : "An internal error occurred while creating the bike.";
+    throw new HttpsError("internal", errorMessage);
   }
 });
 
