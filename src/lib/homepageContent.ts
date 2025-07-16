@@ -2,15 +2,15 @@
 'use server';
 
 import { db } from './firebase';
-import { doc, getDoc, Timestamp, type DocumentSnapshot, type DocumentData } from 'firebase/firestore'; // FIX: lint issue
+import { doc, getDoc, Timestamp, type DocumentSnapshot, type DocumentData } from 'firebase/firestore';
 import type { HomepageContent } from './types';
 
 const CONTENT_COLLECTION = 'homepage_content';
 const CONTENT_DOC_ID = 'config';
 
-const homepageContentFromDoc = (docSnap: DocumentSnapshot): HomepageContent => { // FIX: lint issue
+const homepageContentFromDoc = (docSnap: DocumentSnapshot<DocumentData>): HomepageContent => {
   const data = docSnap.data();
-  if (!data) { // FIX: lint issue - Added a check for data existence
+  if (!data) {
       throw new Error(`Document data not found for ${docSnap.id}`);
   }
   return {

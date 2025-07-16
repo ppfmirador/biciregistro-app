@@ -4,7 +4,7 @@
 import type { UserProfile, UserProfileData, UserRole } from '@/lib/types';
 import React, { createContext, useContext, useState, useEffect, ReactNode, useCallback } from 'react';
 import { useRouter } from 'next/navigation';
-import { app, auth } from '@/lib/firebase';
+import { auth } from '@/lib/firebase';
 import {
   onAuthStateChanged,
   signInWithEmailAndPassword,
@@ -23,6 +23,7 @@ import {
 import { getUserDoc, updateUserDoc, incrementReferralCount } from '@/lib/db';
 import { useToast } from '@/hooks/use-toast';
 import { FirebaseError } from 'firebase/app';
+import { initializeClientSideFirebase } from '@/lib/firebase-client'; // Import the client-side initializer
 
 interface AuthContextType {
   user: UserProfile | null;
@@ -44,6 +45,11 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
   const [loading, setLoading] = useState(true);
   const { toast } = useToast();
   const router = useRouter(); 
+
+  // Call the client-side Firebase initializer here, once.
+  useEffect(() => {
+    initializeClientSideFirebase();
+  }, []);
 
   const fetchAndUpdateUserProfile = useCallback(async (firebaseUser: FirebaseUser) => {
     setLoading(true);
