@@ -5,7 +5,6 @@ import type { UserProfile, UserProfileData, UserRole } from '@/lib/types';
 import React, { createContext, useContext, useState, useEffect, ReactNode, useCallback } from 'react';
 import { useRouter } from 'next/navigation';
 import { app, auth } from '@/lib/firebase';
-import { initializeAppCheck, ReCaptchaV3Provider } from 'firebase/app-check';
 import {
   onAuthStateChanged,
   signInWithEmailAndPassword,
@@ -44,25 +43,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
   const [user, setUser] = useState<UserProfile | null>(null);
   const [loading, setLoading] = useState(true);
   const { toast } = useToast();
-  const router = useRouter(); // FIX: lint issue - Now used
-
-  useEffect(() => {
-    // This check is to prevent App Check from trying to initialize on the server.
-    if (typeof window !== 'undefined') {
-      try {
-        // Initialize App Check for your web app
-        // Make sure you have configured the reCAPTCHA v3 provider in your Firebase console
-        // and added your development domain to the allowlist.
-        initializeAppCheck(app, {
-          provider: new ReCaptchaV3Provider('6LcU1WUrAAAAAFq53Jr7wofsEZqiCFIKdkgrlciU'),
-          isTokenAutoRefreshEnabled: true
-        });
-        console.log("Firebase App Check initialized.");
-      } catch (error) {
-        console.error("Error initializing Firebase App Check:", error);
-      }
-    }
-  }, []);
+  const router = useRouter(); 
 
   const fetchAndUpdateUserProfile = useCallback(async (firebaseUser: FirebaseUser) => {
     setLoading(true);
@@ -138,8 +119,8 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
     setLoading(true);
     try {
       await signInWithEmailAndPassword(auth, email, pass);
-    } catch (error: unknown) { // FIX: lint issue
-      const authError = error as FirebaseError; // FIX: lint issue
+    } catch (error: unknown) { 
+      const authError = error as FirebaseError; 
       console.warn("Authentication error during signIn:", authError.code);
       setUser(null);
       setLoading(false);
@@ -177,8 +158,8 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
       }
 
       await fetchAndUpdateUserProfile(firebaseUser);
-    } catch (error: unknown) { // FIX: lint issue
-      const authError = error as FirebaseError; // FIX: lint issue
+    } catch (error: unknown) { 
+      const authError = error as FirebaseError; 
       console.warn("Authentication error during signUp:", authError.code);
       setUser(null);
       setLoading(false);
@@ -195,8 +176,8 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
   const signOut = async (): Promise<void> => {
     try {
       await firebaseSignOut(auth);
-      router.push('/'); // FIX: lint issue - Now used
-    } catch (error: unknown) { // FIX: lint issue
+      router.push('/'); 
+    } catch (error: unknown) { 
       const firebaseError = error as FirebaseError;
       console.error("Error al cerrar sesión:", firebaseError.message);
       setLoading(false);
@@ -253,7 +234,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
 
         await updateUserDoc(firebaseUser.uid, initialProfileData);
       }
-    } catch (error: unknown) { // FIX: lint issue
+    } catch (error: unknown) { 
       const authError = error as FirebaseError;
       if (authError.code === 'auth/popup-closed-by-user') {
         console.log("Google sign-in pop-up closed by user.");
@@ -301,7 +282,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
     }
     try {
       await firebaseUpdatePassword(auth.currentUser, newPassword);
-    } catch (error: unknown) { // FIX: lint issue
+    } catch (error: unknown) { 
       const authError = error as FirebaseError;
       console.warn("Error updating password:", error);
       if (authError.code === 'auth/weak-password') {
