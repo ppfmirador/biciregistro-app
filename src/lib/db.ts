@@ -49,7 +49,7 @@ const safeToISOString = (dateInput: unknown, fieldNameForLogging: string): strin
   return new Date(0).toISOString(); 
 };
 
-const bikeFromDoc = (docSnap: { id: string; data: () => any; }): Bike => {
+const bikeFromDoc = (docSnap: { id: string; data: () => DocumentData; }): Bike => {
   const data = docSnap.data();
   if (!data) {
     throw new Error(`No data found for document ${docSnap.id}`);
@@ -62,7 +62,7 @@ const bikeFromDoc = (docSnap: { id: string; data: () => any; }): Bike => {
     ownerId: data.ownerId,
     status: data.status,
     registrationDate: safeToISOString(data.registrationDate, 'registrationDate'),
-    statusHistory: (data.statusHistory || []).map((entry: any, index: number) => ({
+    statusHistory: (data.statusHistory || []).map((entry: DocumentData, index: number) => ({
       status: entry.status,
       timestamp: safeToISOString(entry.timestamp, `statusHistory[${index}].timestamp`),
       notes: entry.notes,
@@ -91,7 +91,7 @@ const bikeFromDoc = (docSnap: { id: string; data: () => any; }): Bike => {
   } as Bike;
 };
 
-const bikeRideFromDoc = (docSnap: { id: string, data: () => any }): BikeRide => {
+const bikeRideFromDoc = (docSnap: { id: string, data: () => DocumentData }): BikeRide => {
     const data = docSnap.data();
     return {
         id: docSnap.id,
@@ -114,7 +114,7 @@ const bikeRideFromDoc = (docSnap: { id: string, data: () => any }): BikeRide => 
     } as BikeRide;
 };
 
-const userProfileFromDoc = (docSnap: { id: string; data: () => any; }): UserProfile => {
+const userProfileFromDoc = (docSnap: { id: string; data: () => DocumentData; }): UserProfile => {
     const data = docSnap.data();
     return {
         uid: docSnap.id,
@@ -151,7 +151,7 @@ const userProfileFromDoc = (docSnap: { id: string; data: () => any; }): UserProf
 };
 
 
-const transferRequestFromDoc = (docSnap: { id: string; data: () => any; }): TransferRequest => {
+const transferRequestFromDoc = (docSnap: { id: string; data: () => DocumentData; }): TransferRequest => {
   const data = docSnap.data();
   return {
     id: docSnap.id,
@@ -211,15 +211,15 @@ export const getBikeById = async (bikeId: string): Promise<Bike | null> => {
 };
 
 export const getMyBikes = async (): Promise<Bike[]> => {
-    const functions = getFunctions(app, 'us-central1');
-    const getMyBikesCallable = httpsCallable<void, { bikes: Bike[] }>(functions, 'getMyBikes');
-    try {
-        const result = await getMyBikesCallable();
-        return result.data.bikes;
-    } catch (error) {
-        console.error("Error calling getMyBikes function:", error);
-        throw error;
-    }
+    const functions = getFunctions(app, 'us-central1'); // FIX: lint issue
+    const getMyBikesCallable = httpsCallable<void, { bikes: Bike[] }>(functions, 'getMyBikes'); // FIX: lint issue
+    try { // FIX: lint issue
+        const result = await getMyBikesCallable(); // FIX: lint issue
+        return result.data.bikes; // FIX: lint issue
+    } catch (error) { // FIX: lint issue
+        console.error("Error calling getMyBikes function:", error); // FIX: lint issue
+        throw error; // FIX: lint issue
+    } // FIX: lint issue
 };
 
 /**
@@ -297,7 +297,7 @@ export const addBikeToFirestore = async (
 export const updateBike = async (bikeId: string, updates: Partial<Omit<Bike, 'id' | 'registrationDate' | 'statusHistory' | 'ownerFirstName' | 'ownerLastName' | 'ownerEmail' | 'ownerWhatsappPhone'>> & { status?: BikeStatus, newStatusNote?: string, bikeType?: BikeType }): Promise<Bike | null> => {
   const bikeRef = doc(db, 'bikes', bikeId);
   
-  const updateData: { [key: string]: any } = {};
+  const updateData: { [key: string]: unknown } = {};
 
   if (updates.serialNumber) {
     const bikesRef = collection(db, 'bikes');
@@ -361,7 +361,7 @@ export const addBike = async (
   }
 ): Promise<{ bikeId: string }> => {
   const functions = getFunctions(app, 'us-central1');
-  const createBikeCallable = httpsCallable<{ bikeData: any }, { bikeId: string }>(functions, 'createBike');
+  const createBikeCallable = httpsCallable<{ bikeData: unknown }, { bikeId: string }>(functions, 'createBike');
 
   try {
     const result = await createBikeCallable({ bikeData });
@@ -519,14 +519,14 @@ export const getUserProfileByEmail = async (email: string): Promise<UserProfile 
 
 export const updateUserDoc = async (uid: string, data: Partial<UserProfileData>): Promise<void> => {
   const userRef = doc(db, 'users', uid);
-  const updateData: { [key: string]: any } = { ...data };
+  const updateData: { [key: string]: unknown } = { ...data };
 
   const currentUserDoc = await getUserDoc(uid);
 
   if (updateData.email === undefined && currentUserDoc?.email) {
     updateData.email = currentUserDoc.email;
   } else if (updateData.email) {
-    updateData.email = updateData.email.toLowerCase();
+    updateData.email = (updateData.email as string).toLowerCase();
   }
 
   for (const key in updateData) {
@@ -621,7 +621,7 @@ const generateTemporaryPassword = (length = 10): string => {
   return result;
 };
 
-const createAuditLog = async (adminId: string, action: string, details: Record<string, any>) => {
+const createAuditLog = async (adminId: string, action: string, details: Record<string, unknown>) => {
     const logData = {
         adminId,
         action,
@@ -783,7 +783,7 @@ export const createCustomerWithTemporaryPassword = async (
 
 export const getShopRegisteredBikes = async (shopId: string, searchTerm?: string, limitResults: number = 10): Promise<Bike[]> => {
   const bikesRef = collection(db, 'bikes');
-  const bikeQueryConstraints: any[] = [
+  const bikeQueryConstraints: QueryConstraint[] = [
     where('registeredByShopId', '==', shopId),
     orderBy('registrationDate', 'desc')
   ];
