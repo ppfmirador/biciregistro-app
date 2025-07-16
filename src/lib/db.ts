@@ -211,15 +211,15 @@ export const getBikeById = async (bikeId: string): Promise<Bike | null> => {
 };
 
 export const getMyBikes = async (): Promise<Bike[]> => {
-    const functions = getFunctions(app, 'us-central1'); // FIX: lint issue
-    const getMyBikesCallable = httpsCallable<void, { bikes: Bike[] }>(functions, 'getMyBikes'); // FIX: lint issue
-    try { // FIX: lint issue
-        const result = await getMyBikesCallable(); // FIX: lint issue
-        return result.data.bikes; // FIX: lint issue
-    } catch (error) { // FIX: lint issue
-        console.error("Error calling getMyBikes function:", error); // FIX: lint issue
-        throw error; // FIX: lint issue
-    } // FIX: lint issue
+    const functions = getFunctions(app, 'us-central1');
+    const getMyBikesCallable = httpsCallable<void, { bikes: Bike[] }>(functions, 'getMyBikes');
+    try {
+        const result = await getMyBikesCallable();
+        return result.data.bikes;
+    } catch (error) {
+        console.error("Error calling getMyBikes function:", error);
+        throw error;
+    }
 };
 
 /**
