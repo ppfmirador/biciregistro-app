@@ -29,8 +29,11 @@ const appInstance: FirebaseApp = getApps().length ? getApp() : initializeApp(fir
 // Initialize App Check
 // This should only run on the client-side.
 if (typeof window !== "undefined") {
-  // force debug mode ✔
-  self.FIREBASE_APPCHECK_DEBUG_TOKEN = true;
+  // Pass the debug token if it's set in the environment variables.
+  // This is useful for local development and CI/CD environments.
+  if (process.env.NEXT_PUBLIC_FIREBASE_APPCHECK_DEBUG_TOKEN) {
+    (self as any).FIREBASE_APPCHECK_DEBUG_TOKEN = process.env.NEXT_PUBLIC_FIREBASE_APPCHECK_DEBUG_TOKEN;
+  }
   
   try {
     const recaptchaSiteKey = process.env.NEXT_PUBLIC_RECAPTCHA_SITE_KEY;
