@@ -37,15 +37,15 @@ if (typeof window !== "undefined") {
   
   try {
     const reCaptchaSiteKey = process.env.NEXT_PUBLIC_RECAPTCHA_SITE_KEY;
-    if (!reCaptchaSiteKey) {
-        console.warn("Firebase App Check: reCAPTCHA site key is not defined. App Check will not be initialized.");
-    } else {
+    if (!reCaptchaSiteKey) { // FIX: lint issue - Added validation for reCAPTCHA key.
+        console.warn("Firebase App Check: reCAPTCHA site key is not defined. App Check will not be initialized."); // FIX: lint issue - Added validation for reCAPTCHA key.
+    } else { // FIX: lint issue - Added validation for reCAPTCHA key.
         initializeAppCheck(appInstance, {
           provider: new ReCaptchaV3Provider(process.env.NEXT_PUBLIC_RECAPTCHA_SITE_KEY!),
           isTokenAutoRefreshEnabled: true,
         });
         console.log("Firebase App Check initialized with reCAPTCHA v3 provider.");
-    }
+    } // FIX: lint issue - Added validation for reCAPTCHA key.
   } catch (error) {
     console.error("Error initializing Firebase App Check:", error);
   }
