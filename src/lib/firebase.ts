@@ -29,27 +29,22 @@ const appInstance: FirebaseApp = getApps().length ? getApp() : initializeApp(fir
 // Initialize App Check
 // This should only run on the client-side.
 if (typeof window !== "undefined") {
-  // If the debug token is present in the environment, assign it to the window object.
-  // The App Check SDK will automatically use this for development environments.
-  const debugToken = process.env.NEXT_PUBLIC_FIREBASE_APPCHECK_DEBUG_TOKEN;
-  if (debugToken) {
-    (self as any).FIREBASE_APPCHECK_DEBUG_TOKEN = debugToken;
-  }
-
-  // Initialize App Check with the reCAPTCHA v3 provider. The SDK handles
-  // whether to use the debug token or the provider based on the environment.
-  const reCaptchaSiteKey = process.env.NEXT_PUBLIC_RECAPTCHA_SITE_KEY;
-  if (reCaptchaSiteKey) {
-    try {
-      initializeAppCheck(appInstance, {
-        provider: new ReCaptchaV3Provider(reCaptchaSiteKey),
-        isTokenAutoRefreshEnabled: true,
-      });
-    } catch (error) {
-      console.error("Error initializing Firebase App Check with reCAPTCHA:", error);
+  // force debug mode ✔
+  self.FIREBASE_APPCHECK_DEBUG_TOKEN = true;
+  
+  try {
+    const recaptchaSiteKey = process.env.NEXT_PUBLIC_RECAPTCHA_SITE_KEY;
+    if (recaptchaSiteKey) {
+        initializeAppCheck(appInstance, {
+          provider: new ReCaptchaV3Provider(recaptchaSiteKey),
+          isTokenAutoRefreshEnabled: true,
+        });
+        console.log("Firebase App Check initialized with ReCaptchaV3Provider.");
+    } else {
+      console.warn("Firebase App Check not initialized: NEXT_PUBLIC_RECAPTCHA_SITE_KEY is not defined.");
     }
-  } else {
-    console.warn("Firebase App Check: NEXT_PUBLIC_RECAPTCHA_SITE_KEY is not defined. App Check will not be fully initialized for production.");
+  } catch (error) {
+    console.error("Error initializing Firebase App Check:", error);
   }
 }
 
