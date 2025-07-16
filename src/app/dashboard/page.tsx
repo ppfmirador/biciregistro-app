@@ -4,7 +4,7 @@
 import { useEffect, useState, useCallback } from 'react';
 import Link from 'next/link';
 import { useAuth } from '@/context/AuthContext';
-import { getMyBikes, reportBikeStolen, initiateTransferRequest, getUserTransferRequests, respondToTransferRequest } from '@/lib/db';
+import { getMyBikes, initiateTransferRequest, getUserTransferRequests, respondToTransferRequest } from '@/lib/db';
 import type { Bike, TransferRequest, ReportTheftDialogData } from '@/lib/types';
 import BikeCard from '@/components/bike/BikeCard';
 import { Button } from '@/components/ui/button';
@@ -26,7 +26,7 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
-import { Dialog, DialogContent as DialogContentCustom, DialogDescription as DialogDescriptionCustom, DialogHeader as DialogHeaderCustom, DialogTitle as DialogTitleCustom, DialogTrigger as DialogTriggerCustom } from "@/components/ui/dialog";
+import { Dialog, DialogContent as DialogContentCustom, DialogDescription as DialogDescriptionCustom, DialogHeader as DialogHeaderCustom, DialogTitle as DialogTitleCustom, DialogTrigger as DialogTriggerCustom, DialogFooter as DialogFooterCustom } from "@/components/ui/dialog";
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { APP_NAME } from '@/constants';
@@ -99,7 +99,7 @@ export default function DashboardPage() {
           setReferralMessageTemplate(`¡Hola! Te invito a unirte a ${APP_NAME}, una plataforma para registrar tu bicicleta y ayudar a la comunidad ciclista. ¡Es gratis! Regístrate aquí: [APP_LINK]`);
         }
 
-      } catch (error: unknown) {
+      } catch (error) {
         toast({ title: 'Error', description: 'No se pudieron cargar los datos del panel.', variant: 'destructive' });
         console.error("Error fetching dashboard data:", error);
       } finally {
@@ -125,7 +125,7 @@ export default function DashboardPage() {
       await reportBikeStolen(bikeId, theftData);
       toast({ title: 'Bicicleta Reportada como Robada', description: 'El estado de la bicicleta ha sido actualizado con los nuevos detalles.' });
       fetchData();
-    } catch (error: unknown) {
+    } catch (error) {
       const err = error as FirebaseError;
       toast({ title: 'Error al Reportar Robo', description: err.message || 'No se pudo reportar la bicicleta como robada.', variant: 'destructive' });
     }
@@ -142,7 +142,7 @@ export default function DashboardPage() {
       await initiateTransferRequest(bikeId, user.uid, recipientEmail, transferDocumentUrl, transferDocumentName);
       toast({ title: 'Transferencia Iniciada', description: `Solicitud enviada a ${recipientEmail}.` });
       fetchData();
-    } catch (error: unknown) {
+    } catch (error) {
       const err = error as FirebaseError;
       toast({ title: 'Error al Iniciar Transferencia', description: err.message || 'No se pudo iniciar la transferencia.', variant: 'destructive' });
     }
@@ -154,7 +154,7 @@ export default function DashboardPage() {
         await respondToTransferRequest(requestId, user.uid, action);
         toast({title: 'Transferencia Respondida', description: `La solicitud ha sido ${translateActionForDisplay(action)}.`});
         fetchData();
-    } catch (error: unknown)
+    } catch (error)
 {
         const err = error as FirebaseError;
         toast({title: 'Error al Responder a Transferencia', description: err.message || 'No se pudo responder a la transferencia.', variant: 'destructive'});
