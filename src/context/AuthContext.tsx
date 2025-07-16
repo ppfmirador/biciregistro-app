@@ -2,8 +2,8 @@
 "use client";
 
 import type { UserProfile, UserProfileData, UserRole } from '@/lib/types';
-import React, { createContext, useContext, useState, useEffect, ReactNode } from 'react';
-import { useRouter, usePathname } from 'next/navigation';
+import React, { createContext, useContext, useState, useEffect, ReactNode, useCallback } from 'react';
+import { useRouter } from 'next/navigation';
 import { app, auth } from '@/lib/firebase';
 import { initializeAppCheck, ReCaptchaV3Provider } from 'firebase/app-check';
 import {
@@ -42,8 +42,6 @@ const AuthContext = createContext<AuthContextType | undefined>(undefined);
 export const AuthProvider = ({ children }: { children: ReactNode }) => {
   const [user, setUser] = useState<UserProfile | null>(null);
   const [loading, setLoading] = useState(true);
-  const router = useRouter();
-  const pathname = usePathname();
   const { toast } = useToast();
 
   useEffect(() => {
@@ -64,7 +62,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
     }
   }, []);
 
-  const fetchAndUpdateUserProfile = async (firebaseUser: FirebaseUser) => {
+  const fetchAndUpdateUserProfile = useCallback(async (firebaseUser: FirebaseUser) => {
     setLoading(true);
     let userProfileBase: UserProfile = {
       uid: firebaseUser.uid,
@@ -113,7 +111,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
     }
     setUser(userProfileBase);
     setLoading(false);
-  };
+  }, []);
 
   useEffect(() => {
     const unsubscribe = onAuthStateChanged(auth, async (firebaseUser: FirebaseUser | null) => {
@@ -126,23 +124,24 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
     });
 
     return () => unsubscribe();
-  }, []);
+  }, [fetchAndUpdateUserProfile]);
 
-  const refreshUserProfile = async () => {
+  const refreshUserProfile = useCallback(async () => {
     if (auth.currentUser) {
       await fetchAndUpdateUserProfile(auth.currentUser);
     }
-  };
+  }, [fetchAndUpdateUserProfile]);
 
   const signIn = async (email: string, pass: string): Promise<void> => {
     setLoading(true);
     try {
       await signInWithEmailAndPassword(auth, email, pass);
-    } catch (error: any) {
-      console.warn("Authentication error during signIn:", error.code);
+    } catch (error: unknown) {
+      const authError = error as { code?: string };
+      console.warn("Authentication error during signIn:", authError.code);
       setUser(null);
       setLoading(false);
-      if (error.code === 'auth/invalid-credential' || error.code === 'auth/user-not-found' || error.code === 'auth/wrong-password') {
+      if (authError.code === 'auth/invalid-credential' || authError.code === 'auth/user-not-found' || authError.code === 'auth/wrong-password') {
         throw new Error('Correo electrónico o contraseña incorrectos. Por favor, verifica tus datos.');
       } else {
         throw new Error('Ocurrió un error inesperado al iniciar sesión. Por favor, inténtalo de nuevo.');
@@ -176,13 +175,14 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
       }
 
       await fetchAndUpdateUserProfile(firebaseUser);
-    } catch (error: any) {
-      console.warn("Authentication error during signUp:", error.code);
+    } catch (error: unknown) {
+      const authError = error as { code?: string };
+      console.warn("Authentication error during signUp:", authError.code);
       setUser(null);
       setLoading(false);
-      if (error.code === 'auth/email-already-in-use') {
+      if (authError.code === 'auth/email-already-in-use') {
         throw new Error('Este correo electrónico ya está registrado. Por favor, intenta iniciar sesión.');
-      } else if (error.code === 'auth/weak-password') {
+      } else if (authError.code === 'auth/weak-password') {
         throw new Error('La contraseña es demasiado débil. Debe tener al menos 6 caracteres.');
       } else {
         throw new Error('Ocurrió un error inesperado al registrar la cuenta.');
@@ -249,11 +249,11 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
 
         await updateUserDoc(firebaseUser.uid, initialProfileData);
       }
-    } catch (error: any) {
-      // Improved error handling
-      if (error.code === 'auth/popup-closed-by-user') {
+    } catch (error: unknown) {
+      const authError = error as { code?: string; message?: string };
+      if (authError.code === 'auth/popup-closed-by-user') {
         console.log("Google sign-in pop-up closed by user.");
-      } else if (error.code === 'auth/unauthorized-domain') {
+      } else if (authError.code === 'auth/unauthorized-domain') {
         console.error("Google Sign-In Error: This domain is not authorized in the Firebase console. Please add it to the list of authorized domains in the Authentication settings.", {
           currentLocation: window.location.hostname
         });
@@ -263,7 +263,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
           variant: 'destructive',
           duration: 9000,
         });
-      } else if (error.message && error.message.includes("Missing project support email")){
+      } else if (authError.message && authError.message.includes("Missing project support email")){
            console.error("Google Sign-In Error: Missing project support email in Firebase console. Please set it in Project Settings -> General.");
            toast({
              title: 'Error de Configuración del Proyecto',
@@ -297,14 +297,15 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
     }
     try {
       await firebaseUpdatePassword(auth.currentUser, newPassword);
-    } catch (error: any) {
+    } catch (error: unknown) {
+      const authError = error as { code?: string; message?: string };
       console.warn("Error updating password:", error);
-      if (error.code === 'auth/weak-password') {
+      if (authError.code === 'auth/weak-password') {
         throw new Error('La nueva contraseña es demasiado débil. Debe tener al menos 6 caracteres.');
-      } else if (error.code === 'auth/requires-recent-login') {
+      } else if (authError.code === 'auth/requires-recent-login') {
         throw new Error('Esta operación es sensible y requiere autenticación reciente. Por favor, cierra sesión y vuelve a iniciarla antes de cambiar tu contraseña.');
       }
-      throw new Error(error.message || 'No se pudo actualizar la contraseña.');
+      throw new Error(authError.message || 'No se pudo actualizar la contraseña.');
     }
   };
 

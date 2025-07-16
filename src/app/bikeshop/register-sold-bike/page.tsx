@@ -113,7 +113,7 @@ export default function RegisterSoldBikePage() {
         setCustomerNotFound(true);
         toast({ title: "Cliente No Encontrado", description: "Este cliente no tiene una cuenta. Ingresa sus datos manualmente para crear una pre-cuenta.", variant: "default" });
       }
-    } catch (error) {
+    } catch (error: unknown) {
       toast({ title: "Error al Verificar", description: "No se pudo verificar el correo del cliente.", variant: "destructive" });
     } finally {
       setIsVerifyingCustomer(false);
@@ -245,13 +245,14 @@ export default function RegisterSoldBikePage() {
       // Optionally delay navigation or let user click away
       // router.push('/bikeshop/dashboard');
 
-    } catch (error: any) {
+    } catch (error: unknown) {
+      const errorMessage = error instanceof Error ? error.message : "No se pudo registrar la bicicleta.";
       console.error("Error registering bike by shop:", error);
-      if (error.message && error.message.includes('Ya existe una bicicleta registrada con el número de serie:')) {
-        setError('serialNumber', { type: 'manual', message: error.message });
-        toast({ title: "Error: Número de Serie Duplicado", description: error.message, variant: "destructive", duration: 7000 });
+      if (errorMessage.includes('Ya existe una bicicleta registrada con el número de serie:')) {
+        setError('serialNumber', { type: 'manual', message: errorMessage });
+        toast({ title: "Error: Número de Serie Duplicado", description: errorMessage, variant: "destructive", duration: 7000 });
       } else {
-        toast({ title: "Error en el Registro", description: error.message || "No se pudo registrar la bicicleta.", variant: "destructive" });
+        toast({ title: "Error en el Registro", description: errorMessage, variant: "destructive" });
       }
     } finally {
       setIsSubmitting(false);
@@ -493,8 +494,8 @@ export default function RegisterSoldBikePage() {
               {[1, 2, 3].map(i => (
                 <div className="space-y-1" key={`photo-upload-${i}`}>
                   <Label htmlFor={`photo${i}`}>Foto ${i}</Label>
-                  <Input id={`photo${i}`} type="file" accept="image/*" {...register(`photo${i}` as any)} className={(errors as any)[`photo${i}`] ? 'border-destructive' : ''} disabled={isSubmitting} ref={i === 1 ? photo1Ref : i === 2 ? photo2Ref : photo3Ref}/>
-                  {(errors as any)[`photo${i}`] && <p className="text-xs text-destructive">{(errors as any)[`photo${i}`].message}</p>}
+                  <Input id={`photo${i}`} type="file" accept="image/*" {...register(`photo${i}` as 'photo1')} className={(errors as any)[`photo${i}`] ? 'border-destructive' : ''} disabled={isSubmitting} ref={i === 1 ? photo1Ref : i === 2 ? photo2Ref : photo3Ref}/>
+                  {(errors as any)[`photo${i}`] && <p className="text-xs text-destructive">{typeof (errors as any)[`photo${i}`].message === 'string' ? (errors as any)[`photo${i}`].message : 'Error de archivo'}</p>}
                 </div>
               ))}
 
@@ -502,7 +503,7 @@ export default function RegisterSoldBikePage() {
               <div className="space-y-1">
                 <Label htmlFor="ownershipDocument" className="flex items-center"><Paperclip className="h-4 w-4 mr-2" />Adjuntar Documento</Label>
                 <Input id="ownershipDocument" type="file" accept=".pdf,.jpg,.jpeg,.png,.doc,.docx" {...register('ownershipDocument')} className={errors.ownershipDocument ? 'border-destructive' : ''} disabled={isSubmitting} ref={ownershipDocumentRef} />
-                {errors.ownershipDocument && <p className="text-xs text-destructive">{errors.ownershipDocument.message}</p>}
+                {errors.ownershipDocument && <p className="text-xs text-destructive">{typeof errors.ownershipDocument.message === 'string' ? errors.ownershipDocument.message : 'Error de archivo'}</p>}
               </div>
             </section>
 

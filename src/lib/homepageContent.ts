@@ -8,7 +8,7 @@ import type { HomepageContent } from './types';
 const CONTENT_COLLECTION = 'homepage_content';
 const CONTENT_DOC_ID = 'config';
 
-const homepageContentFromDoc = (docSnap: any): HomepageContent => {
+const homepageContentFromDoc = (docSnap: { id: string, data: () => any }): HomepageContent => {
   const data = docSnap.data();
   return {
     id: docSnap.id,

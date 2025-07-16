@@ -58,8 +58,9 @@ export default function BikeShopInventoryPage() {
         const limitForFetch = currentSearchTerm ? undefined : 10;
         const shopBikes = await getShopRegisteredBikes(user.uid, currentSearchTerm || undefined, limitForFetch);
         setBikes(shopBikes);
-      } catch (error: any) {
-        toast({ title: 'Error', description: 'No se pudieron cargar las bicicletas registradas.', variant: 'destructive' });
+      } catch (error: unknown) {
+        const errorMessage = error instanceof Error ? error.message : "No se pudieron cargar las bicicletas registradas.";
+        toast({ title: 'Error', description: errorMessage, variant: 'destructive' });
         console.error("Error fetching shop-registered bikes:", error);
       } finally {
         setIsLoading(false);
@@ -159,7 +160,7 @@ export default function BikeShopInventoryPage() {
           {!isLoading && bikes.length === 0 && searchTerm ? (
              <div className="text-center py-10">
               <SearchIcon className="mx-auto h-12 w-12 text-muted-foreground mb-3" />
-              <p className="text-muted-foreground">No se encontraron bicicletas con el término "{searchTerm}".</p>
+              <p className="text-muted-foreground">No se encontraron bicicletas con el término &quot;{searchTerm}&quot;.</p>
             </div>
           ) : !isLoading && bikes.length === 0 && !searchTerm ? (
             <div className="text-center py-10">
@@ -193,5 +194,3 @@ export default function BikeShopInventoryPage() {
     </div>
   );
 }
-
-

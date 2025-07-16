@@ -4,7 +4,6 @@
 import type { Bike } from '@/lib/types';
 import { calculateBikeCompleteness } from '@/lib/bikeUtils';
 import { Progress } from '@/components/ui/progress';
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 
 interface BikeCompletenessIndicatorProps {
   bike: Bike | null;

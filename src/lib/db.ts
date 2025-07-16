@@ -1,5 +1,4 @@
 
-
 import { db, app } from './firebase';
 import {
   collection,
@@ -15,7 +14,6 @@ import {
   serverTimestamp,
   deleteDoc,
   arrayUnion,
-  arrayRemove,
   setDoc,
   orderBy,
   limit,
@@ -25,19 +23,19 @@ import {
   type QueryConstraint,
   type FirestoreError,
 } from 'firebase/firestore';
-import { getFunctions, httpsCallable, type HttpsCallable } from 'firebase/functions';
+import { getFunctions, httpsCallable } from 'firebase/functions';
 import type {
-  Bike, BikeStatus, BikeType, StatusEntry, TransferRequest, TheftDetails,
-  UserProfileData, UserRole, UserProfile, ReportTheftDialogData,
+  Bike, BikeStatus, BikeType, TransferRequest, ReportTheftDialogData,
   NewCustomerDataForShop, ShopAnalyticsData, NgoAnalyticsData, BikeRide
 } from './types';
+import type { UserProfileData, UserProfile, UserRole } from '@/lib/types';
 import type { BikeShopAdminFormValues, NgoAdminFormValues, BikeRideFormValues } from './schemas';
 import { BIKE_STATUSES, OTHER_BRAND_VALUE } from '@/constants';
 import { initializeApp } from 'firebase/app';
 import { getAuth, createUserWithEmailAndPassword, sendEmailVerification, sendPasswordResetEmail } from 'firebase/auth';
 
 
-const safeToISOString = (dateInput: any, fieldNameForLogging: string): string => {
+const safeToISOString = (dateInput: unknown, fieldNameForLogging: string): string => {
   if (dateInput instanceof Timestamp) {
     return dateInput.toDate().toISOString();
   }
@@ -51,7 +49,7 @@ const safeToISOString = (dateInput: any, fieldNameForLogging: string): string =>
   return new Date(0).toISOString(); 
 };
 
-const bikeFromDoc = (docSnap: any): Bike => {
+const bikeFromDoc = (docSnap: { id: string; data: () => any; }): Bike => {
   const data = docSnap.data();
   if (!data) {
     throw new Error(`No data found for document ${docSnap.id}`);
@@ -93,7 +91,7 @@ const bikeFromDoc = (docSnap: any): Bike => {
   } as Bike;
 };
 
-const bikeRideFromDoc = (docSnap: any): BikeRide => {
+const bikeRideFromDoc = (docSnap: { id: string, data: () => any }): BikeRide => {
     const data = docSnap.data();
     return {
         id: docSnap.id,
@@ -116,7 +114,7 @@ const bikeRideFromDoc = (docSnap: any): BikeRide => {
     } as BikeRide;
 };
 
-const userProfileFromDoc = (docSnap: any): UserProfile => {
+const userProfileFromDoc = (docSnap: { id: string; data: () => any; }): UserProfile => {
     const data = docSnap.data();
     return {
         uid: docSnap.id,
@@ -153,7 +151,7 @@ const userProfileFromDoc = (docSnap: any): UserProfile => {
 };
 
 
-const transferRequestFromDoc = (docSnap: any): TransferRequest => {
+const transferRequestFromDoc = (docSnap: { id: string; data: () => any; }): TransferRequest => {
   const data = docSnap.data();
   return {
     id: docSnap.id,
@@ -368,13 +366,14 @@ export const addBike = async (
   try {
     const result = await createBikeCallable({ bikeData });
     return result.data;
-  } catch (error: any) {
-    console.error("Error calling createBike function:", error);
+  } catch (error: unknown) {
+    const err = error as Error & { details?: { message?: string } };
+    console.error("Error calling createBike function:", err);
     // Rethrow with a more specific message if available
-    if (error.details && error.details.message) {
-      throw new Error(error.details.message);
+    if (err.details && err.details.message) {
+      throw new Error(err.details.message);
     }
-    throw new Error(error.message || "No se pudo crear la bicicleta.");
+    throw new Error(err.message || "No se pudo crear la bicicleta.");
   }
 };
 
@@ -384,9 +383,10 @@ export const reportBikeStolen = async (bikeId: string, theftData: ReportTheftDia
   const reportBikeStolenCallable = httpsCallable<{ bikeId: string, theftData: ReportTheftDialogData }, { success: boolean }>(functions, 'reportBikeStolen');
   try {
     await reportBikeStolenCallable({ bikeId, theftData });
-  } catch (error: any) {
-    console.error("Error calling reportBikeStolen function:", error);
-    throw new Error(error.message || "Could not report bike as stolen.");
+  } catch (error: unknown) {
+    const err = error as Error;
+    console.error("Error calling reportBikeStolen function:", err);
+    throw new Error(err.message || "Could not report bike as stolen.");
   }
 };
 
@@ -395,9 +395,10 @@ export const markBikeRecovered = async (bikeId: string): Promise<void> => {
   const markBikeRecoveredCallable = httpsCallable<{ bikeId: string }, { success: boolean }>(functions, 'markBikeRecovered');
   try {
     await markBikeRecoveredCallable({ bikeId });
-  } catch (error: any) {
-    console.error("Error calling markBikeRecovered function:", error);
-    throw new Error(error.message || "Could not mark bike as recovered.");
+  } catch (error: unknown) {
+    const err = error as Error;
+    console.error("Error calling markBikeRecovered function:", err);
+    throw new Error(err.message || "Could not mark bike as recovered.");
   }
 };
 
@@ -424,9 +425,10 @@ export const initiateTransferRequest = async (
       transferDocumentUrl,
       transferDocumentName,
     });
-  } catch (error: any) {
-    console.error("Error calling initiateTransferRequest function:", error);
-    throw new Error(error.message || "Could not initiate transfer request.");
+  } catch (error: unknown) {
+    const err = error as Error;
+    console.error("Error calling initiateTransferRequest function:", err);
+    throw new Error(err.message || "Could not initiate transfer request.");
   }
 };
 
@@ -480,9 +482,10 @@ export const respondToTransferRequest = async (
 
   try {
     await respondToTransferCallable({ requestId, action });
-  } catch (error: any) {
-    console.error("Error calling respondToTransferRequest function:", error);
-    throw new Error(error.message || "Could not respond to transfer request.");
+  } catch (error: unknown) {
+    const err = error as Error;
+    console.error("Error calling respondToTransferRequest function:", err);
+    throw new Error(err.message || "Could not respond to transfer request.");
   }
 };
 
@@ -516,7 +519,7 @@ export const getUserProfileByEmail = async (email: string): Promise<UserProfile 
 
 export const updateUserDoc = async (uid: string, data: Partial<UserProfileData>): Promise<void> => {
   const userRef = doc(db, 'users', uid);
-  const updateData = { ...data };
+  const updateData: { [key: string]: any } = { ...data };
 
   const currentUserDoc = await getUserDoc(uid);
 
@@ -629,7 +632,7 @@ const createAuditLog = async (adminId: string, action: string, details: Record<s
 };
 
 
-export const createBikeShopAccountByAdmin = async (shopData: BikeShopAdminFormValues, adminId: string): Promise<{ uid: string; temporaryPassword: string }> => {
+export const createBikeShopAccountByAdmin = async (shopData: BikeShopAdminFormValues, adminId: string): Promise<{ uid: string; }> => {
   const tempPassword = generateTemporaryPassword();
   const tempAppName = `temp-shop-creation-${Date.now()}`;
   const tempApp = initializeApp(app.options, tempAppName);
@@ -669,13 +672,14 @@ export const createBikeShopAccountByAdmin = async (shopData: BikeShopAdminFormVa
 
     await createAuditLog(adminId, 'createBikeShop', { shopId: newUser.uid, shopName: shopData.shopName, adminEmail: adminAuth.currentUser?.email });
 
-    return { uid: newUser.uid, temporaryPassword: tempPassword };
-  } catch (error: any) {
-    if (error.code === 'auth/email-already-in-use') {
+    return { uid: newUser.uid };
+  } catch (error: unknown) {
+    const authError = error as { code?: string, message?: string };
+    if (authError.code === 'auth/email-already-in-use') {
       throw new Error('Este correo electrónico ya está registrado. Asigna el rol de "Tienda de Bicis" al usuario existente si es necesario, o verifica si ya es una tienda.');
     }
     console.error("Error creating bike shop account:", error);
-    throw new Error(`No se pudo crear la cuenta de tienda: ${error.message || 'Error desconocido.'}`);
+    throw new Error(`No se pudo crear la cuenta de tienda: ${authError.message || 'Error desconocido.'}`);
   }
 };
 
@@ -719,12 +723,13 @@ export const createNgoAccountByAdmin = async (ngoData: NgoAdminFormValues, admin
     await createAuditLog(adminId, 'createNGO', { ngoId: newUser.uid, ngoName: ngoData.ngoName, adminEmail: adminAuth.currentUser?.email });
 
     return { uid: newUser.uid };
-  } catch (error: any) {
-    if (error.code === 'auth/email-already-in-use') {
+  } catch (error: unknown) {
+    const authError = error as { code?: string, message?: string };
+    if (authError.code === 'auth/email-already-in-use') {
       throw new Error('Este correo electrónico ya está registrado. Asigna el rol de "ONG/Colectivo" al usuario existente si es necesario.');
     }
     console.error("Error creating NGO account:", error);
-    throw new Error(`No se pudo crear la cuenta de ONG: ${error.message || 'Error desconocido.'}`);
+    throw new Error(`No se pudo crear la cuenta de ONG: ${authError.message || 'Error desconocido.'}`);
   }
 };
 
@@ -766,12 +771,13 @@ export const createCustomerWithTemporaryPassword = async (
     await updateUserDoc(newUser.uid, userProfileData);
 
     return { uid: newUser.uid, temporaryPassword: tempPassword };
-  } catch (error: any) {
-    if (error.code === 'auth/email-already-in-use') {
+  } catch (error: unknown) {
+    const authError = error as { code?: string, message?: string };
+    if (authError.code === 'auth/email-already-in-use') {
       throw new Error('Este correo electrónico ya está registrado para un cliente. Considera buscarlo por su correo y registrar la bici para el usuario existente.');
     }
     console.error("Error creating customer pre-account:", error);
-    throw new Error(`No se pudo crear la pre-cuenta del cliente: ${error.message || 'Error desconocido.'}`);
+    throw new Error(`No se pudo crear la pre-cuenta del cliente: ${authError.message || 'Error desconocido.'}`);
   }
 };
 
@@ -795,7 +801,7 @@ export const getShopRegisteredBikes = async (shopId: string, searchTerm?: string
       console.error(`Error processing bike ${docSnap.id} for shop inventory:`, e);
       return null;
     }
-  }).filter(bike => bike !== null) as Bike[];
+  }).filter((bike): bike is Bike => bike !== null);
 
   const ownerIds = [...new Set(shopBikes.map(bike => bike.ownerId).filter(id => id !== null && id !== undefined) as string[])];
   const ownerProfiles: Record<string, UserProfileData> = {};
@@ -871,7 +877,7 @@ export const getShopAnalytics = async (shopId: string, dateRange?: { from?: Date
 
   const bikesRef = collection(db, "bikes");
   const userIdsArray = Array.from(shopUserIds);
-  let allBikes: Bike[] = [];
+  const allBikes: Bike[] = [];
 
   const MAX_IDS_PER_QUERY = 30;
   for (let i = 0; i < userIdsArray.length; i += MAX_IDS_PER_QUERY) {
@@ -956,7 +962,7 @@ export const getNgoAnalytics = async (ngoId: string, dateRange?: { from?: Date; 
         }
 
         const bikesRef = collection(db, "bikes");
-        let allReferredBikes: Bike[] = [];
+        const allReferredBikes: Bike[] = [];
 
         const MAX_IDS_PER_QUERY = 30;
         for (let i = 0; i < referredUserIds.length; i += MAX_IDS_PER_QUERY) {
@@ -1006,9 +1012,9 @@ export const getNgoAnalytics = async (ngoId: string, dateRange?: { from?: Date; 
 
         return results;
 
-    } catch (error: any) {
-        console.error("Raw error in getNgoAnalytics:", error);
+    } catch (error: unknown) {
         const firestoreError = error as FirestoreError;
+        console.error("Raw error in getNgoAnalytics:", error);
         console.error("Detailed Firestore Error in getNgoAnalytics:", {
             code: firestoreError.code,
             message: firestoreError.message,
@@ -1069,7 +1075,7 @@ export const getOrganizerRides = async (organizerId: string): Promise<BikeRide[]
 
         return combinedRides;
 
-    } catch (error: any) {
+    } catch (error: unknown) {
         const firestoreError = error as FirestoreError;
         console.error("Firestore Error in getOrganizerRides:", {
             code: firestoreError.code,
@@ -1130,9 +1136,3 @@ export const deleteRide = async (rideId: string, currentOrganizerId: string): Pr
     }
     await deleteDoc(rideRef);
 };
-
-
-
-    
-
-    

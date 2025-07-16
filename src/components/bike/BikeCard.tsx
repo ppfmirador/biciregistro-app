@@ -26,7 +26,6 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
-import { DialogTrigger } from '@/components/ui/dialog'; 
 import { BIKE_STATUSES } from '@/constants';
 
 interface BikeCardProps {

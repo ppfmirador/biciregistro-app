@@ -3,9 +3,9 @@
 
 import Link from 'next/link';
 import SearchBikeForm from '@/components/SearchBikeForm';
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
-import { ShieldCheck, LockKeyhole, Users, Store, User } from 'lucide-react'; // Removed Loader2 as it's not directly used for initial load
+import { ShieldCheck, LockKeyhole, Users, User } from 'lucide-react';
 import Image from 'next/image';
 import { APP_NAME } from '@/constants';
 import SponsorCarousel from '@/components/SponsorCarousel';

@@ -13,9 +13,8 @@ import { Label } from '@/components/ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { useAuth } from '@/context/AuthContext';
 import { getUserDoc, updateUserDoc } from '@/lib/db';
-import type { UserProfileData } from '@/lib/types';
 import { useToast } from '@/hooks/use-toast';
-import { ArrowLeft, UserCircle, Loader2, KeyRound, Eye, EyeOff, HeartHandshake, User, Globe, MapPin } from 'lucide-react';
+import { ArrowLeft, UserCircle, Loader2, KeyRound, Eye, EyeOff, HeartHandshake, User, MapPin } from 'lucide-react';
 import { Separator } from '@/components/ui/separator';
 import { ngoProfileSchema, type NgoProfileFormValues } from '@/lib/schemas';
 import { LAT_AM_LOCATIONS, DAYS_OF_WEEK } from '@/constants';
@@ -81,7 +80,7 @@ function EditNgoProfilePageContent() {
             meetingDays: existingProfile.meetingDays || [] 
           } as NgoProfileFormValues);
         }
-      } catch (error) {
+      } catch (error: unknown) {
         toast({ title: "Error", description: "No se pudo cargar tu perfil.", variant: "destructive" });
       } finally {
         setIsLoadingData(false);
@@ -98,8 +97,9 @@ function EditNgoProfilePageContent() {
       await updateUserDoc(user.uid, data);
       toast({ title: "¡Perfil Actualizado!", description: "La información de tu organización ha sido guardada." });
       router.push('/ngo/dashboard');
-    } catch (error: any) {
-      toast({ title: "Error al Guardar Perfil", description: error.message || "No se pudo guardar el perfil.", variant: "destructive" });
+    } catch (error: unknown) {
+      const errorMessage = error instanceof Error ? error.message : "No se pudo guardar el perfil.";
+      toast({ title: "Error al Guardar Perfil", description: errorMessage, variant: "destructive" });
     } finally {
       setIsSubmittingProfile(false);
     }
@@ -121,9 +121,10 @@ function EditNgoProfilePageContent() {
       toast({ title: "¡Contraseña Actualizada!", description: "Tu contraseña ha sido cambiada exitosamente." });
       setNewPassword('');
       setConfirmPassword('');
-    } catch (error: any) {
-      setPasswordChangeError(error.message || "No se pudo cambiar la contraseña.");
-      toast({ title: "Error al Cambiar Contraseña", description: error.message || "No se pudo cambiar la contraseña.", variant: "destructive" });
+    } catch (error: unknown) {
+      const errorMessage = error instanceof Error ? error.message : "No se pudo cambiar la contraseña.";
+      setPasswordChangeError(errorMessage);
+      toast({ title: "Error al Cambiar Contraseña", description: errorMessage, variant: "destructive" });
     } finally {
       setIsChangingPassword(false);
     }
@@ -223,13 +224,13 @@ function EditNgoProfilePageContent() {
                           {DAYS_OF_WEEK.map((day) => (
                               <div key={day.id} className="flex items-center space-x-2">
                                   <Checkbox
-                                      id={`day-ngo-${day.id}`}
+                                      id={`day-admin-${day.id}`}
                                       checked={watchedMeetingDays.includes(day.id)}
                                       onCheckedChange={(checked) => handleDayChange(day.id, checked)}
                                   />
                                   <Tooltip>
                                       <TooltipTrigger asChild>
-                                          <Label htmlFor={`day-ngo-${day.id}`} className="font-normal cursor-pointer">{day.label}</Label>
+                                          <Label htmlFor={`day-admin-${day.id}`} className="font-normal cursor-pointer">{day.label}</Label>
                                       </TooltipTrigger>
                                       <TooltipContent>
                                           <p>{day.id}</p>

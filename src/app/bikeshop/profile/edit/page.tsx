@@ -12,7 +12,6 @@ import { Label } from '@/components/ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { useAuth } from '@/context/AuthContext';
 import { getUserDoc, updateUserDoc } from '@/lib/db';
-import type { UserProfileData } from '@/lib/types';
 import { useToast } from '@/hooks/use-toast';
 import { ArrowLeft, UserCircle, Loader2, KeyRound, Eye, EyeOff, Building, User } from 'lucide-react';
 import { Separator } from '@/components/ui/separator';
@@ -72,7 +71,7 @@ function EditBikeShopProfilePageContent() {
             whatsappGroupLink: existingProfile.whatsappGroupLink || '',
           } as BikeShopProfileFormValues);
         }
-      } catch (error) {
+      } catch (error: unknown) {
         toast({ title: "Error", description: "No se pudo cargar tu perfil.", variant: "destructive" });
       } finally {
         setIsLoadingData(false);
@@ -89,8 +88,9 @@ function EditBikeShopProfilePageContent() {
       await updateUserDoc(user.uid, data);
       toast({ title: "¡Perfil Actualizado!", description: "La información de tu tienda ha sido guardada." });
       router.push('/bikeshop/dashboard');
-    } catch (error: any) {
-      toast({ title: "Error al Guardar Perfil", description: error.message || "No se pudo guardar el perfil.", variant: "destructive" });
+    } catch (error: unknown) {
+      const errorMessage = error instanceof Error ? error.message : "No se pudo guardar el perfil.";
+      toast({ title: "Error al Guardar Perfil", description: errorMessage, variant: "destructive" });
     } finally {
       setIsSubmittingProfile(false);
     }
@@ -112,9 +112,10 @@ function EditBikeShopProfilePageContent() {
       toast({ title: "¡Contraseña Actualizada!", description: "Tu contraseña ha sido cambiada exitosamente." });
       setNewPassword('');
       setConfirmPassword('');
-    } catch (error: any) {
-      setPasswordChangeError(error.message || "No se pudo cambiar la contraseña.");
-      toast({ title: "Error al Cambiar Contraseña", description: error.message || "No se pudo cambiar la contraseña.", variant: "destructive" });
+    } catch (error: unknown) {
+      const errorMessage = error instanceof Error ? error.message : "No se pudo cambiar la contraseña.";
+      setPasswordChangeError(errorMessage);
+      toast({ title: "Error al Cambiar Contraseña", description: errorMessage, variant: "destructive" });
     } finally {
       setIsChangingPassword(false);
     }

@@ -9,8 +9,8 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { Loader2, Building, User, Phone, Globe, MapPin } from 'lucide-react';
-import { LAT_AM_LOCATIONS, PLACEHOLDER_NONE_VALUE } from '@/constants';
+import { Loader2, Building, User } from 'lucide-react';
+import { LAT_AM_LOCATIONS } from '@/constants';
 import { Separator } from '../ui/separator';
 import type { UserProfileData } from '@/lib/types';
 

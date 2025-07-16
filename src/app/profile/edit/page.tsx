@@ -49,7 +49,7 @@ function EditProfilePageContent() {
         } else {
           setProfileData({ email: user.email || undefined });
         }
-      } catch (error) {
+      } catch (error: unknown) {
         toast({ title: "Error", description: "No se pudo cargar tu perfil.", variant: "destructive" });
         console.error(error);
       } finally {
@@ -78,8 +78,9 @@ function EditProfilePageContent() {
       await updateUserDoc(user.uid, profileToSave);
       toast({ title: "¡Perfil Actualizado!", description: "Tu información de perfil ha sido guardada." });
       router.push('/dashboard');
-    } catch (error: any) {
-      toast({ title: "Error al Guardar Perfil", description: error.message || "No se pudo guardar el perfil.", variant: "destructive" });
+    } catch (error: unknown) {
+      const errorMessage = error instanceof Error ? error.message : "No se pudo guardar el perfil.";
+      toast({ title: "Error al Guardar Perfil", description: errorMessage, variant: "destructive" });
     } finally {
       setIsSubmittingProfile(false);
     }
@@ -103,11 +104,10 @@ function EditProfilePageContent() {
       setConfirmPassword('');
       setShowNewPassword(false);
       setShowConfirmPassword(false);
-    } catch (error: any) {
-      // The error.message will contain the user-friendly message from AuthContext
-      // including the instruction for 'auth/requires-recent-login'.
-      setPasswordChangeError(error.message || "No se pudo cambiar la contraseña.");
-      toast({ title: "Error al Cambiar Contraseña", description: error.message || "No se pudo cambiar la contraseña.", variant: "destructive" });
+    } catch (error: unknown) {
+      const errorMessage = error instanceof Error ? error.message : 'No se pudo actualizar la contraseña.';
+      setPasswordChangeError(errorMessage);
+      toast({ title: "Error al Cambiar Contraseña", description: errorMessage, variant: "destructive" });
     } finally {
       setIsChangingPassword(false);
     }
@@ -174,6 +174,7 @@ function EditProfilePageContent() {
                     size="icon"
                     className="absolute right-1 top-1/2 -translate-y-1/2 h-7 w-7 text-muted-foreground hover:text-foreground"
                     onClick={() => setShowNewPassword(!showNewPassword)}
+                    aria-label={showNewPassword ? "Ocultar contraseña" : "Mostrar contraseña"}
                   >
                     {showNewPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
                   </Button>
@@ -196,6 +197,7 @@ function EditProfilePageContent() {
                     size="icon"
                     className="absolute right-1 top-1/2 -translate-y-1/2 h-7 w-7 text-muted-foreground hover:text-foreground"
                     onClick={() => setShowConfirmPassword(!showConfirmPassword)}
+                    aria-label={showConfirmPassword ? "Ocultar contraseña" : "Mostrar contraseña"}
                   >
                     {showConfirmPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
                   </Button>

@@ -21,10 +21,11 @@ export const uploadFileToStorage = async (file: File, path: string): Promise<str
     const snapshot = await uploadBytes(storageRef, file);
     const downloadURL = await getDownloadURL(snapshot.ref);
     return downloadURL;
-  } catch (error: any) {
-    console.error("Error uploading file:", error);
+  } catch (error: unknown) {
+    const storageError = error as { code?: string; message?: string };
+    console.error("Error uploading file:", storageError);
     // Provide more specific error messages based on Firebase Storage error codes
-    switch (error.code) {
+    switch (storageError.code) {
       case 'storage/unauthorized':
         throw new Error('No tienes permiso para subir archivos. Revisa las reglas de seguridad de Storage.');
       case 'storage/canceled':
@@ -38,7 +39,7 @@ export const uploadFileToStorage = async (file: File, path: string): Promise<str
         throw new Error('Ocurrió un error desconocido. Esto puede ser un problema de App Check o CORS. Asegúrate de que App Check esté configurado para tu dominio y que la política CORS sea correcta.');
       default:
         // This will now primarily catch the custom error thrown above or other unexpected errors.
-        throw new Error(`Error al subir el archivo: ${error.message || 'Error desconocido.'}`);
+        throw new Error(`Error al subir el archivo: ${storageError.message || 'Error desconocido.'}`);
     }
   }
 };
@@ -53,8 +54,9 @@ export const deleteFileFromStorage = async (filePath: string): Promise<void> => 
   try {
     const fileRef = ref(storage, filePath);
     await deleteObject(fileRef);
-  } catch (error: any) {
-    if (error.code === 'storage/object-not-found') {
+  } catch (error: unknown) {
+    const storageError = error as { code?: string };
+    if (storageError.code === 'storage/object-not-found') {
       console.warn(`File not found for deletion, or already deleted: ${filePath}`);
     } else {
       console.error("Error deleting file from storage:", filePath, error);

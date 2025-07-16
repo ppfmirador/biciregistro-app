@@ -76,8 +76,9 @@ function EditBikePageContent() {
       await updateBike(bike.id, updates);
       toast({ title: "¡Bicicleta Actualizada!", description: "Los detalles de tu bicicleta han sido actualizados." });
       router.push(`/bike/${encodeURIComponent(data.serialNumber || bike.serialNumber)}`); 
-    } catch (error: any) {
-      toast({ title: "Error al Actualizar", description: error.message || "No se pudo actualizar la bicicleta.", variant: "destructive" });
+    } catch (error: unknown) {
+      const errorMessage = error instanceof Error ? error.message : "No se pudo actualizar la bicicleta.";
+      toast({ title: "Error al Actualizar", description: errorMessage, variant: "destructive" });
     } finally {
       setIsSubmitting(false);
     }

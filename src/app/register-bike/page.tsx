@@ -6,7 +6,7 @@ import { BikeForm } from '@/components/bike/BikeForm';
 import type { BikeFormValues } from '@/lib/schemas';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { useAuth } from '@/context/AuthContext';
-import { getFunctions, httpsCallable, type HttpsCallable } from 'firebase/functions';
+import { getFunctions, httpsCallable } from 'firebase/functions';
 import { app } from '@/lib/firebase';
 import { useRouter } from 'next/navigation';
 import { useToast } from '@/hooks/use-toast';
@@ -108,10 +108,11 @@ export default function RegisterBikePage() {
       toast({ title: '¡Bicicleta Registrada!', description: `${finalBrand} ${data.model} ha sido registrada exitosamente.` });
       router.push(`/bike/${encodeURIComponent(data.serialNumber)}/qr`);
 
-    } catch (error: any) {
+    } catch (error: unknown) {
+      const errorMessage = error instanceof Error ? error.message : "No se pudo registrar la bicicleta. Revisa los datos e inténtalo de nuevo.";
       toast({ 
         title: 'Registro Fallido', 
-        description: error.message || 'No se pudo registrar la bicicleta. Revisa los datos e inténtalo de nuevo.', 
+        description: errorMessage, 
         variant: 'destructive' 
       });
     } finally {

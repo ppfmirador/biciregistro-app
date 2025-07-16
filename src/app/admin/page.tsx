@@ -1,8 +1,8 @@
 
 "use client";
 
-import { useState, useEffect, useRef, type ChangeEvent } from 'react';
-import { useForm, type SubmitHandler, Controller } from 'react-hook-form';
+import { useState, useEffect, type ChangeEvent } from 'react';
+import { useForm, type SubmitHandler } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import * as z from 'zod';
 import { Button } from '@/components/ui/button';
@@ -10,7 +10,7 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
-import { Loader2, Shield, Save, PlusCircle, Trash2, Image as ImageIcon, UploadCloud, LayoutGrid, Filter, Bike as BikeIcon, Users, AlertTriangle, ArrowRightLeft, BarChart, CalendarIcon, Store, UserCog, Building, MessageSquareText, Edit, HeartHandshake, UserX, UserCheck } from 'lucide-react';
+import { Loader2, Shield, Save, PlusCircle, Trash2, UploadCloud, LayoutGrid, Filter, Bike as BikeIcon, Users, AlertTriangle, ArrowRightLeft, BarChart, CalendarIcon, Store, UserCog, Edit, HeartHandshake, UserX } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import { getHomepageContent } from '@/lib/homepageContent';
 import type { HomepageContent, SponsorConfig, UserProfileData, UserRole } from '@/lib/types';
@@ -31,7 +31,7 @@ import { useAuth } from '@/context/AuthContext';
 import { useRouter } from 'next/navigation';
 import { getFunctions, httpsCallable, type HttpsCallable } from 'firebase/functions';
 import { app } from '@/lib/firebase';
-import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogTrigger, DialogFooter, DialogClose } from '@/components/ui/dialog';
+import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { BikeShopForm } from '@/components/admin/BikeShopForm';
 import { NgoForm } from '@/components/admin/NgoForm';
 import { Separator } from '@/components/ui/separator';
@@ -125,8 +125,6 @@ interface AdminUser extends UserProfileData {
 type BikeShopWithId = UserProfileData & { id: string };
 type NgoWithId = UserProfileData & { id: string };
 
-interface AddAdminRoleData { email: string; }
-interface AddAdminRoleResult { message: string; }
 interface UpdateUserRoleData { uid: string; role: UserRole; }
 interface UpdateUserRoleResult { message: string; }
 interface DeleteUserAccountData { uid: string; }
@@ -165,28 +163,12 @@ export default function AdminPage() {
   const [isDeleteConfirmOpen, setIsDeleteConfirmOpen] = useState(false);
 
 
-  const { register, handleSubmit, reset, control: homepageControl, formState: { errors } } = useForm<HomepageTextFormValues>({
+  const { register, handleSubmit, reset, formState: { errors } } = useForm<HomepageTextFormValues>({
     resolver: zodResolver(homepageTextContentSchema),
     defaultValues: { ...defaultContentValues }
   });
-
-  useEffect(() => {
-    if (!authLoading) {
-      if (!user || !user.isAdmin) {
-        toast({
-          title: "Acceso Denegado",
-          description: "No tienes permisos para acceder a esta página.",
-          variant: "destructive",
-        });
-        router.push('/');
-        return;
-      }
-      fetchAdminPageData();
-    }
-  }, [user, authLoading, router, toast]);
-
-
-  const fetchAdminPageData = async () => {
+  
+  const fetchAdminPageData = useCallback(async () => {
     setIsFetchingAdminContent(true);
     setIsFetchingUsers(true);
     setIsFetchingShops(true);
@@ -219,7 +201,7 @@ export default function AdminPage() {
       setBikeShops(shopsFromDb);
       setNgos(ngosFromDb);
 
-    } catch (error) {
+    } catch (error: unknown) {
       toast({ title: "Error", description: "No se pudo cargar el contenido/usuarios del administrador.", variant: "destructive" });
     } finally {
       setIsFetchingAdminContent(false);
@@ -227,7 +209,22 @@ export default function AdminPage() {
       setIsFetchingShops(false);
       setIsFetchingNgos(false);
     }
-  };
+  }, [reset, toast]);
+
+  useEffect(() => {
+    if (!authLoading) {
+      if (!user || !user.isAdmin) {
+        toast({
+          title: "Acceso Denegado",
+          description: "No tienes permisos para acceder a esta página.",
+          variant: "destructive",
+        });
+        router.push('/');
+        return;
+      }
+      fetchAdminPageData();
+    }
+  }, [user, authLoading, router, toast, fetchAdminPageData]);
 
 
   const handleCommunityImageChange = (e: ChangeEvent<HTMLInputElement>) => {
@@ -361,8 +358,9 @@ export default function AdminPage() {
       setExistingCommunityImageUrl(finalCommunityImageUrl);
       setSponsors(finalSponsors.map(s => ({ ...s, existingLogoPath: getPathFromStorageUrl(s.logoUrl), newLogoPreview: undefined, logoFile: undefined })));
 
-    } catch (error: any) {
-      toast({ title: "Error al Guardar", description: error.message || "No se pudo guardar el contenido.", variant: "destructive" });
+    } catch (error: unknown) {
+      const errorMessage = error instanceof Error ? error.message : "No se pudo guardar el contenido.";
+      toast({ title: "Error al Guardar", description: errorMessage, variant: "destructive" });
     } finally {
       setIsLoading(false);
     }
@@ -388,9 +386,10 @@ export default function AdminPage() {
         if (user?.uid === uid) {
             await refreshUserProfile();
         }
-    } catch (error: any) {
+    } catch (error: unknown) {
+        const errorMessage = error instanceof Error ? error.message : "Error desconocido al actualizar rol.";
         console.error("Error updating role:", error);
-        toast({ title: "Error al Actualizar Rol", description: error.message, variant: "destructive" });
+        toast({ title: "Error al Actualizar Rol", description: errorMessage, variant: "destructive" });
     } finally {
         setIsLoading(false);
     }
@@ -407,9 +406,10 @@ export default function AdminPage() {
 
       toast({ title: "Usuario Eliminado", description: result.data.message });
       await fetchAdminPageData();
-    } catch (error: any) {
+    } catch (error: unknown) {
+      const errorMessage = error instanceof Error ? error.message : "No se pudo eliminar el usuario.";
       console.error("Error object from deleteUserAccount callable:", error);
-      toast({ title: "Error al Eliminar Usuario", description: error.message || "No se pudo eliminar el usuario.", variant: "destructive" });
+      toast({ title: "Error al Eliminar Usuario", description: errorMessage, variant: "destructive" });
     } finally {
       setIsLoading(false);
       setIsDeleteConfirmOpen(false);
@@ -440,7 +440,7 @@ export default function AdminPage() {
         });
       } else {
         // Create new shop
-        const { temporaryPassword } = await createBikeShopAccountByAdmin(data, user.uid);
+        await createBikeShopAccountByAdmin(data, user.uid);
         toast({
           title: "¡Cuenta de Tienda Creada!",
           description: `Se ha enviado un correo a ${data.email} con instrucciones para establecer la contraseña.`,
@@ -450,8 +450,9 @@ export default function AdminPage() {
       setIsShopFormOpen(false);
       setEditingShop(null);
       await fetchAdminPageData(); // Refresh the list of shops
-    } catch (error: any) {
-      toast({ title: "Error al Guardar Tienda", description: error.message, variant: "destructive" });
+    } catch (error: unknown) {
+      const errorMessage = error instanceof Error ? error.message : "Error desconocido al guardar tienda.";
+      toast({ title: "Error al Guardar Tienda", description: errorMessage, variant: "destructive" });
     } finally {
       setIsLoading(false);
     }
@@ -478,8 +479,9 @@ export default function AdminPage() {
       setIsNgoFormOpen(false);
       setEditingNgo(null);
       await fetchAdminPageData(); // Refresh the list of NGOs
-    } catch (error: any) {
-      toast({ title: "Error al Guardar ONG", description: error.message, variant: "destructive" });
+    } catch (error: unknown) {
+      const errorMessage = error instanceof Error ? error.message : "Error desconocido al guardar ONG.";
+      toast({ title: "Error al Guardar ONG", description: errorMessage, variant: "destructive" });
     } finally {
       setIsLoading(false);
     }
@@ -559,7 +561,7 @@ export default function AdminPage() {
                   {errors.welcomeDescription && <p className="text-sm text-destructive">{errors.welcomeDescription.message}</p>}
                 </div>
 
-                <h2 className="text-xl font-semibold pt-4 border-t">Sección "¿Por qué {APP_NAME}?"</h2>
+                <h2 className="text-xl font-semibold pt-4 border-t">Sección &quot;¿Por qué {APP_NAME}?&quot;</h2>
                 <div className="space-y-2">
                   <Label htmlFor="whyAppNameTitle">Título de la Sección</Label>
                   <Input id="whyAppNameTitle" {...register('whyAppNameTitle')} className={errors.whyAppNameTitle ? 'border-destructive' : ''} />
@@ -601,7 +603,7 @@ export default function AdminPage() {
                   {errors.feature3Description && <p className="text-sm text-destructive">{errors.feature3Description.message}</p>}
                 </div>
 
-                <h2 className="text-xl font-semibold pt-4 border-t">Sección "Únete a Nuestra Comunidad"</h2>
+                <h2 className="text-xl font-semibold pt-4 border-t">Sección &quot;Únete a Nuestra Comunidad&quot;</h2>
                 <div className="space-y-2">
                   <Label htmlFor="communityTitle">Título de Comunidad</Label>
                   <Input id="communityTitle" {...register('communityTitle')} className={errors.communityTitle ? 'border-destructive' : ''} />
@@ -1072,5 +1074,3 @@ export default function AdminPage() {
     </div>
   );
 }
-
-    

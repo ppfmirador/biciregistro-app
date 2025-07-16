@@ -1,3 +1,4 @@
+
 "use client";
 
 import { useEffect, useState, Suspense } from 'react';
@@ -49,8 +50,9 @@ function QrCodePageContent() {
                     return;
                 }
                 setBike(bikeData);
-            } catch (error) {
-                toast({ title: "Error", description: "No se pudo cargar la información de la bicicleta.", variant: "destructive" });
+            } catch (error: unknown) {
+                const errorMessage = error instanceof Error ? error.message : "No se pudo cargar la información de la bicicleta.";
+                toast({ title: "Error", description: errorMessage, variant: "destructive" });
                 router.push('/dashboard');
             } finally {
                 setIsLoading(false);

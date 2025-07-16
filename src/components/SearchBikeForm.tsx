@@ -36,19 +36,15 @@ const SearchBikeForm: React.FC<SearchBikeFormProps> = ({ initialSerialNumber }) 
 
   const onSubmit: SubmitHandler<SearchFormValues> = async (data) => {
     setIsLoading(true);
-    // Simulate a small delay if needed, or remove for instant navigation
-    // await new Promise(resolve => setTimeout(resolve, 300)); 
     try {
       // Append ?from=home to indicate navigation from homepage search
       router.push(`/bike/${encodeURIComponent(data.serialNumber.trim())}?from=home`);
-    } catch (error) {
+    } catch (error: unknown) {
        toast({
         title: 'Error en la Búsqueda',
         description: 'No se pudo procesar la búsqueda. Por favor, inténtalo de nuevo.',
         variant: 'destructive',
       });
-    } finally {
-        // setIsLoading(false); // Navigation will unmount or change context, no need to set loading to false if page changes.
     }
   };
 

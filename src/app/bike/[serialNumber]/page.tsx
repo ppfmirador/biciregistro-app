@@ -1,12 +1,12 @@
 
 "use client";
 
-import React, { useEffect, useState, useRef, Suspense } from 'react'; // Added React import
+import React, { useEffect, useState, useRef, Suspense, useCallback } from 'react';
 import { useParams, useRouter, useSearchParams } from 'next/navigation';
 import Link from 'next/link';
-import { getBikeBySerialNumber, updateBike, getBikeById, markBikeRecovered, getUserDoc } from '@/lib/db';
+import { getBikeBySerialNumber, updateBike, getBikeById, markBikeRecovered } from '@/lib/db';
 import type { Bike, StatusEntry } from '@/lib/types';
-import { Card, CardContent, CardDescription, CardHeader, CardTitle, CardFooter } from '@/components/ui/card';
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import BikeStatusBadge from '@/components/bike/BikeStatusBadge';
 import BikeCompletenessIndicator from '@/components/bike/BikeCompletenessIndicator';
@@ -73,7 +73,7 @@ function BikeDetailsPageContent() {
   }, [serialNumberFromParams]);
 
 
-  const fetchBike = React.useCallback(async () => {
+  const fetchBike = useCallback(async () => {
     if (serialNumberParam) {
       setLoading(true);
       setPageError(null);
@@ -102,13 +102,14 @@ function BikeDetailsPageContent() {
             setBike(bikeData); // Set the public data for non-owners
         }
 
-      } catch (err: any) {
-        console.error("Error in fetchBike:", err);
+      } catch (err: unknown) {
+        const error = err as Error;
+        console.error("Error in fetchBike:", error);
         let message = 'Error al obtener los detalles de la bicicleta.';
-        if (err instanceof URIError) {
+        if (error instanceof URIError) {
           message = 'El número de serie en la URL tiene un formato inválido.';
-        } else if (err.message) {
-          message = err.message;
+        } else if (error.message) {
+          message = error.message;
         }
         setPageError(message);
         toast({ title: "Error de Carga", description: message, variant: "destructive" });
@@ -125,7 +126,7 @@ function BikeDetailsPageContent() {
     if (serialNumberParam) {
       fetchBike();
     }
-  }, [serialNumberParam, user, authLoading]); // Re-fetch when user logs in/out
+  }, [serialNumberParam, user, authLoading, fetchBike]);
 
   // Early return if serialNumberParam is definitively null
   if (serialNumberParam === null && !loading) {
@@ -274,8 +275,9 @@ function BikeDetailsPageContent() {
       await markBikeRecovered(bike.id);
       toast({ title: '¡Bicicleta Recuperada!', description: 'El estado de la bicicleta ha sido actualizado a "En Regla".' });
       fetchBike(); // Re-fetch bike data
-    } catch (error: any) {
-      toast({ title: 'Error al Marcar como Recuperada', description: error.message || 'No se pudo actualizar el estado.', variant: 'destructive' });
+    } catch (error: unknown) {
+      const errorMessage = error instanceof Error ? error.message : 'No se pudo actualizar el estado.';
+      toast({ title: 'Error al Marcar como Recuperada', description: errorMessage, variant: 'destructive' });
     } finally {
       setMarkingRecovered(false);
       setIsRecoverConfirmationOpen(false);
@@ -718,7 +720,7 @@ function BikeDetailsPageContent() {
             <AlertDialogTitle>Confirmar Recuperación</AlertDialogTitle>
             <AlertDialogDescription>
               ¿Estás seguro de que quieres marcar esta bicicleta ({bike.brand} {bike.model} - N/S: {bike.serialNumber}) como recuperada?
-              Esto cambiará su estado a "En Regla" y eliminará los detalles del reporte de robo.
+              Esto cambiará su estado a &quot;En Regla&quot; y eliminará los detalles del reporte de robo.
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>

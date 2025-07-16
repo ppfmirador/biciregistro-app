@@ -1,5 +1,4 @@
 
-
 "use client";
 
 import { useEffect, useState, Suspense } from 'react';
@@ -87,7 +86,7 @@ function ManageRidePageContent() {
                         cost: ride.cost || undefined,
                         level: ride.level || undefined,
                     });
-                } catch (error) {
+                } catch (error: unknown) {
                     toast({ title: "Error", description: "No se pudo cargar el evento.", variant: "destructive" });
                 } finally {
                     setIsLoading(false);
@@ -108,8 +107,9 @@ function ManageRidePageContent() {
                 description: `El evento "${data.title}" ha sido guardado.`,
             });
             router.push('/ngo/dashboard');
-        } catch (error: any) {
-            toast({ title: "Error al Guardar", description: error.message, variant: "destructive" });
+        } catch (error: unknown) {
+            const errorMessage = error instanceof Error ? error.message : "Error desconocido al guardar.";
+            toast({ title: "Error al Guardar", description: errorMessage, variant: "destructive" });
         } finally {
             setIsSubmitting(false);
         }

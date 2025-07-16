@@ -13,7 +13,6 @@ import { useRouter, useSearchParams } from 'next/navigation';
 import { useToast } from '@/hooks/use-toast';
 import { Loader2, Eye, EyeOff } from 'lucide-react';
 import type { UserRole } from '@/lib/types';
-import { getAdditionalUserInfo } from 'firebase/auth';
 
 const formSchema = z.object({
   email: z.string().email({ message: 'Dirección de correo inválida.' }),
@@ -84,10 +83,11 @@ export const AuthForm: React.FC<AuthFormProps> = ({ mode, userType = 'cyclist' }
           description: 'Tu cuenta ha sido creada. Por favor, revisa tu correo electrónico para verificar tu cuenta.'
         });
       }
-    } catch (error: any) {
+    } catch (error: unknown) {
+      const errorMessage = error instanceof Error ? error.message : 'Ocurrió un error inesperado.';
       toast({
         title: 'Autenticación Fallida',
-        description: error.message || 'Ocurrió un error inesperado.',
+        description: errorMessage,
         variant: 'destructive',
       });
     } finally {
@@ -100,7 +100,7 @@ export const AuthForm: React.FC<AuthFormProps> = ({ mode, userType = 'cyclist' }
     const referrerId = searchParams.get('ref');
     try {
       await signInWithGoogle(referrerId);
-    } catch (error) {
+    } catch (error: unknown) {
       // Error is handled in AuthContext
     } finally {
       setIsGoogleSubmitting(false);
@@ -129,7 +129,7 @@ export const AuthForm: React.FC<AuthFormProps> = ({ mode, userType = 'cyclist' }
         description: `Si existe una cuenta para ${email}, se ha enviado un enlace para restablecer la contraseña. Revisa tu bandeja de entrada y spam.`,
         duration: 7000,
       });
-    } catch (error: any) {
+    } catch (error: unknown) {
       console.error("Error requesting password reset:", error);
       toast({
         title: 'Error',

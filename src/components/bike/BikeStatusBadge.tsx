@@ -1,3 +1,4 @@
+
 import type { BikeStatus } from '@/lib/types';
 import { Badge } from '@/components/ui/badge';
 import { cn } from '@/lib/utils';
@@ -10,7 +11,7 @@ interface BikeStatusBadgeProps {
 
 const BikeStatusBadge: React.FC<BikeStatusBadgeProps> = ({ status, className }) => {
   let variant: 'default' | 'destructive' | 'secondary' | 'outline' = 'default';
-  let statusText = status;
+  const statusText = status;
 
   switch (status) {
     case BIKE_STATUSES[0]: // En Regla

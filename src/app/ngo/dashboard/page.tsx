@@ -105,7 +105,7 @@ export default function NgoDashboardPage() {
     if (auth.currentUser) {
       refreshUserProfile();
     }
-  }, []);
+  }, [refreshUserProfile]);
 
   const handleApplyFilters = () => {
     fetchDashboardData();
@@ -116,7 +116,7 @@ export default function NgoDashboardPage() {
 
     const referralLink = `${window.location.origin}/auth?mode=signup&ref=${user.uid}`;
     
-    let message = inviteTemplate
+    const message = inviteTemplate
         .replace(/\{\{\s*ngoName\s*\}\}/g, user.ngoName)
         .replace(/\{\{\s*ngoLink\s*\}\}/g, referralLink);
 
@@ -187,10 +187,11 @@ export default function NgoDashboardPage() {
         description: `El evento "${rideToDelete.title}" ha sido eliminado.`,
       });
       fetchDashboardData(); // Refresh the list
-    } catch (error: any) {
+    } catch (error: unknown) {
+      const errorMessage = error instanceof Error ? error.message : "Error desconocido al eliminar.";
       toast({
         title: "Error al Eliminar",
-        description: error.message,
+        description: errorMessage,
         variant: "destructive",
       });
     } finally {

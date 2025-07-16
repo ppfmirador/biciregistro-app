@@ -15,7 +15,7 @@ import {
 import { Button } from '@/components/ui/button';
 import { Label } from '@/components/ui/label';
 import { Input } from '@/components/ui/input';
-import { ArrowRightLeft, Loader2, Paperclip, UploadCloud } from 'lucide-react';
+import { ArrowRightLeft, Loader2, Paperclip } from 'lucide-react';
 import type { Bike } from '@/lib/types';
 import { APP_NAME } from '@/constants';
 import { useToast } from '@/hooks/use-toast';
@@ -75,8 +75,9 @@ const TransferOwnershipDialog: React.FC<TransferOwnershipDialogProps> = ({ bike,
       if (fileInputRef.current) {
         fileInputRef.current.value = '';
       }
-    } catch (error: any) {
-      toast({ title: 'Error en Transferencia', description: error.message || 'No se pudo procesar la transferencia.', variant: 'destructive' });
+    } catch (error: unknown) {
+      const errorMessage = error instanceof Error ? error.message : "No se pudo procesar la transferencia.";
+      toast({ title: 'Error en Transferencia', description: errorMessage, variant: 'destructive' });
     } finally {
       setIsLoading(false);
     }
@@ -150,4 +151,3 @@ const TransferOwnershipDialog: React.FC<TransferOwnershipDialogProps> = ({ bike,
 };
 
 export default TransferOwnershipDialog;
-

@@ -97,7 +97,7 @@ export default function BikeShopDashboardPage() {
     if (auth.currentUser) {
       refreshUserProfile();
     }
-  }, []);
+  }, [refreshUserProfile]);
 
   const handleApplyFilters = () => {
     fetchDashboardData();
@@ -146,10 +146,11 @@ export default function BikeShopDashboardPage() {
         description: `El evento "${rideToDelete.title}" ha sido eliminado.`,
       });
       fetchDashboardData(); // Refresh the list
-    } catch (error: any) {
+    } catch (error: unknown) {
+      const errorMessage = error instanceof Error ? error.message : "Error desconocido al eliminar.";
       toast({
         title: "Error al Eliminar",
-        description: error.message,
+        description: errorMessage,
         variant: "destructive",
       });
     } finally {
@@ -440,9 +441,9 @@ export default function BikeShopDashboardPage() {
                     </AlertDialogDescription>
                 </AlertDialogHeader>
                 <AlertDialogFooter>
-                    <AlertDialogCancel disabled={isDeletingRide} onClick={() => setRideToDelete(null)}>Cancelar</AlertDialogCancel>
-                    <AlertDialogAction onClick={handleDeleteRide} disabled={isDeletingRide} className="bg-destructive hover:bg-destructive/90">
-                        {isDeletingRide ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <Trash2 className="mr-2 h-4 w-4" />}
+                    <AlertDialogCancel disabled={isDeleting} onClick={() => setRideToDelete(null)}>Cancelar</AlertDialogCancel>
+                    <AlertDialogAction onClick={handleDeleteRide} disabled={isDeleting} className="bg-destructive hover:bg-destructive/90">
+                        {isDeleting ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <Trash2 className="mr-2 h-4 w-4" />}
                         Sí, eliminar evento
                     </AlertDialogAction>
                 </AlertDialogFooter>
