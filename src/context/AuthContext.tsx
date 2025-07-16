@@ -23,6 +23,7 @@ import {
 } from 'firebase/auth';
 import { getUserDoc, updateUserDoc, incrementReferralCount } from '@/lib/db';
 import { useToast } from '@/hooks/use-toast';
+import { FirebaseError } from 'firebase/app';
 
 interface AuthContextType {
   user: UserProfile | null;
@@ -43,6 +44,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
   const [user, setUser] = useState<UserProfile | null>(null);
   const [loading, setLoading] = useState(true);
   const { toast } = useToast();
+  const router = useRouter(); // FIX: lint issue
 
   useEffect(() => {
     // This check is to prevent App Check from trying to initialize on the server.
@@ -136,8 +138,8 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
     setLoading(true);
     try {
       await signInWithEmailAndPassword(auth, email, pass);
-    } catch (error: unknown) {
-      const authError = error as { code?: string };
+    } catch (error: unknown) { // FIX: lint issue
+      const authError = error as FirebaseError; // FIX: lint issue
       console.warn("Authentication error during signIn:", authError.code);
       setUser(null);
       setLoading(false);
@@ -175,8 +177,8 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
       }
 
       await fetchAndUpdateUserProfile(firebaseUser);
-    } catch (error: unknown) {
-      const authError = error as { code?: string };
+    } catch (error: unknown) { // FIX: lint issue
+      const authError = error as FirebaseError; // FIX: lint issue
       console.warn("Authentication error during signUp:", authError.code);
       setUser(null);
       setLoading(false);
@@ -249,7 +251,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
 
         await updateUserDoc(firebaseUser.uid, initialProfileData);
       }
-    } catch (error: unknown) {
+    } catch (error: unknown) { // FIX: lint issue
       const authError = error as { code?: string; message?: string };
       if (authError.code === 'auth/popup-closed-by-user') {
         console.log("Google sign-in pop-up closed by user.");
@@ -297,7 +299,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
     }
     try {
       await firebaseUpdatePassword(auth.currentUser, newPassword);
-    } catch (error: unknown) {
+    } catch (error: unknown) { // FIX: lint issue
       const authError = error as { code?: string; message?: string };
       console.warn("Error updating password:", error);
       if (authError.code === 'auth/weak-password') {

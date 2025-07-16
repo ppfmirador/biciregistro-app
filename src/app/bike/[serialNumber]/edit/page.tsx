@@ -1,7 +1,7 @@
 
 "use client";
 
-import { useEffect, useState, Suspense } from 'react';
+import { useEffect, useState, Suspense, useCallback } from 'react';
 import { useParams, useRouter } from 'next/navigation';
 import { BikeForm } from '@/components/bike/BikeForm';
 import type { BikeFormValues } from '@/lib/schemas';
@@ -25,37 +25,38 @@ function EditBikePageContent() {
   const [isLoading, setIsLoading] = useState(true);
   const [isSubmitting, setIsSubmitting] = useState(false);
 
+  const fetchBikeData = useCallback(async () => {
+    setIsLoading(true);
+    try {
+      const bikeData = await getBikeBySerialNumber(decodeURIComponent(serialNumber));
+      if (!bikeData) {
+        toast({ title: "Error", description: "Bicicleta no encontrada.", variant: "destructive" });
+        router.push('/dashboard');
+        return;
+      }
+      if (bikeData.ownerId !== user?.uid) { // FIX: lint issue - Added optional chaining
+        toast({ title: "Acceso Denegado", description: "No tienes permiso para editar esta bicicleta.", variant: "destructive" });
+        router.push(`/bike/${serialNumber}`);
+        return;
+      }
+      setBike(bikeData);
+    } catch (error: unknown) { // FIX: lint issue
+      toast({ title: "Error", description: "No se pudo cargar la información de la bicicleta.", variant: "destructive" });
+      console.error(error);
+      router.push('/dashboard');
+    } finally {
+      setIsLoading(false);
+    }
+  }, [serialNumber, user, router, toast]);
+
   useEffect(() => {
     if (serialNumber && user) {
-      const fetchBikeData = async () => {
-        setIsLoading(true);
-        try {
-          const bikeData = await getBikeBySerialNumber(decodeURIComponent(serialNumber));
-          if (!bikeData) {
-            toast({ title: "Error", description: "Bicicleta no encontrada.", variant: "destructive" });
-            router.push('/dashboard');
-            return;
-          }
-          if (bikeData.ownerId !== user.uid) {
-            toast({ title: "Acceso Denegado", description: "No tienes permiso para editar esta bicicleta.", variant: "destructive" });
-            router.push(`/bike/${serialNumber}`);
-            return;
-          }
-          setBike(bikeData);
-        } catch (error) {
-          toast({ title: "Error", description: "No se pudo cargar la información de la bicicleta.", variant: "destructive" });
-          console.error(error);
-          router.push('/dashboard');
-        } finally {
-          setIsLoading(false);
-        }
-      };
       fetchBikeData();
     } else if (!authLoading && !user) {
         toast({ title: "Autenticación Requerida", description: "Por favor, inicia sesión.", variant: "destructive" });
         router.push('/auth');
     }
-  }, [serialNumber, user, authLoading, router, toast]);
+  }, [serialNumber, user, authLoading, router, toast, fetchBikeData]);
 
   const handleSubmit = async (data: BikeFormValues) => {
     if (!bike) return;
@@ -76,7 +77,7 @@ function EditBikePageContent() {
       await updateBike(bike.id, updates);
       toast({ title: "¡Bicicleta Actualizada!", description: "Los detalles de tu bicicleta han sido actualizados." });
       router.push(`/bike/${encodeURIComponent(data.serialNumber || bike.serialNumber)}`); 
-    } catch (error: unknown) {
+    } catch (error: unknown) { // FIX: lint issue
       const errorMessage = error instanceof Error ? error.message : "No se pudo actualizar la bicicleta.";
       toast({ title: "Error al Actualizar", description: errorMessage, variant: "destructive" });
     } finally {

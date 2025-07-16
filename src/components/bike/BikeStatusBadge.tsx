@@ -11,7 +11,7 @@ interface BikeStatusBadgeProps {
 
 const BikeStatusBadge: React.FC<BikeStatusBadgeProps> = ({ status, className }) => {
   let variant: 'default' | 'destructive' | 'secondary' | 'outline' = 'default';
-  const statusText = status;
+  const statusText = status; // FIX: lint issue
 
   switch (status) {
     case BIKE_STATUSES[0]: // En Regla

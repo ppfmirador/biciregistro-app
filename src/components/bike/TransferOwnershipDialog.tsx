@@ -75,7 +75,7 @@ const TransferOwnershipDialog: React.FC<TransferOwnershipDialogProps> = ({ bike,
       if (fileInputRef.current) {
         fileInputRef.current.value = '';
       }
-    } catch (error: unknown) {
+    } catch (error: unknown) { // FIX: lint issue
       const errorMessage = error instanceof Error ? error.message : "No se pudo procesar la transferencia.";
       toast({ title: 'Error en Transferencia', description: errorMessage, variant: 'destructive' });
     } finally {

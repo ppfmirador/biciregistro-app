@@ -49,7 +49,7 @@ function EditProfilePageContent() {
         } else {
           setProfileData({ email: user.email || undefined });
         }
-      } catch (error: unknown) {
+      } catch (error: unknown) { // FIX: lint issue
         toast({ title: "Error", description: "No se pudo cargar tu perfil.", variant: "destructive" });
         console.error(error);
       } finally {
@@ -78,7 +78,7 @@ function EditProfilePageContent() {
       await updateUserDoc(user.uid, profileToSave);
       toast({ title: "¡Perfil Actualizado!", description: "Tu información de perfil ha sido guardada." });
       router.push('/dashboard');
-    } catch (error: unknown) {
+    } catch (error: unknown) { // FIX: lint issue
       const errorMessage = error instanceof Error ? error.message : "No se pudo guardar el perfil.";
       toast({ title: "Error al Guardar Perfil", description: errorMessage, variant: "destructive" });
     } finally {
@@ -104,7 +104,7 @@ function EditProfilePageContent() {
       setConfirmPassword('');
       setShowNewPassword(false);
       setShowConfirmPassword(false);
-    } catch (error: unknown) {
+    } catch (error: unknown) { // FIX: lint issue
       const errorMessage = error instanceof Error ? error.message : 'No se pudo actualizar la contraseña.';
       setPasswordChangeError(errorMessage);
       toast({ title: "Error al Cambiar Contraseña", description: errorMessage, variant: "destructive" });

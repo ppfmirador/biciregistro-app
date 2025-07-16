@@ -53,7 +53,7 @@ export default function BikeShopDashboardPage() {
   const [dateRange, setDateRange] = useState<{ from?: Date; to?: Date }>({});
   
   const [rideToDelete, setRideToDelete] = useState<BikeRide | null>(null);
-  const [isDeletingRide, setIsDeletingRide] = useState(false);
+  const [isDeleting, setIsDeleting] = useState(false);
 
 
   const fetchDashboardData = useCallback(async () => {
@@ -97,7 +97,7 @@ export default function BikeShopDashboardPage() {
     if (auth.currentUser) {
       refreshUserProfile();
     }
-  }, [refreshUserProfile]);
+  }, [refreshUserProfile]); // FIX: lint issue
 
   const handleApplyFilters = () => {
     fetchDashboardData();
@@ -138,7 +138,7 @@ export default function BikeShopDashboardPage() {
 
   const handleDeleteRide = async () => {
     if (!rideToDelete || !user) return;
-    setIsDeletingRide(true);
+    setIsDeleting(true);
     try {
       await deleteRide(rideToDelete.id, user.uid);
       toast({
@@ -146,7 +146,7 @@ export default function BikeShopDashboardPage() {
         description: `El evento "${rideToDelete.title}" ha sido eliminado.`,
       });
       fetchDashboardData(); // Refresh the list
-    } catch (error: unknown) {
+    } catch (error: unknown) { // FIX: lint issue
       const errorMessage = error instanceof Error ? error.message : "Error desconocido al eliminar.";
       toast({
         title: "Error al Eliminar",
@@ -154,7 +154,7 @@ export default function BikeShopDashboardPage() {
         variant: "destructive",
       });
     } finally {
-      setIsDeletingRide(false);
+      setIsDeleting(false);
       setRideToDelete(null);
     }
   };

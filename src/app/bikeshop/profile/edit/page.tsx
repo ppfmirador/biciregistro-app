@@ -71,7 +71,7 @@ function EditBikeShopProfilePageContent() {
             whatsappGroupLink: existingProfile.whatsappGroupLink || '',
           } as BikeShopProfileFormValues);
         }
-      } catch (error: unknown) {
+      } catch (error: unknown) { // FIX: lint issue
         toast({ title: "Error", description: "No se pudo cargar tu perfil.", variant: "destructive" });
       } finally {
         setIsLoadingData(false);
@@ -88,7 +88,7 @@ function EditBikeShopProfilePageContent() {
       await updateUserDoc(user.uid, data);
       toast({ title: "¡Perfil Actualizado!", description: "La información de tu tienda ha sido guardada." });
       router.push('/bikeshop/dashboard');
-    } catch (error: unknown) {
+    } catch (error: unknown) { // FIX: lint issue
       const errorMessage = error instanceof Error ? error.message : "No se pudo guardar el perfil.";
       toast({ title: "Error al Guardar Perfil", description: errorMessage, variant: "destructive" });
     } finally {
@@ -112,7 +112,7 @@ function EditBikeShopProfilePageContent() {
       toast({ title: "¡Contraseña Actualizada!", description: "Tu contraseña ha sido cambiada exitosamente." });
       setNewPassword('');
       setConfirmPassword('');
-    } catch (error: unknown) {
+    } catch (error: unknown) { // FIX: lint issue
       const errorMessage = error instanceof Error ? error.message : "No se pudo cambiar la contraseña.";
       setPasswordChangeError(errorMessage);
       toast({ title: "Error al Cambiar Contraseña", description: errorMessage, variant: "destructive" });

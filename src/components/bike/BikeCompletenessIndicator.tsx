@@ -58,10 +58,3 @@ const BikeCompletenessIndicator: React.FC<BikeCompletenessIndicatorProps> = ({ b
 };
 
 export default BikeCompletenessIndicator;
-
-// Small monkey patch for Progress component to allow custom indicator color
-declare module "@/components/ui/progress" {
-  interface ProgressProps extends React.RefAttributes<HTMLDivElement> {
-    indicatorClassName?: string;
-  }
-}

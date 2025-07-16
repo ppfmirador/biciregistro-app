@@ -1,7 +1,7 @@
 
 "use client";
 
-import { useEffect, useState, Suspense } from 'react';
+import { useEffect, useState, Suspense, useCallback } from 'react';
 import { useParams, useRouter } from 'next/navigation';
 import { getBikeBySerialNumber } from '@/lib/db';
 import type { Bike } from '@/lib/types';
@@ -25,6 +25,31 @@ function QrCodePageContent() {
     const [bike, setBike] = useState<Bike | null>(null);
     const [isLoading, setIsLoading] = useState(true);
 
+    const fetchBikeData = useCallback(async () => {
+        setIsLoading(true);
+        try {
+            const bikeData = await getBikeBySerialNumber(decodeURIComponent(serialNumber));
+            if (!bikeData) {
+                toast({ title: "Error", description: "Bicicleta no encontrada.", variant: "destructive" });
+                router.push('/dashboard');
+                return;
+            }
+            // Security check: Only the owner can see the QR management page.
+            if (bikeData.ownerId !== user?.uid) { // FIX: lint issue
+                toast({ title: "Acceso Denegado", description: "No tienes permiso para gestionar el QR de esta bicicleta.", variant: "destructive" });
+                router.push('/dashboard');
+                return;
+            }
+            setBike(bikeData);
+        } catch (error: unknown) { // FIX: lint issue
+            const errorMessage = error instanceof Error ? error.message : "No se pudo cargar la información de la bicicleta.";
+            toast({ title: "Error", description: errorMessage, variant: "destructive" });
+            router.push('/dashboard');
+        } finally {
+            setIsLoading(false);
+        }
+    }, [serialNumber, user, router, toast]);
+
     useEffect(() => {
         if (!serialNumber || authLoading) return;
 
@@ -34,33 +59,8 @@ function QrCodePageContent() {
             return;
         }
 
-        const fetchBikeData = async () => {
-            setIsLoading(true);
-            try {
-                const bikeData = await getBikeBySerialNumber(decodeURIComponent(serialNumber));
-                if (!bikeData) {
-                    toast({ title: "Error", description: "Bicicleta no encontrada.", variant: "destructive" });
-                    router.push('/dashboard');
-                    return;
-                }
-                // Security check: Only the owner can see the QR management page.
-                if (bikeData.ownerId !== user.uid) {
-                    toast({ title: "Acceso Denegado", description: "No tienes permiso para gestionar el QR de esta bicicleta.", variant: "destructive" });
-                    router.push('/dashboard');
-                    return;
-                }
-                setBike(bikeData);
-            } catch (error: unknown) {
-                const errorMessage = error instanceof Error ? error.message : "No se pudo cargar la información de la bicicleta.";
-                toast({ title: "Error", description: errorMessage, variant: "destructive" });
-                router.push('/dashboard');
-            } finally {
-                setIsLoading(false);
-            }
-        };
-
         fetchBikeData();
-    }, [serialNumber, user, authLoading, router, toast]);
+    }, [serialNumber, user, authLoading, router, toast, fetchBikeData]);
 
     if (isLoading || authLoading) {
         return (

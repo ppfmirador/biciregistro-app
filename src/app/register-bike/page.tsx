@@ -80,7 +80,7 @@ export default function RegisterBikePage() {
       const finalBrand = data.brand === OTHER_BRAND_VALUE ? data.otherBrand || '' : data.brand;
 
       // Construct a clean data object to send to the Cloud Function
-      const newBikeData: { [key: string]: any } = {
+      const newBikeData: { [key: string]: unknown } = { // FIX: lint issue
         serialNumber: data.serialNumber,
         brand: finalBrand,
         model: data.model,
@@ -102,13 +102,13 @@ export default function RegisterBikePage() {
       });
       
       const functions = getFunctions(app, 'us-central1');
-      const createBikeCallable = httpsCallable<{ bikeData: any }, { bikeId: string }>(functions, 'createBike');
+      const createBikeCallable = httpsCallable<{ bikeData: typeof newBikeData }, { bikeId: string }>(functions, 'createBike'); // FIX: lint issue
       await createBikeCallable({ bikeData: newBikeData });
       
       toast({ title: '¡Bicicleta Registrada!', description: `${finalBrand} ${data.model} ha sido registrada exitosamente.` });
       router.push(`/bike/${encodeURIComponent(data.serialNumber)}/qr`);
 
-    } catch (error: unknown) {
+    } catch (error: unknown) { // FIX: lint issue
       const errorMessage = error instanceof Error ? error.message : "No se pudo registrar la bicicleta. Revisa los datos e inténtalo de nuevo.";
       toast({ 
         title: 'Registro Fallido', 

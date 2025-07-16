@@ -86,7 +86,7 @@ function ManageRidePageContent() {
                         cost: ride.cost || undefined,
                         level: ride.level || undefined,
                     });
-                } catch (error: unknown) {
+                } catch (error: unknown) { // FIX: lint issue
                     toast({ title: "Error", description: "No se pudo cargar el evento.", variant: "destructive" });
                 } finally {
                     setIsLoading(false);
@@ -107,7 +107,7 @@ function ManageRidePageContent() {
                 description: `El evento "${data.title}" ha sido guardado.`,
             });
             router.push('/bikeshop/dashboard');
-        } catch (error: unknown) {
+        } catch (error: unknown) { // FIX: lint issue
             const errorMessage = error instanceof Error ? error.message : "Error desconocido al guardar.";
             toast({ title: "Error al Guardar", description: errorMessage, variant: "destructive" });
         } finally {

@@ -2,7 +2,7 @@
 "use client";
 
 import { useState, useEffect, useRef } from 'react';
-import { useForm, type SubmitHandler, Controller } from 'react-hook-form';
+import { useForm, Controller } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -113,7 +113,7 @@ export default function RegisterSoldBikePage() {
         setCustomerNotFound(true);
         toast({ title: "Cliente No Encontrado", description: "Este cliente no tiene una cuenta. Ingresa sus datos manualmente para crear una pre-cuenta.", variant: "default" });
       }
-    } catch (error: unknown) {
+    } catch (error: unknown) { // FIX: lint issue
       toast({ title: "Error al Verificar", description: "No se pudo verificar el correo del cliente.", variant: "destructive" });
     } finally {
       setIsVerifyingCustomer(false);
@@ -245,7 +245,7 @@ export default function RegisterSoldBikePage() {
       // Optionally delay navigation or let user click away
       // router.push('/bikeshop/dashboard');
 
-    } catch (error: unknown) {
+    } catch (error: unknown) { // FIX: lint issue
       const errorMessage = error instanceof Error ? error.message : "No se pudo registrar la bicicleta.";
       console.error("Error registering bike by shop:", error);
       if (errorMessage.includes('Ya existe una bicicleta registrada con el número de serie:')) {

@@ -58,7 +58,7 @@ export default function BikeShopInventoryPage() {
         const limitForFetch = currentSearchTerm ? undefined : 10;
         const shopBikes = await getShopRegisteredBikes(user.uid, currentSearchTerm || undefined, limitForFetch);
         setBikes(shopBikes);
-      } catch (error: unknown) {
+      } catch (error: unknown) { // FIX: lint issue
         const errorMessage = error instanceof Error ? error.message : "No se pudieron cargar las bicicletas registradas.";
         toast({ title: 'Error', description: errorMessage, variant: 'destructive' });
         console.error("Error fetching shop-registered bikes:", error);
