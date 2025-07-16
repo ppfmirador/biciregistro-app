@@ -1,6 +1,4 @@
 
-// This type is not used in the project, so it's safe to remove.
-// import type { Timestamp } from 'firebase/firestore'; // FIX: lint issue
 
 // Updated to use Spanish status values directly, aligning with BIKE_STATUSES constant
 export type BikeStatus = 'En Regla' | 'Robada' | 'Transferida';

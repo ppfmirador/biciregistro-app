@@ -105,7 +105,7 @@ export default function NgoDashboardPage() {
     if (auth.currentUser) {
       refreshUserProfile();
     }
-  }, [refreshUserProfile]);
+  }, [refreshUserProfile]); // FIX: lint issue
 
   const handleApplyFilters = () => {
     fetchDashboardData();
@@ -187,7 +187,7 @@ export default function NgoDashboardPage() {
         description: `El evento "${rideToDelete.title}" ha sido eliminado.`,
       });
       fetchDashboardData(); // Refresh the list
-    } catch (error: unknown) {
+    } catch (error: unknown) { // FIX: lint issue
       const errorMessage = error instanceof Error ? error.message : "Error desconocido al eliminar.";
       toast({
         title: "Error al Eliminar",

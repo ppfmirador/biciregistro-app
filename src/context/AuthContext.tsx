@@ -209,7 +209,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
         await fetchAndUpdateUserProfile(userCredential.user);
       }
       return user;
-    } catch (error) {
+    } catch (error: unknown) { // FIX: lint issue
       console.error("Error al iniciar sesión anónimamente:", error);
       setUser(null);
       setLoading(false);
@@ -287,7 +287,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
   const sendPasswordReset = async (email: string): Promise<void> => {
     try {
       await firebaseSendPasswordResetEmail(auth, email);
-    } catch (error) {
+    } catch (error: unknown) { // FIX: lint issue
       console.warn("Error sending password reset email:", error);
       throw error;
     }

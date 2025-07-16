@@ -2,7 +2,7 @@
 'use server';
 
 import { db } from './firebase';
-import { doc, getDoc, Timestamp, DocumentSnapshot, DocumentData } from 'firebase/firestore'; // FIX: lint issue
+import { doc, getDoc, Timestamp, type DocumentSnapshot, type DocumentData } from 'firebase/firestore'; // FIX: lint issue
 import type { HomepageContent } from './types';
 
 const CONTENT_COLLECTION = 'homepage_content';
