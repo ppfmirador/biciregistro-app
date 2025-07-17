@@ -685,6 +685,33 @@ export const respondToTransferRequest = onCall(callOptions, async (req) => {
   }
 });
 
+export const getUserTransferRequests = onCall(callOptions, async (req) => {
+  if (!req.auth || !req.auth.token.email) {
+    throw new HttpsError('unauthenticated', 'You must be logged in.');
+  }
+
+  const uid = req.auth.uid;
+  const email = req.auth.token.email.toLowerCase();
+  const requestsRef = admin.firestore().collection('transferRequests');
+
+  const [sentSnap, receivedSnap] = await Promise.all([
+    requestsRef.where('fromOwnerId', '==', uid).get(),
+    requestsRef.where('toUserEmail', '==', email).get(),
+  ]);
+
+  const docs = [...sentSnap.docs, ...receivedSnap.docs];
+  const unique = new Map(docs.map(d => [d.id, d]));
+
+  const requests = Array.from(unique.values()).map(d => ({
+    id: d.id,
+    ...d.data(),
+    requestDate: d.data().requestDate?.toDate().toISOString(),
+    resolutionDate: d.data().resolutionDate?.toDate().toISOString(),
+  }));
+
+  return { requests };
+});
+
 // Admin-specific functions
 // -----------------------------------------------------------------------------
 
@@ -1059,5 +1086,3 @@ export const createOrUpdateRide = onCall(callOptions, async (req) => {
     throw new HttpsError("internal", "Failed to save ride data.");
   }
 });
-
-    
