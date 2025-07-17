@@ -1,4 +1,3 @@
-// This file is deprecated and will be removed.
-// The bike creation logic has been moved to a client-side handler
-// in src/app/register-bike/page.tsx that calls a dedicated Cloud Function.
-'use server';
+// This file is obsolete and has been removed.
+// All bike creation logic has been moved to a callable Cloud Function,
+// invoked directly from the client-side handlers in register-bike pages.
