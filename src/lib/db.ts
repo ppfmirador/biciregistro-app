@@ -299,7 +299,7 @@ export const addBikeToFirestore = async (
 export const updateBike = async (bikeId: string, updates: Partial<Omit<Bike, 'id' | 'registrationDate' | 'statusHistory' | 'ownerFirstName' | 'ownerLastName' | 'ownerEmail' | 'ownerWhatsappPhone'>> & { status?: BikeStatus, newStatusNote?: string, bikeType?: BikeType }): Promise<Bike | null> => {
   const bikeRef = doc(db, 'bikes', bikeId);
   
-  const updateData: { [key: string]: unknown } = {};
+  const updateData: { [key: string]: any } = {};
 
   if (updates.serialNumber) {
     const bikesRef = collection(db, 'bikes');
@@ -1052,3 +1052,5 @@ export const deleteRide = async (rideId: string, currentOrganizerId: string): Pr
     }
     await deleteDoc(rideRef);
 };
+
+    
