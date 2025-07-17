@@ -24,19 +24,17 @@ const allowedOrigins = [
 ];
 
 // Set global options for all functions in this file.
-// This is the single source of truth for region, CORS, and App Check settings.
+// CORS is now handled per-function via callOptions.
 setGlobalOptions({
   region: "us-central1",
-  // Allow requests from specified origins. This is crucial for web clients.
-  cors: allowedOrigins,
   // Bypassing App Check for development. Change to true for production.
   enforceAppCheck: false,
 });
 
 
-// This object is now cleaner, as CORS is handled globally.
+// This object now contains the CORS configuration to be applied to each function.
 const callOptions = {
-  // No options needed here unless you want to override a global setting for a specific function.
+  cors: allowedOrigins,
 };
 
 // ───────────────────────────
@@ -123,7 +121,7 @@ export const createBike = onCall(callOptions, async (req) => {
       .get();
 
     // Defensive check for user profile. Now it's not a blocking check.
-    const ownerData = ownerProfile.exists() ? ownerProfile.data() : null;
+    const ownerData = ownerProfile.exists ? ownerProfile.data() : null;
 
     // Defensive check for auth token email.
     if (!req.auth.token.email) {
@@ -689,6 +687,34 @@ export const respondToTransferRequest = onCall(callOptions, async (req) => {
     throw new HttpsError("internal", errorMessage);
   }
 });
+
+export const getUserTransferRequests = onCall(callOptions, async (req) => {
+  if (!req.auth || !req.auth.token.email) {
+    throw new HttpsError('unauthenticated', 'You must be logged in.');
+  }
+
+  const uid = req.auth.uid;
+  const email = req.auth.token.email.toLowerCase();
+  const requestsRef = admin.firestore().collection('transferRequests');
+
+  const [sentSnap, receivedSnap] = await Promise.all([
+    requestsRef.where('fromOwnerId', '==', uid).get(),
+    requestsRef.where('toUserEmail', '==', email).get(),
+  ]);
+
+  const docs = [...sentSnap.docs, ...receivedSnap.docs];
+  const unique = new Map(docs.map(d => [d.id, d]));
+
+  const requests = Array.from(unique.values()).map(d => ({
+    id: d.id,
+    ...d.data(),
+    requestDate: d.data().requestDate?.toDate().toISOString(),
+    resolutionDate: d.data().resolutionDate?.toDate().toISOString(),
+  }));
+
+  return { requests };
+});
+
 
 // Admin-specific functions
 // -----------------------------------------------------------------------------
