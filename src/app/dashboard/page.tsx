@@ -4,7 +4,9 @@
 import { useEffect, useState, useCallback } from 'react';
 import Link from 'next/link';
 import { useAuth } from '@/context/AuthContext';
-import { getMyBikes, initiateTransferRequest, getUserTransferRequests, respondToTransferRequest } from '@/lib/db';
+import { getMyBikes, getUserTransferRequests } from '@/lib/db';
+import { getFunctions, httpsCallable, type FunctionsError } from 'firebase/functions';
+import { app } from '@/lib/firebase';
 import type { Bike, TransferRequest, ReportTheftDialogData } from '@/lib/types';
 import BikeCard from '@/components/bike/BikeCard';
 import { Button } from '@/components/ui/button';
@@ -122,12 +124,18 @@ export default function DashboardPage() {
 
   const handleReportTheft = async (bikeId: string, theftData: ReportTheftDialogData) => {
     try {
-      await reportBikeStolen(bikeId, theftData);
-      toast({ title: 'Bicicleta Reportada como Robada', description: 'El estado de la bicicleta ha sido actualizado con los nuevos detalles.' });
-      fetchData();
+        const functions = getFunctions(app, 'us-central1');
+        const reportBikeStolenCallable = httpsCallable<
+            { bikeId: string; theftData: ReportTheftDialogData },
+            { success: boolean }
+        >(functions, 'reportBikeStolen');
+        
+        await reportBikeStolenCallable({ bikeId, theftData });
+        toast({ title: 'Bicicleta Reportada como Robada', description: 'El estado de la bicicleta ha sido actualizado con los nuevos detalles.' });
+        fetchData();
     } catch (error) {
-      const err = error as FirebaseError;
-      toast({ title: 'Error al Reportar Robo', description: err.message || 'No se pudo reportar la bicicleta como robada.', variant: 'destructive' });
+        const err = error as FunctionsError;
+        toast({ title: 'Error al Reportar Robo', description: err.message || 'No se pudo reportar la bicicleta como robada.', variant: 'destructive' });
     }
   };
 
@@ -139,11 +147,25 @@ export default function DashboardPage() {
   ) => {
     if (!user) return;
     try {
-      await initiateTransferRequest(bikeId, user.uid, recipientEmail, transferDocumentUrl, transferDocumentName);
+        const functions = getFunctions(app, 'us-central1');
+        const initiateTransferCallable = httpsCallable<{
+            bikeId: string;
+            recipientEmail: string;
+            transferDocumentUrl?: string | null;
+            transferDocumentName?: string | null;
+        }, { success: boolean }>(functions, 'initiateTransferRequest');
+
+        await initiateTransferCallable({
+            bikeId,
+            recipientEmail,
+            transferDocumentUrl,
+            transferDocumentName,
+        });
+
       toast({ title: 'Transferencia Iniciada', description: `Solicitud enviada a ${recipientEmail}.` });
       fetchData();
     } catch (error) {
-      const err = error as FirebaseError;
+      const err = error as FunctionsError;
       toast({ title: 'Error al Iniciar Transferencia', description: err.message || 'No se pudo iniciar la transferencia.', variant: 'destructive' });
     }
   };
@@ -151,12 +173,17 @@ export default function DashboardPage() {
   const handleRespondToTransfer = async (requestId: string, action: TransferAction) => {
     if (!user) return;
     try {
-        await respondToTransferRequest(requestId, user.uid, action);
+        const functions = getFunctions(app, 'us-central1');
+        const respondToTransferCallable = httpsCallable<{
+            requestId: string;
+            action: TransferAction;
+        }, { success: boolean }>(functions, 'respondToTransferRequest');
+        await respondToTransferCallable({ requestId, action });
         toast({title: 'Transferencia Respondida', description: `La solicitud ha sido ${translateActionForDisplay(action)}.`});
         fetchData();
     } catch (error)
-{
-        const err = error as FirebaseError;
+    {
+        const err = error as FunctionsError;
         toast({title: 'Error al Responder a Transferencia', description: err.message || 'No se pudo responder a la transferencia.', variant: 'destructive'});
     }
   };
@@ -507,7 +534,3 @@ const TransferRequestsSection: React.FC<TransferRequestsSectionProps> = ({ title
     </Card>
   );
 }
-
-    
-
-    

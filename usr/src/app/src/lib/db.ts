@@ -22,7 +22,7 @@ import {
   increment,
   type QueryConstraint,
   type FirestoreError,
-  type DocumentData, // FIX: lint issue
+  type DocumentData,
 } from 'firebase/firestore';
 import { getFunctions, httpsCallable } from 'firebase/functions';
 import type {
@@ -378,6 +378,20 @@ export const addBike = async (
   }
 };
 
+export async function reportBikeStolen(
+  bikeId: string,
+  theftData: ReportTheftDialogData,
+) {
+  const functions = getFunctions(app, 'us-central1');
+  const callable = httpsCallable<
+    { bikeId: string; theftData: ReportTheftDialogData },
+    { success: boolean }
+  >(functions, 'reportBikeStolen');
+
+  const res = await callable({ bikeId, theftData });
+  return res.data;
+}
+
 export const markBikeRecovered = async (bikeId: string): Promise<void> => {
   const functions = getFunctions(app, 'us-central1');
   const markBikeRecoveredCallable = httpsCallable<{ bikeId: string }, { success: boolean }>(functions, 'markBikeRecovered');
@@ -661,7 +675,7 @@ export const createBikeShopAccountByAdmin = async (shopData: BikeShopAdminFormVa
     await createAuditLog(adminId, 'createBikeShop', { shopId: newUser.uid, shopName: shopData.shopName, adminEmail: adminAuth.currentUser?.email });
 
     return { uid: newUser.uid };
-  } catch (error) {
+  } catch (error: unknown) {
     const authError = error as { code?: string, message?: string };
     if (authError.code === 'auth/email-already-in-use') {
       throw new Error('Este correo electrónico ya está registrado. Asigna el rol de "Tienda de Bicis" al usuario existente si es necesario, o verifica si ya es una tienda.');
@@ -714,7 +728,7 @@ export const createNgoAccountByAdmin = async (ngoData: NgoAdminFormValues, admin
     await createAuditLog(adminId, 'createNGO', { ngoId: newUser.uid, ngoName: ngoData.ngoName, adminEmail: adminAuth.currentUser?.email });
 
     return { uid: newUser.uid };
-  } catch (error) {
+  } catch (error: unknown) {
     const authError = error as { code?: string, message?: string };
     if (authError.code === 'auth/email-already-in-use') {
       throw new Error('Este correo electrónico ya está registrado. Asigna el rol de "ONG/Colectivo" al usuario existente si es necesario.');
@@ -762,7 +776,7 @@ export const createCustomerWithTemporaryPassword = async (
     await updateUserDoc(newUser.uid, userProfileData);
 
     return { uid: newUser.uid, temporaryPassword: tempPassword };
-  } catch (error) {
+  } catch (error: unknown) {
     const authError = error as { code?: string, message?: string };
     if (authError.code === 'auth/email-already-in-use') {
       throw new Error('Este correo electrónico ya está registrado para un cliente. Considera buscarlo por su correo y registrar la bici para el usuario existente.');
@@ -1003,7 +1017,7 @@ export const getNgoAnalytics = async (ngoId: string, dateRange?: { from?: Date; 
 
         return results;
 
-    } catch (error) {
+    } catch (error: unknown) {
         const firestoreError = error as FirestoreError;
         console.error("Raw error in getNgoAnalytics:", error);
         console.error("Detailed Firestore Error in getNgoAnalytics:", {
@@ -1066,7 +1080,7 @@ export const getOrganizerRides = async (organizerId: string): Promise<BikeRide[]
 
         return combinedRides;
 
-    } catch (error) {
+    } catch (error: unknown) {
         const firestoreError = error as FirestoreError;
         console.error("Firestore Error in getOrganizerRides:", {
             code: firestoreError.code,

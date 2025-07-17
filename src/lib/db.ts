@@ -1,4 +1,5 @@
 
+
 import { db, app } from './firebase';
 import {
   collection,
@@ -22,6 +23,7 @@ import {
   increment,
   type QueryConstraint,
   type FirestoreError,
+  type DocumentData,
 } from 'firebase/firestore';
 import { getFunctions, httpsCallable } from 'firebase/functions';
 import type {
@@ -139,7 +141,7 @@ const userProfileFromDoc = (docSnap: { id: string; data: () => DocumentData; }):
         registeredByShopId: data.registeredByShopId || undefined,
         referralCount: data.referralCount || 0,
         referrerId: data.referrerId || undefined,
-        // Shop specific
+        // Bike Shop specific
         address: data.address,
         website: data.website,
         mapsLink: data.mapsLink,
@@ -216,7 +218,7 @@ export const getMyBikes = async (): Promise<Bike[]> => {
     try {
         const result = await getMyBikesCallable();
         return result.data.bikes;
-    } catch (error) {
+    } catch (error: unknown) {
         console.error("Error calling getMyBikes function:", error);
         throw error;
     }
@@ -377,19 +379,6 @@ export const addBike = async (
   }
 };
 
-
-export const reportBikeStolen = async (bikeId: string, theftData: ReportTheftDialogData): Promise<void> => {
-  const functions = getFunctions(app, 'us-central1');
-  const reportBikeStolenCallable = httpsCallable<{ bikeId: string, theftData: ReportTheftDialogData }, { success: boolean }>(functions, 'reportBikeStolen');
-  try {
-    await reportBikeStolenCallable({ bikeId, theftData });
-  } catch (error: unknown) {
-    const err = error as Error;
-    console.error("Error calling reportBikeStolen function:", err);
-    throw new Error(err.message || "Could not report bike as stolen.");
-  }
-};
-
 export const markBikeRecovered = async (bikeId: string): Promise<void> => {
   const functions = getFunctions(app, 'us-central1');
   const markBikeRecoveredCallable = httpsCallable<{ bikeId: string }, { success: boolean }>(functions, 'markBikeRecovered');
@@ -402,93 +391,17 @@ export const markBikeRecovered = async (bikeId: string): Promise<void> => {
   }
 };
 
-
-export const initiateTransferRequest = async (
-  bikeId: string,
-  fromOwnerId: string,
-  recipientEmail: string,
-  transferDocumentUrl?: string | null,
-  transferDocumentName?: string | null
-): Promise<void> => {
-  const functions = getFunctions(app, 'us-central1');
-  const initiateTransferCallable = httpsCallable<{
-    bikeId: string;
-    recipientEmail: string;
-    transferDocumentUrl?: string | null;
-    transferDocumentName?: string | null;
-  }, { success: boolean }>(functions, 'initiateTransferRequest');
-
-  try {
-    await initiateTransferCallable({
-      bikeId,
-      recipientEmail,
-      transferDocumentUrl,
-      transferDocumentName,
-    });
-  } catch (error: unknown) {
-    const err = error as Error;
-    console.error("Error calling initiateTransferRequest function:", err);
-    throw new Error(err.message || "Could not initiate transfer request.");
-  }
-};
-
 export const getUserTransferRequests = async (userId: string, userEmail: string | null): Promise<TransferRequest[]> => {
-  if (!userEmail) return [];
-
-  const requestsRef = collection(db, 'transferRequests');
-  const outgoingQuery = query(requestsRef, where('fromOwnerId', '==', userId));
-  const incomingQuery = query(requestsRef, where('toUserEmail', '==', userEmail.toLowerCase()));
-
-
-  const [outgoingSnapshot, incomingSnapshot] = await Promise.all([
-    getDocs(outgoingQuery),
-    getDocs(incomingQuery)
-  ]);
-
-  const requestsMap = new Map<string, TransferRequest>();
-
-  outgoingSnapshot.docs.forEach(docSnap => {
+    const functions = getFunctions(app, 'us-central1');
+    const getUserTransferRequestsCallable = httpsCallable<void, { requests: TransferRequest[] }>(functions, 'getUserTransferRequests');
     try {
-      requestsMap.set(docSnap.id, transferRequestFromDoc(docSnap));
-    } catch (e) {
-      console.error(`Error processing outgoing transfer request ${docSnap.id}:`, e);
+        const result = await getUserTransferRequestsCallable();
+        return result.data.requests;
+    } catch (error: unknown) {
+        console.error("Error calling getUserTransferRequests function:", error);
+        throw error;
     }
-  });
-  incomingSnapshot.docs.forEach(docSnap => {
-    if (!requestsMap.has(docSnap.id)) {
-      try {
-        requestsMap.set(docSnap.id, transferRequestFromDoc(docSnap));
-      } catch (e) {
-        console.error(`Error processing incoming transfer request ${docSnap.id}:`, e);
-      }
-    }
-  });
-
-  return Array.from(requestsMap.values())
-    .sort((a, b) => new Date(b.requestDate).getTime() - new Date(a.requestDate).getTime());
 };
-
-
-export const respondToTransferRequest = async (
-  requestId: string,
-  respondingUserId: string,
-  action: 'accepted' | 'rejected' | 'cancelled'
-): Promise<void> => {
-  const functions = getFunctions(app, 'us-central1');
-  const respondToTransferCallable = httpsCallable<{
-    requestId: string;
-    action: 'accepted' | 'rejected' | 'cancelled';
-  }, { success: boolean }>(functions, 'respondToTransferRequest');
-
-  try {
-    await respondToTransferCallable({ requestId, action });
-  } catch (error: unknown) {
-    const err = error as Error;
-    console.error("Error calling respondToTransferRequest function:", err);
-    throw new Error(err.message || "Could not respond to transfer request.");
-  }
-};
-
 
 export const getUserDoc = async (uid: string): Promise<UserProfileData | null> => {
   if (!uid) return null;
@@ -713,6 +626,9 @@ export const createNgoAccountByAdmin = async (ngoData: NgoAdminFormValues, admin
       postalCode: ngoData.postalCode,
       publicWhatsapp: ngoData.publicWhatsapp,
       website: ngoData.website || '',
+      meetingDays: ngoData.meetingDays || [],
+      meetingTime: ngoData.meetingTime || '',
+      meetingPointMapsLink: ngoData.meetingPointMapsLink || '',
       contactName: ngoData.contactName,
       contactWhatsApp: ngoData.contactWhatsApp,
       firstName: ngoData.contactName.split(' ')[0],
@@ -818,7 +734,7 @@ export const getShopRegisteredBikes = async (shopId: string, searchTerm?: string
           ownerQuerySnapshot.docs.forEach(docSnap => {
             ownerProfiles[docSnap.id] = docSnap.data() as UserProfileData;
           });
-        } catch (error){
+        } catch (error: unknown){
            console.warn(`Could not fetch batch owner details for shop inventory. This might be due to Firestore rules if user is not authenticated. Error: ${error}`);
         }
       }
@@ -899,7 +815,7 @@ export const getShopAnalytics = async (shopId: string, dateRange?: { from?: Date
       bikeSnapshot.forEach(doc => {
           try {
               allBikes.push(bikeFromDoc(doc));
-          } catch(e) {
+          } catch(e: unknown) {
               console.warn(`Could not process bike doc ${doc.id} for shop analytics`, e);
           }
       });
@@ -976,7 +892,7 @@ export const getNgoAnalytics = async (ngoId: string, dateRange?: { from?: Date; 
             bikeSnapshot.forEach(doc => {
                 try {
                     allReferredBikes.push(bikeFromDoc(doc));
-                } catch (e) {
+                } catch (e: unknown) {
                     console.warn(`Could not process bike doc ${doc.id} for NGO analytics`, e);
                 }
             });
@@ -1052,7 +968,7 @@ export const getOrganizerRides = async (organizerId: string): Promise<BikeRide[]
         snapshot1.docs.forEach(doc => {
             try {
                 ridesMap.set(doc.id, bikeRideFromDoc(doc));
-            } catch(e) {
+            } catch(e: unknown) {
                 console.warn(`Could not process ride doc ${doc.id} from organizerId query`, e);
             }
         });
@@ -1062,7 +978,7 @@ export const getOrganizerRides = async (organizerId: string): Promise<BikeRide[]
             if (!ridesMap.has(doc.id)) {
                 try {
                     ridesMap.set(doc.id, bikeRideFromDoc(doc));
-                } catch(e) {
+                } catch(e: unknown) {
                     console.warn(`Could not process ride doc ${doc.id} from ngoId query`, e);
                 }
             }

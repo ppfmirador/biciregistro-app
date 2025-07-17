@@ -4,7 +4,7 @@
 import { useEffect, useState, useCallback } from 'react';
 import Link from 'next/link';
 import { useAuth } from '@/context/AuthContext';
-import { getMyBikes, initiateTransferRequest, getUserTransferRequests, respondToTransferRequest } from '@/lib/db';
+import { getMyBikes, initiateTransferRequest, getUserTransferRequests, respondToTransferRequest, reportBikeStolen } from '@/lib/db';
 import type { Bike, TransferRequest, ReportTheftDialogData } from '@/lib/types';
 import BikeCard from '@/components/bike/BikeCard';
 import { Button } from '@/components/ui/button';
@@ -32,8 +32,6 @@ import { Label } from '@/components/ui/label';
 import { APP_NAME } from '@/constants';
 import { getHomepageContent } from '@/lib/homepageContent';
 import { FirebaseError } from 'firebase/app';
-import { getFunctions, httpsCallable } from 'firebase/functions';
-import { app } from '@/lib/firebase';
 
 
 type TransferAction = 'accepted' | 'rejected' | 'cancelled';
@@ -87,13 +85,13 @@ export default function DashboardPage() {
       setIsLoading(true);
       setIsFetchingReferralMessage(true);
       try {
-        const [userBikesResult, userRequestsResult, homepageContent] = await Promise.all([
+        const [userBikesResult, userRequests, homepageContent] = await Promise.all([
           getMyBikes(),
           getUserTransferRequests(user.uid, user.email),
           getHomepageContent(),
         ]);
         setBikes(userBikesResult);
-        setTransferRequests(userRequestsResult);
+        setTransferRequests(userRequests);
 
         if (homepageContent?.referralMessage) {
           setReferralMessageTemplate(homepageContent.referralMessage);
@@ -124,9 +122,7 @@ export default function DashboardPage() {
 
   const handleReportTheft = async (bikeId: string, theftData: ReportTheftDialogData) => {
     try {
-      const functions = getFunctions(app, 'us-central1');
-      const reportBikeStolenCallable = httpsCallable<{ bikeId: string, theftData: ReportTheftDialogData }, { success: boolean }>(functions, 'reportBikeStolen');
-      await reportBikeStolenCallable({ bikeId, theftData });
+      await reportBikeStolen(bikeId, theftData);
       toast({ title: 'Bicicleta Reportada como Robada', description: 'El estado de la bicicleta ha sido actualizado con los nuevos detalles.' });
       fetchData();
     } catch (error) {
