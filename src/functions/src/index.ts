@@ -24,7 +24,7 @@ const allowedOrigins = [
 ];
 
 // Set global options for all functions in this file.
-// This is the single source of truth for region and App Check settings.
+// CORS is handled per-function via callOptions.
 setGlobalOptions({
   region: "us-central1",
   // Bypassing App Check for development. Change to true for production.
@@ -1090,5 +1090,3 @@ export const createOrUpdateRide = onCall(callOptions, async (req) => {
     throw new HttpsError("internal", "Failed to save ride data.");
   }
 });
-
-    
