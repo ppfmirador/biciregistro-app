@@ -1,571 +1,872 @@
-
-
-import { db, app } from './firebase';
-import {
-  collection,
-  doc,
-  getDoc,
-  getDocs,
-  addDoc,
-  updateDoc,
-  query,
-  where,
-  writeBatch,
-  Timestamp,
-  serverTimestamp,
-  deleteDoc,
-  arrayUnion,
-  setDoc,
-  orderBy,
-  limit,
-  documentId,
-  runTransaction,
-  increment,
-  type QueryConstraint,
-  type FirestoreError,
-  type DocumentData,
-} from 'firebase/firestore';
-import { getFunctions, httpsCallable } from 'firebase/functions';
+// functions/src/index.ts
+import { onCall, HttpsError } from "firebase-functions/v2/https";
+import * as admin from "firebase-admin";
+import { setGlobalOptions } from "firebase-functions/v2";
 import type {
-  Bike, BikeStatus, BikeType, TransferRequest, ReportTheftDialogData,
-  NewCustomerDataForShop, ShopAnalyticsData, NgoAnalyticsData, BikeRide
-} from './types';
-import type { UserProfileData, UserProfile, UserRole } from '@/lib/types';
-import type { BikeShopAdminFormValues, NgoAdminFormValues, BikeRideFormValues } from './schemas';
-import { BIKE_STATUSES, OTHER_BRAND_VALUE } from '@/constants';
-import { initializeApp } from 'firebase/app';
-import { getAuth, createUserWithEmailAndPassword, sendEmailVerification, sendPasswordResetEmail } from 'firebase/auth';
+  BikeRideFormValues,
+  BikeShopAdminFormValues,
+  NgoAdminFormValues,
+  UserRole,
+} from "./types";
 
+// Initialize Firebase Admin SDK
+admin.initializeApp();
 
-const safeToISOString = (dateInput: unknown, fieldNameForLogging: string): string => {
-  if (dateInput instanceof Timestamp) {
-    return dateInput.toDate().toISOString();
-  }
-  if (typeof dateInput === 'string') {
-    const date = new Date(dateInput);
-    if (!isNaN(date.getTime())) {
-      return date.toISOString();
-    }
-  }
-  console.warn(`Invalid date format for field '${fieldNameForLogging}' in bikeFromDoc:`, dateInput);
-  return new Date(0).toISOString(); 
+/**  Lista de orígenes que permitirás durante el desarrollo y en prod  */
+const allowedOrigins = [
+  "https://biciregistro.mx",
+  "https://www.biciregistro.mx",
+  "https://bike-guardian-hbbg6.firebaseapp.com",
+  "https://6000-firebase-studio-1749165459191.cluster-joak5ukfbnbyqspg4tewa33d24.cloudworkstations.dev",
+  // cloud workstation → usa un comodín para cualquier sub-dominio
+  /^https:\/\/.*\.cloudworkstations\.dev$/,
+  "http://localhost:3000",
+];
+
+// Set global options for all functions in this file.
+// CORS is now handled per-function via callOptions.
+setGlobalOptions({
+  region: "us-central1",
+  // Bypassing App Check for development. Change to true for production.
+  enforceAppCheck: false,
+});
+
+// This object now contains the CORS configuration to be applied to each function.
+const callOptions = {
+  cors: allowedOrigins,
 };
 
-const bikeFromDoc = (docSnap: { id: string; data: () => DocumentData; }): Bike => {
-  const data = docSnap.data();
-  if (!data) {
-    throw new Error(`No data found for document ${docSnap.id}`);
-  }
-  return {
-    id: docSnap.id,
-    serialNumber: data.serialNumber,
-    brand: data.brand,
-    model: data.model,
-    ownerId: data.ownerId,
-    status: data.status,
-    registrationDate: safeToISOString(data.registrationDate, 'registrationDate'),
-    statusHistory: (data.statusHistory || []).map((entry: DocumentData, index: number) => ({
-      status: entry.status,
-      timestamp: safeToISOString(entry.timestamp, `statusHistory[${index}].timestamp`),
-      notes: entry.notes,
-      transferDocumentUrl: entry.transferDocumentUrl || null,
-      transferDocumentName: entry.transferDocumentName || null,
-    })),
-    photoUrls: data.photoUrls || [],
-    color: data.color || undefined,
-    description: data.description || undefined,
-    country: data.country || undefined,
-    state: data.state || undefined,
-    bikeType: data.bikeType || undefined,
-    ownershipDocumentUrl: data.ownershipDocumentUrl || null, 
-    ownershipDocumentName: data.ownershipDocumentName || null, 
-    theftDetails: data.theftDetails ? {
-      ...data.theftDetails,
-      theftLocationCountry: data.theftDetails.theftLocationCountry || undefined,
-      reportedAt: safeToISOString(data.theftDetails.reportedAt, 'theftDetails.reportedAt'),
-    } : null,
-    registeredByShopId: data.registeredByShopId || null,
-    pendingCustomerEmail: data.pendingCustomerEmail || null,
-    ownerFirstName: data.ownerFirstName || '',
-    ownerLastName: data.ownerLastName || '',
-    ownerEmail: data.ownerEmail || '',
-    ownerWhatsappPhone: data.ownerWhatsappPhone || '',
-  } as Bike;
-};
-
-const bikeRideFromDoc = (docSnap: { id: string, data: () => DocumentData }): BikeRide => {
-    const data = docSnap.data();
-    return {
-        id: docSnap.id,
-        organizerId: data.organizerId || data.ngoId, // Backwards compatibility
-        organizerName: data.organizerName || data.ngoName,
-        organizerLogoUrl: data.organizerLogoUrl || data.ngoLogoUrl,
-        title: data.title,
-        description: data.description,
-        rideDate: safeToISOString(data.rideDate, 'rideDate'),
-        distance: data.distance,
-        meetingPoint: data.meetingPoint,
-        meetingPointMapsLink: data.meetingPointMapsLink,
-        createdAt: safeToISOString(data.createdAt, 'createdAt'),
-        updatedAt: safeToISOString(data.updatedAt, 'updatedAt'),
-        modality: data.modality || undefined,
-        cost: data.cost ?? undefined,
-        level: data.level || undefined,
-        country: data.country,
-        state: data.state,
-    } as BikeRide;
-};
-
-const userProfileFromDoc = (docSnap: { id: string; data: () => DocumentData; }): UserProfile => {
-    const data = docSnap.data();
-    return {
-        uid: docSnap.id,
-        email: data.email,
-        firstName: data.firstName,
-        lastName: data.lastName,
-        shopName: data.shopName,
-        ngoName: data.ngoName,
-        mission: data.mission,
-        publicWhatsapp: data.publicWhatsapp,
-        whatsappPhone: data.whatsappPhone,
-        country: data.country,
-        profileState: data.profileState,
-        postalCode: data.postalCode,
-        age: data.age,
-        gender: data.gender,
-        role: data.role,
-        isAdmin: data.isAdmin || false,
-        displayName: data.firstName ? `${data.firstName} ${data.lastName || ''}`.trim() : data.email,
-        isAnonymous: false, 
-        emailVerified: false, 
-        registeredByShopId: data.registeredByShopId || undefined,
-        referralCount: data.referralCount || 0,
-        referrerId: data.referrerId || undefined,
-        // Bike Shop specific
-        address: data.address,
-        website: data.website,
-        mapsLink: data.mapsLink,
-        phone: data.phone,
-        contactName: data.contactName,
-        contactEmail: data.contactEmail,
-        contactWhatsApp: data.contactWhatsApp,
-    } as UserProfile;
-};
-
-
-const transferRequestFromDoc = (docSnap: { id: string; data: () => DocumentData; }): TransferRequest => {
-  const data = docSnap.data();
-  return {
-    id: docSnap.id,
-    bikeId: data.bikeId,
-    serialNumber: data.serialNumber,
-    bikeBrand: data.bikeBrand || undefined,
-    bikeModel: data.bikeModel || undefined,
-    fromOwnerId: data.fromOwnerId,
-    toUserEmail: data.toUserEmail,
-    status: data.status,
-    requestDate: safeToISOString(data.requestDate, 'transferRequest.requestDate'),
-    resolutionDate: data.resolutionDate ? safeToISOString(data.resolutionDate, 'transferRequest.resolutionDate') : undefined,
-    fromOwnerEmail: data.fromOwnerEmail || undefined,
-    transferDocumentUrl: data.transferDocumentUrl || null,
-    transferDocumentName: data.transferDocumentName || null,
-  } as TransferRequest;
-};
-
-
-export const getBikeBySerialNumber = async (serialNumber: string): Promise<Bike | null> => {
-  const functions = getFunctions(app, "us-central1");
-  const getPublicBikeBySerialCallable = httpsCallable<
-    { serialNumber: string },
-    Bike | null
-  >(functions, "getPublicBikeBySerial");
-  try {
-      const result = await getPublicBikeBySerialCallable({ serialNumber });
-      return result.data;
-  } catch (error) {
-      console.error("Error calling getPublicBikeBySerial function:", error);
-      return null;
-  }
-};
-
-export const getBikeById = async (bikeId: string): Promise<Bike | null> => {
-  if (!bikeId || typeof bikeId !== 'string' || bikeId.trim() === '') {
-    console.error("getBikeById called with invalid bikeId:", bikeId);
-    return null;
-  }
-  try {
-    const bikeRef = doc(db, 'bikes', bikeId.trim());
-    const docSnap = await getDoc(bikeRef);
-    if (!docSnap.exists()) {
-      return null;
-    }
-
-    try {
-      return bikeFromDoc(docSnap);
-    } catch (docProcessingError) {
-      console.error(`Error processing bike document ${docSnap.id}:`, docProcessingError);
-      return null;
-    }
-  } catch (error) {
-    console.error(`Firestore error fetching bike by ID ${bikeId}:`, error);
-    throw error;
-  }
-};
-
-export const getMyBikes = async (): Promise<Bike[]> => {
-    const functions = getFunctions(app, 'us-central1');
-    const getMyBikesCallable = httpsCallable<void, { bikes: Bike[] }>(functions, 'getMyBikes');
-    try {
-        const result = await getMyBikesCallable();
-        return result.data.bikes;
-    } catch (error: unknown) {
-        console.error("Error calling getMyBikes function:", error);
-        throw error;
-    }
-};
-
-export const getUserTransferRequests = async (userId: string, userEmail: string | null): Promise<TransferRequest[]> => {
-    const functions = getFunctions(app, 'us-central1');
-    const getUserTransferRequestsCallable = httpsCallable<void, { requests: TransferRequest[] }>(functions, 'getUserTransferRequests');
-    try {
-        const result = await getUserTransferRequestsCallable();
-        return result.data.requests;
-    } catch (error: unknown) {
-        console.error("Error calling getUserTransferRequests function:", error);
-        throw error;
-    }
-};
+// ───────────────────────────
+//     Cloud Functions
+// ───────────────────────────
 
 /**
- * Adds a new bike document to Firestore. This function is called by a server action
- * and assumes the data has already been validated.
+ * Creates a new bike document in Firestore.
+ * This function performs a server-side check for duplicate serial numbers
+ * and sanitizes all incoming data.
  */
-export const addBikeToFirestore = async (
-  bikeData: {
-    serialNumber: string;
-    brand: string;
-    otherBrand?: string;
-    model: string;
-    color?: string;
-    description?: string;
-    country?: string;
-    state?: string;
-    bikeType?: BikeType;
-    photoUrls?: string[];
-    ownershipDocumentUrl?: string | null;
-    ownershipDocumentName?: string | null;
-  },
-  ownerId: string,
-  registeredByShopId?: string | null,
-  initialStatus: BikeStatus = BIKE_STATUSES[0],
-  initialStatusNotes: string = "Registro inicial por ciclista"
-): Promise<string> => {
-  const bikesRef = collection(db, 'bikes');
-  
-  // Final server-side check for duplicate serial numbers.
-  const serialNumberCheckQuery = query(bikesRef, where('serialNumber', '==', bikeData.serialNumber.trim()));
-  const serialNumberSnapshot = await getDocs(serialNumberCheckQuery);
-  if (!serialNumberSnapshot.empty) {
-    throw new Error(`Ya existe una bicicleta registrada con el número de serie: ${bikeData.serialNumber}.`);
+export const createBike = onCall(callOptions, async (req) => {
+  if (!req.auth) {
+    throw new HttpsError(
+      "unauthenticated",
+      "You must be logged in to create a bike.",
+    );
+  }
+  const { bikeData } = req.data;
+  const ownerId = req.auth.uid;
+
+  // --- Start of Robust Validation ---
+  if (!bikeData) {
+    throw new HttpsError("invalid-argument", "Bike data object is missing.");
+  }
+  const {
+    serialNumber,
+    brand,
+    model,
+    color,
+    description,
+    country,
+    state,
+    bikeType,
+    photoUrls,
+    ownershipDocumentUrl,
+    ownershipDocumentName,
+  } = bikeData;
+
+  if (
+    !serialNumber ||
+    typeof serialNumber !== "string" ||
+    serialNumber.trim() === ""
+  ) {
+    throw new HttpsError(
+      "invalid-argument",
+      "Bike data must include a valid 'serialNumber'.",
+    );
+  }
+  if (!brand || typeof brand !== "string" || brand.trim() === "") {
+    throw new HttpsError(
+      "invalid-argument",
+      "Bike data must include a valid 'brand'.",
+    );
+  }
+  if (!model || typeof model !== "string" || model.trim() === "") {
+    throw new HttpsError(
+      "invalid-argument",
+      "Bike data must include a valid 'model'.",
+    );
+  }
+  // --- End of Robust Validation ---
+
+  const bikesRef = admin.firestore().collection("bikes");
+  const serialNumberCheckQuery = bikesRef.where(
+    "serialNumber",
+    "==",
+    serialNumber.trim(),
+  );
+
+  try {
+    const serialNumberSnapshot = await serialNumberCheckQuery.get();
+    if (!serialNumberSnapshot.empty) {
+      throw new HttpsError(
+        "already-exists",
+        `Ya existe una bicicleta registrada con el número de serie: ${serialNumber}`,
+      );
+    }
+
+    const ownerProfile = await admin
+      .firestore()
+      .collection("users")
+      .doc(ownerId)
+      .get();
+
+    // Defensive check for user profile. Now it's not a blocking check.
+    const ownerData = ownerProfile.exists ? ownerProfile.data() : null;
+
+    // Defensive check for auth token email.
+    if (!req.auth.token.email) {
+      console.error(
+        `User token for UID: ${ownerId} is missing an email address.`,
+      );
+      throw new HttpsError(
+        "unauthenticated",
+        "Your user token is missing a valid email address.",
+      );
+    }
+
+    // --- Start of Defensive Data Construction ---
+    const dataToSave = {
+      serialNumber: serialNumber.trim(),
+      brand: brand.trim(),
+      model: model.trim(),
+      ownerId: ownerId,
+      ownerFirstName: ownerData?.firstName ?? "",
+      ownerLastName: ownerData?.lastName ?? "",
+      // Fallback to auth token email if not present in the user document
+      ownerEmail: ownerData?.email || req.auth.token.email,
+      ownerWhatsappPhone: ownerData?.whatsappPhone ?? "",
+      status: "En Regla",
+      registrationDate: admin.firestore.FieldValue.serverTimestamp(),
+      statusHistory: [
+        {
+          status: "En Regla",
+          timestamp: admin.firestore.FieldValue.serverTimestamp(),
+          notes: "Registro inicial por ciclista",
+        },
+      ],
+      theftDetails: null,
+      // Optional fields are explicitly checked and defaulted to null/[]
+      color: color ?? null,
+      description: description ?? null,
+      country: country ?? null,
+      state: state ?? null,
+      bikeType: bikeType ?? null,
+      photoUrls: Array.isArray(photoUrls) ? photoUrls : [],
+      ownershipDocumentUrl: ownershipDocumentUrl ?? null,
+      ownershipDocumentName: ownershipDocumentName ?? null,
+    };
+    // --- End of Defensive Data Construction ---
+
+    const docRef = await bikesRef.add(dataToSave);
+
+    return { bikeId: docRef.id };
+  } catch (error: unknown) {
+    const isHttpsError = error instanceof HttpsError;
+    // Improved logging
+    console.error(`Error in createBike for user ${req.auth?.uid}:`, {
+      errorMessage: error instanceof Error ? error.message : "Unknown error",
+      errorCode: isHttpsError ? (error as HttpsError).code : undefined,
+      bikeData: {
+        // Log the data that caused the issue, but be careful with sensitive info
+        serialNumber: bikeData.serialNumber,
+        brand: bikeData.brand,
+        model: bikeData.model,
+      },
+      fullError: error,
+    });
+    if (isHttpsError) {
+      throw error;
+    }
+    // Throw with the original error message for better client-side debugging
+    const errorMessage =
+      error instanceof Error
+        ? error.message
+        : "An internal error occurred while creating the bike.";
+    throw new HttpsError("internal", errorMessage);
+  }
+});
+
+/**
+ * Fetches all bikes owned by the currently authenticated user.
+ */
+export const getMyBikes = onCall(callOptions, async (req) => {
+  if (!req.auth) {
+    throw new HttpsError(
+      "unauthenticated",
+      "You must be logged in to view your bikes.",
+    );
+  }
+  const ownerId = req.auth.uid;
+
+  try {
+    const bikesRef = admin.firestore().collection("bikes");
+    const q = bikesRef.where("ownerId", "==", ownerId);
+    const querySnapshot = await q.get();
+
+    const bikes = querySnapshot.docs.map((doc) => {
+      const data = doc.data();
+      // Convert Firestore Timestamps to ISO strings for the client
+      const statusHistory = (data.statusHistory || []).map(
+        (entry: { timestamp: admin.firestore.Timestamp }) => ({
+          ...entry,
+          timestamp: entry.timestamp?.toDate().toISOString(),
+        }),
+      );
+
+      return {
+        id: doc.id,
+        ...data,
+        registrationDate: data.registrationDate?.toDate().toISOString(),
+        statusHistory: statusHistory,
+      };
+    });
+    return { bikes };
+  } catch (error) {
+    console.error("Error fetching user's bikes:", error);
+    if (error instanceof HttpsError) {
+      throw error;
+    }
+    const errorMessage =
+      error instanceof Error
+        ? error.message
+        : "An unexpected server error while fetching bikes.";
+    throw new HttpsError("internal", errorMessage);
+  }
+});
+
+/**
+ * Fetches a bike's details by its serial number.
+ * Returns full details for the owner, and public details for others.
+ */
+export const getPublicBikeBySerial = onCall(callOptions, async (req) => {
+  const { serialNumber } = req.data;
+  if (!serialNumber || typeof serialNumber !== "string") {
+    throw new HttpsError(
+      "invalid-argument",
+      "Serial number must be a non-empty string.",
+    );
   }
 
-  // Fetch owner's profile to denormalize name and contact info.
-  const ownerProfile = await getUserDoc(ownerId);
-  
-  const finalBrand = bikeData.brand === OTHER_BRAND_VALUE ? bikeData.otherBrand || '' : bikeData.brand;
+  try {
+    const bikesRef = admin.firestore().collection("bikes");
+    const q = bikesRef.where("serialNumber", "==", serialNumber).limit(1);
+    const querySnapshot = await q.get();
 
-  const dataToSave = {
-      serialNumber: bikeData.serialNumber.trim(),
-      brand: finalBrand,
-      model: bikeData.model.trim(),
-      ownerId,
-      ownerFirstName: ownerProfile?.firstName ?? "",
-      ownerLastName: ownerProfile?.lastName ?? "",
-      ownerEmail: ownerProfile?.email ?? "",
-      ownerWhatsappPhone: ownerProfile?.whatsappPhone ?? "",
-      status: initialStatus,
-      registrationDate: serverTimestamp(),
-      statusHistory: [{
-        status: initialStatus,
-        timestamp: Timestamp.now(),
-        notes: initialStatusNotes,
-      }],
-      theftDetails: null,
-      registeredByShopId: registeredByShopId ?? null,
-      // Sanitize optional fields
+    if (querySnapshot.empty) {
+      return null;
+    }
+
+    const bikeDoc = querySnapshot.docs[0];
+    const bikeData = bikeDoc.data();
+    const isOwner = req.auth?.uid === bikeData.ownerId;
+
+    // Helper to convert Firestore Timestamps to ISO strings safely
+    const toISO = (timestamp: admin.firestore.Timestamp | undefined) => {
+      return timestamp ? timestamp.toDate().toISOString() : undefined;
+    };
+
+    const statusHistory = (bikeData.statusHistory || []).map(
+      (entry: { timestamp: admin.firestore.Timestamp }) => ({
+        ...entry,
+        timestamp: toISO(entry.timestamp),
+      }),
+    );
+
+    const theftDetails = bikeData.theftDetails
+      ? {
+          ...bikeData.theftDetails,
+          reportedAt: toISO(bikeData.theftDetails.reportedAt),
+        }
+      : null;
+
+    // Base public data available to everyone
+    const publicData = {
+      id: bikeDoc.id,
+      serialNumber: bikeData.serialNumber,
+      brand: bikeData.brand,
+      model: bikeData.model,
+      status: bikeData.status,
+      photoUrls: bikeData.photoUrls || [],
       color: bikeData.color || null,
       description: bikeData.description || null,
       country: bikeData.country || null,
       state: bikeData.state || null,
       bikeType: bikeData.bikeType || null,
-      photoUrls: bikeData.photoUrls || [],
-      ownershipDocumentUrl: bikeData.ownershipDocumentUrl || null,
-      ownershipDocumentName: bikeData.ownershipDocumentName || null,
-  };
+      ownerFirstName: bikeData.ownerFirstName || "",
+      ownerLastName: bikeData.ownerLastName || "",
+      registrationDate: toISO(bikeData.registrationDate),
+      statusHistory,
+      theftDetails,
+    };
 
-  const docRef = await addDoc(bikesRef, dataToSave);
-  return docRef.id;
-};
-
-
-export const updateBike = async (bikeId: string, updates: Partial<Omit<Bike, 'id' | 'registrationDate' | 'statusHistory' | 'ownerFirstName' | 'ownerLastName' | 'ownerEmail' | 'ownerWhatsappPhone'>> & { status?: BikeStatus, newStatusNote?: string, bikeType?: BikeType }): Promise<Bike | null> => {
-  const bikeRef = doc(db, 'bikes', bikeId);
-  
-  const updateData: { [key: string]: unknown } = {};
-
-  if (updates.serialNumber) {
-    const bikesRef = collection(db, 'bikes');
-    const q = query(bikesRef, where('serialNumber', '==', updates.serialNumber));
-    const querySnapshot = await getDocs(q);
-    if (!querySnapshot.empty && querySnapshot.docs[0].id !== bikeId) {
-      throw new Error(`El número de serie '${updates.serialNumber}' ya está en uso por otra bicicleta.`);
-    }
-    updateData.serialNumber = updates.serialNumber;
-  }
-  
-  if (updates.brand !== undefined) updateData.brand = updates.brand;
-  if (updates.model !== undefined) updateData.model = updates.model;
-  if (updates.color !== undefined) updateData.color = updates.color;
-  if (updates.description !== undefined) updateData.description = updates.description;
-  if (updates.country !== undefined) updateData.country = updates.country;
-  if (updates.state !== undefined) updateData.state = updates.state;
-  if (updates.bikeType !== undefined) updateData.bikeType = updates.bikeType;
-  if (updates.photoUrls !== undefined) updateData.photoUrls = updates.photoUrls;
-  if (updates.ownershipDocumentUrl !== undefined) updateData.ownershipDocumentUrl = updates.ownershipDocumentUrl;
-  if (updates.ownershipDocumentName !== undefined) updateData.ownershipDocumentName = updates.ownershipDocumentName;
-
-  if (updates.status) {
-    const bikeSnap = await getDoc(bikeRef);
-    if (bikeSnap.exists() && bikeSnap.data().status !== updates.status) {
-      updateData.status = updates.status;
-      const newStatusEntry = {
-        status: updates.status,
-        timestamp: Timestamp.now(),
-        notes: updates.newStatusNote || `Estado cambiado a ${updates.status}`,
+    if (isOwner) {
+      // For the owner, return all data including private fields
+      return {
+        ...publicData,
+        ownerId: bikeData.ownerId,
+        ownershipDocumentUrl: bikeData.ownershipDocumentUrl || null,
+        ownershipDocumentName: bikeData.ownershipDocumentName || null,
+        ownerEmail: bikeData.ownerEmail || "",
+        ownerWhatsappPhone: bikeData.ownerWhatsappPhone || "",
+        registeredByShopId: bikeData.registeredByShopId || null,
       };
-      updateData.statusHistory = arrayUnion(newStatusEntry);
+    } else {
+      // For the public, return only the public data
+      return publicData;
+    }
+  } catch (error) {
+    console.error("Error in getPublicBikeBySerial:", error);
+    if (error instanceof HttpsError) {
+      throw error;
+    }
+    const errorMessage =
+      error instanceof Error
+        ? error.message
+        : "An unexpected server error while fetching bike details.";
+    throw new HttpsError("internal", errorMessage);
+  }
+});
 
-      if (bikeSnap.data().status === BIKE_STATUSES[1] && updates.status !== BIKE_STATUSES[1]) {
-        updateData.theftDetails = null;
+/**
+ * Reports a bike as stolen. Only the owner can call this.
+ * @param {string} bikeId The ID of the bike to report as stolen.
+ * @param {object} theftData Details about the theft incident.
+ */
+export const reportBikeStolen = onCall(callOptions, async (req) => {
+  if (!req.auth) {
+    throw new HttpsError(
+      "unauthenticated",
+      "You must be logged in to report a theft.",
+    );
+  }
+  const { bikeId, theftData } = req.data;
+  const { uid } = req.auth;
+
+  if (
+    !bikeId ||
+    typeof bikeId !== "string" ||
+    !theftData ||
+    typeof theftData !== "object"
+  ) {
+    throw new HttpsError(
+      "invalid-argument",
+      "Valid bikeId and theftData are required.",
+    );
+  }
+
+  const bikeRef = admin.firestore().collection("bikes").doc(bikeId);
+
+  try {
+    const bikeDoc = await bikeRef.get();
+    if (!bikeDoc.exists || bikeDoc.data()?.ownerId !== uid) {
+      throw new HttpsError(
+        "permission-denied",
+        "You do not own this bike or it does not exist.",
+      );
+    }
+
+    const fullTheftDetails = {
+      theftLocationState: theftData.theftLocationState,
+      theftLocationCountry: theftData.theftLocationCountry,
+      theftPerpetratorDetails: theftData.theftPerpetratorDetails || null,
+      theftIncidentDetails: theftData.theftIncidentDetails,
+      reportedAt: admin.firestore.FieldValue.serverTimestamp(),
+    };
+
+    const newStatusEntry = {
+      status: "Robada",
+      timestamp: admin.firestore.FieldValue.serverTimestamp(),
+      notes:
+        theftData.generalNotes ||
+        `Reportada como robada en ${theftData.theftLocationState}, ` +
+          `${theftData.theftLocationCountry}.`,
+    };
+
+    await bikeRef.update({
+      status: "Robada",
+      statusHistory: admin.firestore.FieldValue.arrayUnion(newStatusEntry),
+      theftDetails: fullTheftDetails,
+    });
+    return {
+      success: true,
+      message: "Bike successfully reported as stolen.",
+    };
+  } catch (error) {
+    console.error(`Error in reportBikeStolen for bike ${bikeId}:`, error);
+    if (error instanceof HttpsError) {
+      throw error;
+    }
+    const errorMessage =
+      error instanceof Error
+        ? error.message
+        : "An unexpected server error while reporting the theft.";
+    throw new HttpsError("internal", errorMessage);
+  }
+});
+
+/**
+ * Marks a stolen bike as recovered. Only the owner can call this.
+ * @param {string} bikeId The ID of the bike to mark as recovered.
+ */
+export const markBikeRecovered = onCall(callOptions, async (req) => {
+  if (!req.auth) {
+    throw new HttpsError("unauthenticated", "You must be logged in.");
+  }
+  const { bikeId } = req.data;
+  const { uid } = req.auth;
+
+  if (!bikeId || typeof bikeId !== "string") {
+    throw new HttpsError("invalid-argument", "A valid bikeId is required.");
+  }
+
+  const bikeRef = admin.firestore().collection("bikes").doc(bikeId);
+  try {
+    const bikeDoc = await bikeRef.get();
+    if (!bikeDoc.exists || bikeDoc.data()?.ownerId !== uid) {
+      throw new HttpsError("permission-denied", "You do not own this bike.");
+    }
+    if (bikeDoc.data()?.status !== "Robada") {
+      throw new HttpsError(
+        "failed-precondition",
+        "This bike is not currently reported as stolen.",
+      );
+    }
+
+    const newStatusEntry = {
+      status: "En Regla",
+      timestamp: admin.firestore.FieldValue.serverTimestamp(),
+      notes: "Bicicleta marcada como recuperada por el propietario.",
+    };
+
+    await bikeRef.update({
+      status: "En Regla",
+      statusHistory: admin.firestore.FieldValue.arrayUnion(newStatusEntry),
+      theftDetails: null,
+    });
+    return {
+      success: true,
+      message: "Bike successfully marked as recovered.",
+    };
+  } catch (error) {
+    console.error(`Error in markBikeRecovered for bike ${bikeId}:`, error);
+    if (error instanceof HttpsError) {
+      throw error;
+    }
+    const errorMessage =
+      error instanceof Error
+        ? error.message
+        : "An unexpected server error while marking the bike as recovered.";
+    throw new HttpsError("internal", errorMessage);
+  }
+});
+
+/**
+ * Initiates an ownership transfer request for a bike.
+ */
+export const initiateTransferRequest = onCall(callOptions, async (req) => {
+  if (!req.auth || !req.auth.token.email) {
+    throw new HttpsError(
+      "unauthenticated",
+      "You must be logged in with a verified email.",
+    );
+  }
+  const { bikeId, recipientEmail, transferDocumentUrl, transferDocumentName } =
+    req.data;
+  const { uid } = req.auth;
+  const fromOwnerEmail = req.auth.token.email;
+
+  if (!bikeId || !recipientEmail) {
+    throw new HttpsError(
+      "invalid-argument",
+      "Bike ID and recipient email are required.",
+    );
+  }
+
+  const bikeRef = admin.firestore().collection("bikes").doc(bikeId);
+  try {
+    const bikeDoc = await bikeRef.get();
+    if (!bikeDoc.exists || bikeDoc.data()?.ownerId !== uid) {
+      throw new HttpsError("permission-denied", "You do not own this bike.");
+    }
+    if (bikeDoc.data()?.status !== "En Regla") {
+      throw new HttpsError(
+        "failed-precondition",
+        "Only bikes 'En Regla' can be transferred.",
+      );
+    }
+
+    const requestsRef = admin.firestore().collection("transferRequests");
+    const q = requestsRef
+      .where("bikeId", "==", bikeId)
+      .where("status", "==", "pending");
+    const existingRequests = await q.get();
+    if (!existingRequests.empty) {
+      throw new HttpsError(
+        "already-exists",
+        "A transfer request for this bike is already pending.",
+      );
+    }
+
+    const newRequest = {
+      bikeId,
+      serialNumber: bikeDoc.data()?.serialNumber,
+      bikeBrand: bikeDoc.data()?.brand,
+      bikeModel: bikeDoc.data()?.model,
+      fromOwnerId: uid,
+      fromOwnerEmail,
+      toUserEmail: recipientEmail.toLowerCase(),
+      status: "pending",
+      requestDate: admin.firestore.FieldValue.serverTimestamp(),
+      transferDocumentUrl: transferDocumentUrl || null,
+      transferDocumentName: transferDocumentName || null,
+    };
+
+    await requestsRef.add(newRequest);
+    return { success: true, message: "Transfer request initiated." };
+  } catch (error) {
+    console.error(
+      `Error in initiateTransferRequest for bike ${bikeId}:`,
+      error,
+    );
+    if (error instanceof HttpsError) {
+      throw error;
+    }
+    const errorMessage =
+      error instanceof Error
+        ? error.message
+        : "An unexpected server error while initiating the transfer request.";
+    throw new HttpsError("internal", errorMessage);
+  }
+});
+
+/**
+ * Responds to an ownership transfer request.
+ */
+export const respondToTransferRequest = onCall(callOptions, async (req) => {
+  if (!req.auth || !req.auth.token.email) {
+    throw new HttpsError("unauthenticated", "You must be logged in.");
+  }
+  const { requestId, action } = req.data;
+  const { uid } = req.auth;
+  const respondingUserEmail = req.auth.token.email;
+
+  if (
+    !requestId ||
+    !action ||
+    !["accepted", "rejected", "cancelled"].includes(action)
+  ) {
+    throw new HttpsError(
+      "invalid-argument",
+      "Request ID and a valid action are required.",
+    );
+  }
+
+  const requestRef = admin
+    .firestore()
+    .collection("transferRequests")
+    .doc(requestId);
+
+  try {
+    return await admin.firestore().runTransaction(async (transaction) => {
+      const requestDoc = await transaction.get(requestRef);
+      if (!requestDoc.exists) {
+        throw new HttpsError("not-found", "Transfer request not found.");
       }
-    }
-  }
-  
-  if (Object.keys(updateData).length > 0) {
-    await updateDoc(bikeRef, updateData);
-  }
-  
-  const updatedBikeSnap = await getDoc(bikeRef);
-  return bikeFromDoc(updatedBikeSnap);
-};
 
-export const addBike = async (
-  bikeData: {
-    serialNumber: string;
-    brand: string;
-    model: string;
-    color?: string;
-    description?: string;
-    country?: string;
-    state?: string;
-    bikeType?: BikeType;
-    photoUrls: string[];
-    ownershipDocumentUrl: string | null;
-    ownershipDocumentName: string | null;
-  }
-): Promise<{ bikeId: string }> => {
-  const functions = getFunctions(app, 'us-central1');
-  const createBikeCallable = httpsCallable<{ bikeData: unknown }, { bikeId: string }>(functions, 'createBike');
-
-  try {
-    const result = await createBikeCallable({ bikeData });
-    return result.data;
-  } catch (error: unknown) {
-    const err = error as Error & { details?: { message?: string } };
-    console.error("Error calling createBike function:", err);
-    // Rethrow with a more specific message if available
-    if (err.details && err.details.message) {
-      throw new Error(err.details.message);
-    }
-    throw new Error(err.message || "No se pudo crear la bicicleta.");
-  }
-};
-
-export const markBikeRecovered = async (bikeId: string): Promise<void> => {
-  const functions = getFunctions(app, 'us-central1');
-  const markBikeRecoveredCallable = httpsCallable<{ bikeId: string }, { success: boolean }>(functions, 'markBikeRecovered');
-  try {
-    await markBikeRecoveredCallable({ bikeId });
-  } catch (error: unknown) {
-    const err = error as Error;
-    console.error("Error calling markBikeRecovered function:", err);
-    throw new Error(err.message || "Could not mark bike as recovered.");
-  }
-};
-
-export const getUserDoc = async (uid: string): Promise<UserProfileData | null> => {
-  if (!uid) return null;
-  const userRef = doc(db, 'users', uid);
-  const docSnap = await getDoc(userRef);
-  if (docSnap.exists()) {
-    return docSnap.data() as UserProfileData;
-  }
-  return null;
-};
-
-export const getUserProfileByEmail = async (email: string): Promise<UserProfile | null> => {
-  if (!email) return null;
-  const usersRef = collection(db, 'users');
-  const q = query(usersRef, where('email', '==', email.toLowerCase()));
-  const querySnapshot = await getDocs(q);
-  if (querySnapshot.empty) {
-    return null;
-  }
-  try {
-    return userProfileFromDoc(querySnapshot.docs[0]);
-  } catch (e) {
-    console.error(`Error processing user profile for email ${email}:`, e);
-    return null;
-  }
-};
-
-
-export const updateUserDoc = async (uid: string, data: Partial<UserProfileData>): Promise<void> => {
-  const userRef = doc(db, 'users', uid);
-  const updateData: { [key: string]: unknown } = { ...data };
-
-  const currentUserDoc = await getUserDoc(uid);
-
-  if (updateData.email === undefined && currentUserDoc?.email) {
-    updateData.email = currentUserDoc.email;
-  } else if (updateData.email) {
-    updateData.email = (updateData.email as string).toLowerCase();
-  }
-
-  for (const key in updateData) {
-    if (updateData[key as keyof typeof updateData] === '') {
-      delete updateData[key as keyof typeof updateData];
-    }
-  }
-
-  if (updateData.role === undefined) {
-    updateData.role = currentUserDoc?.role || 'cyclist';
-  }
-  if (updateData.isAdmin === undefined) {
-    updateData.isAdmin = currentUserDoc?.isAdmin || false;
-  }
-
-  await setDoc(userRef, updateData, { merge: true });
-
-  if (data.firstName !== undefined || data.lastName !== undefined) {
-    const bikesRef = collection(db, 'bikes');
-    const q = query(bikesRef, where('ownerId', '==', uid));
-    const bikesSnapshot = await getDocs(q);
-
-    if (!bikesSnapshot.empty) {
-      const batch = writeBatch(db);
-      const nameUpdate: { ownerFirstName?: string, ownerLastName?: string } = {};
-      if (data.firstName !== undefined) nameUpdate.ownerFirstName = data.firstName;
-      if (data.lastName !== undefined) nameUpdate.ownerLastName = data.lastName;
-      
-      bikesSnapshot.forEach(bikeDoc => {
-        batch.update(bikeDoc.ref, nameUpdate);
-      });
-      await batch.commit();
-    }
-  }
-};
-
-export const incrementReferralCount = async (referrerId: string): Promise<void> => {
-  if (!referrerId) return;
-
-  const referrerRef = doc(db, 'users', referrerId);
-
-  try {
-    await runTransaction(db, async (transaction) => {
-      const referrerDoc = await transaction.get(referrerRef);
-      if (!referrerDoc.exists()) {
-        console.warn(`Referrer with ID ${referrerId} does not exist. No referral will be attributed.`);
-        return;
+      const requestData = requestDoc.data();
+      if (requestData?.status !== "pending") {
+        throw new HttpsError(
+          "failed-precondition",
+          "This request has already been resolved.",
+        );
       }
-      transaction.update(referrerRef, {
-        referralCount: increment(1)
+
+      // Authorization checks
+      if (action === "cancelled") {
+        if (requestData.fromOwnerId !== uid) {
+          throw new HttpsError(
+            "permission-denied",
+            "Only the sender can cancel the request.",
+          );
+        }
+      } else {
+        // "accepted" or "rejected"
+        if (
+          requestData.toUserEmail.toLowerCase() !==
+          respondingUserEmail.toLowerCase()
+        ) {
+          throw new HttpsError(
+            "permission-denied",
+            "Only the recipient can respond to the request.",
+          );
+        }
+      }
+
+      // Perform action
+      transaction.update(requestRef, {
+        status: action,
+        resolutionDate: admin.firestore.FieldValue.serverTimestamp(),
       });
+
+      if (action === "accepted") {
+        const bikeRef = admin
+          .firestore()
+          .collection("bikes")
+          .doc(requestData.bikeId);
+        const bikeDoc = await transaction.get(bikeRef);
+        if (
+          !bikeDoc.exists ||
+          bikeDoc.data()?.ownerId !== requestData.fromOwnerId
+        ) {
+          throw new HttpsError(
+            "failed-precondition",
+            "Bike ownership has changed or bike does not exist.",
+          );
+        }
+
+        const newOwnerDoc = await admin
+          .firestore()
+          .collection("users")
+          .doc(uid)
+          .get();
+        if (!newOwnerDoc.exists) {
+          throw new HttpsError(
+            "not-found",
+            "The recipient user profile does not exist.",
+          );
+        }
+        const newOwnerProfile = newOwnerDoc.data();
+
+        const transferNote =
+          "Propiedad transferida de " +
+          `${requestData.fromOwnerEmail} a ${requestData.toUserEmail}.`;
+        const historyEntry = {
+          status: "Transferida",
+          timestamp: admin.firestore.FieldValue.serverTimestamp(),
+          notes: transferNote,
+          transferDocumentUrl: requestData.transferDocumentUrl || null,
+          transferDocumentName: requestData.transferDocumentName || null,
+        };
+
+        transaction.update(bikeRef, {
+          ownerId: uid,
+          ownerFirstName: newOwnerProfile?.firstName || "",
+          ownerLastName: newOwnerProfile?.lastName || "",
+          ownerEmail: newOwnerProfile?.email || "",
+          ownerWhatsappPhone: newOwnerProfile?.whatsappPhone || "",
+          status: "En Regla",
+          statusHistory: admin.firestore.FieldValue.arrayUnion(historyEntry),
+        });
+      }
+
+      return {
+        success: true,
+        message: "Request successfully " + action + ".",
+      };
     });
   } catch (error) {
-    console.error("Transaction failed during referral count increment: ", error);
+    console.error(
+      `Error in respondToTransferRequest for request ${requestId}:`,
+      error,
+    );
+    if (error instanceof HttpsError) {
+      throw error;
+    }
+    const errorMessage =
+      error instanceof Error ? error.message : "An unexpected server error.";
+    throw new HttpsError("internal", errorMessage);
   }
-};
+});
 
-
-export const getAllUsersForAdmin = async (): Promise<(UserProfileData & {id: string})[]> => {
-  const usersRef = collection(db, 'users');
-  const querySnapshot = await getDocs(usersRef);
-  return querySnapshot.docs.map(docSnap => ({ id: docSnap.id, ...docSnap.data() } as UserProfileData & {id: string}));
-};
-
-export const getAllBikeShops = async (): Promise<(UserProfileData & {id: string})[]> => {
-    const usersRef = collection(db, 'users');
-    const q = query(usersRef, where('role', '==', 'bikeshop'));
-    const querySnapshot = await getDocs(q);
-    return querySnapshot.docs.map(docSnap => ({ id: docSnap.id, ...docSnap.data() } as UserProfileData & {id: string}));
-};
-
-export const getAllNgos = async (): Promise<(UserProfileData & {id: string})[]> => {
-    const usersRef = collection(db, 'users');
-    const q = query(usersRef, where('role', '==', 'ngo'));
-    const querySnapshot = await getDocs(q);
-    return querySnapshot.docs.map(docSnap => ({ id: docSnap.id, ...docSnap.data() } as UserProfileData & {id: string}));
-};
-
-
-export const updateUserRoleByAdmin = async (uid: string, role: UserRole): Promise<void> => {
-  const userRef = doc(db, 'users', uid);
-  const isAdmin = role === 'admin';
-  await updateDoc(userRef, { role: role, isAdmin: isAdmin });
-};
-
-const generateTemporaryPassword = (length = 10): string => {
-  const characters = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789!@#$%^&*()';
-  let result = '';
-  for (let i = 0; i < length; i++) {
-    result += characters.charAt(Math.floor(Math.random() * characters.length));
+export const getUserTransferRequests = onCall(callOptions, async (req) => {
+  if (!req.auth || !req.auth.token.email) {
+    throw new HttpsError("unauthenticated", "You must be logged in.");
   }
-  return result;
-};
 
-const createAuditLog = async (adminId: string, action: string, details: Record<string, unknown>) => {
-    const logData = {
-        adminId,
-        action,
-        timestamp: serverTimestamp(),
-        details,
-    };
-    await addDoc(collection(db, 'audit_logs'), logData);
-};
+  const uid = req.auth.uid;
+  const email = req.auth.token.email.toLowerCase();
+  const requestsRef = admin.firestore().collection("transferRequests");
 
+  const [sentSnap, receivedSnap] = await Promise.all([
+    requestsRef.where("fromOwnerId", "==", uid).get(),
+    requestsRef.where("toUserEmail", "==", email).get(),
+  ]);
 
-export const createBikeShopAccountByAdmin = async (shopData: BikeShopAdminFormValues, adminId: string): Promise<{ uid: string; }> => {
-  const tempPassword = generateTemporaryPassword();
-  const tempAppName = `temp-shop-creation-${Date.now()}`;
-  const tempApp = initializeApp(app.options, tempAppName);
-  const tempAuth = getAuth(tempApp);
-  const adminAuth = getAuth(app); 
+  const docs = [...sentSnap.docs, ...receivedSnap.docs];
+  const unique = new Map(docs.map((d) => [d.id, d]));
+
+  const requests = Array.from(unique.values()).map((d) => ({
+    id: d.id,
+    ...d.data(),
+    requestDate: d.data().requestDate?.toDate().toISOString(),
+    resolutionDate: d.data().resolutionDate?.toDate().toISOString(),
+  }));
+
+  return { requests };
+});
+
+// Admin-specific functions
+// -----------------------------------------------------------------------------
+
+/**
+ * Updates the custom claims for a user to grant/revoke admin privileges.
+ * Only callable by existing admins.
+ */
+export const updateUserRole = onCall(callOptions, async (req) => {
+  // Check if the caller is an admin
+  if (req.auth?.token.admin !== true) {
+    throw new HttpsError(
+      "permission-denied",
+      "Only admins can modify user roles.",
+    );
+  }
+
+  const { uid, role } = req.data as { uid: string; role: UserRole };
+  if (!uid || !role) {
+    throw new HttpsError(
+      "invalid-argument",
+      "The function must be called with a 'uid' and 'role'.",
+    );
+  }
 
   try {
-    const userCredential = await createUserWithEmailAndPassword(tempAuth, shopData.email, tempPassword);
-    const newUser = userCredential.user;
+    // Set custom claims
+    const isAdmin = role === "admin";
+    await admin.auth().setCustomUserClaims(uid, { admin: isAdmin, role });
 
-    try {
-        await sendEmailVerification(newUser);
-        await sendPasswordResetEmail(tempAuth, newUser.email!);
-    } catch (verificationError) {
-        console.warn("Could not send email during shop account creation:", verificationError);
-    }
+    // Update the user's role in their Firestore document
+    const userRef = admin.firestore().collection("users").doc(uid);
+    await userRef.set({ role, isAdmin }, { merge: true });
 
-    const userProfileData: UserProfileData = {
-      email: newUser.email?.toLowerCase(),
-      role: 'bikeshop',
+    return {
+      message: `Success! User ${uid} has been made a(n) ${role}.`,
+    };
+  } catch (error) {
+    console.error("Error setting custom claims:", error);
+    throw new HttpsError("internal", "Unable to update user role.");
+  }
+});
+
+/**
+ * Deletes a user account and all their associated bikes.
+ * Only callable by existing admins.
+ */
+export const deleteUserAccount = onCall(callOptions, async (req) => {
+  if (req.auth?.token.admin !== true) {
+    throw new HttpsError(
+      "permission-denied",
+      "Only admins can delete user accounts.",
+    );
+  }
+
+  const { uid } = req.data as { uid: string };
+  if (!uid) {
+    throw new HttpsError(
+      "invalid-argument",
+      "The function must be called with a 'uid'.",
+    );
+  }
+
+  try {
+    // 1. Delete associated bikes
+    const bikesRef = admin.firestore().collection("bikes");
+    const userBikesQuery = bikesRef.where("ownerId", "==", uid);
+    const bikesSnapshot = await userBikesQuery.get();
+
+    const batch = admin.firestore().batch();
+    bikesSnapshot.docs.forEach((doc) => {
+      batch.delete(doc.ref);
+    });
+    await batch.commit();
+
+    // 2. Delete user's Firestore document
+    const userRef = admin.firestore().collection("users").doc(uid);
+    await userRef.delete();
+
+    // 3. Delete user from Firebase Authentication
+    await admin.auth().deleteUser(uid);
+
+    return { message: `Successfully deleted user ${uid} and their data.` };
+  } catch (error) {
+    console.error(`Error deleting user ${uid}:`, error);
+    throw new HttpsError("internal", "Unable to delete user account.");
+  }
+});
+
+/**
+ * Creates or updates the homepage content document.
+ * Only callable by existing admins.
+ */
+export const updateHomepageContent = onCall(callOptions, async (req) => {
+  if (req.auth?.token.admin !== true) {
+    throw new HttpsError(
+      "permission-denied",
+      "Only admins can update homepage content.",
+    );
+  }
+
+  const content = req.data;
+  if (!content) {
+    throw new HttpsError("invalid-argument", "Content data is missing.");
+  }
+
+  try {
+    const contentRef = admin
+      .firestore()
+      .collection("homepage_content")
+      .doc("config");
+    await contentRef.set(
+      { ...content, lastUpdated: admin.firestore.FieldValue.serverTimestamp() },
+      { merge: true },
+    );
+    return { message: "Homepage content updated successfully." };
+  } catch (error) {
+    console.error("Error updating homepage content:", error);
+    throw new HttpsError("internal", "Unable to update homepage content.");
+  }
+});
+
+export const createBikeShopAccount = onCall(callOptions, async (req) => {
+  if (req.auth?.token.admin !== true) {
+    throw new HttpsError(
+      "permission-denied",
+      "Only admins can create shop accounts.",
+    );
+  }
+
+  const shopData = req.data as BikeShopAdminFormValues;
+  const adminId = req.auth.uid;
+
+  if (!shopData || !shopData.email || !shopData.shopName) {
+    throw new HttpsError(
+      "invalid-argument",
+      "Shop name and email are required.",
+    );
+  }
+
+  try {
+    const userRecord = await admin.auth().createUser({
+      email: shopData.email,
+      emailVerified: false,
+      displayName: shopData.shopName,
+    });
+
+    await admin
+      .auth()
+      .setCustomUserClaims(userRecord.uid, { role: "bikeshop" });
+
+    const userProfileData = {
+      email: shopData.email.toLowerCase(),
+      role: "bikeshop",
       isAdmin: false,
       shopName: shopData.shopName,
       country: shopData.country,
@@ -573,50 +874,85 @@ export const createBikeShopAccountByAdmin = async (shopData: BikeShopAdminFormVa
       address: shopData.address,
       postalCode: shopData.postalCode,
       phone: shopData.phone,
-      website: shopData.website || '',
-      mapsLink: shopData.mapsLink || '',
+      website: shopData.website || "",
+      mapsLink: shopData.mapsLink || "",
       contactName: shopData.contactName,
       contactEmail: shopData.contactEmail,
       contactWhatsApp: shopData.contactWhatsApp,
-      firstName: shopData.contactName.split(' ')[0],
-      lastName: shopData.contactName.split(' ').slice(1).join(' '),
+      createdBy: adminId,
     };
-    await updateUserDoc(newUser.uid, userProfileData);
 
-    await createAuditLog(adminId, 'createBikeShop', { shopId: newUser.uid, shopName: shopData.shopName, adminEmail: adminAuth.currentUser?.email });
+    await admin
+      .firestore()
+      .collection("users")
+      .doc(userRecord.uid)
+      .set(userProfileData);
 
-    return { uid: newUser.uid };
+    const passwordResetLink = await admin
+      .auth()
+      .generatePasswordResetLink(shopData.email);
+
+    // Here you would typically use a transactional email service
+    // (e.g., SendGrid, Mailgun) to send a welcome email with the reset link.
+    // For this example, we'll log it.
+    console.log(
+      `Shop account created for ${shopData.email}. ` +
+        `Password reset link: ${passwordResetLink}`,
+    );
+
+    return {
+      uid: userRecord.uid,
+      message:
+        `Shop account for ${shopData.shopName} created. ` +
+        "An email has been sent to set the password.",
+    };
   } catch (error: unknown) {
-    const authError = error as { code?: string, message?: string };
-    if (authError.code === 'auth/email-already-in-use') {
-      throw new Error('Este correo electrónico ya está registrado. Asigna el rol de "Tienda de Bicis" al usuario existente si es necesario, o verifica si ya es una tienda.');
-    }
     console.error("Error creating bike shop account:", error);
-    throw new Error(`No se pudo crear la cuenta de tienda: ${authError.message || 'Error desconocido.'}`);
+    if (
+      typeof error === "object" &&
+      error !== null &&
+      "code" in error &&
+      error.code === "auth/email-already-exists"
+    ) {
+      throw new HttpsError(
+        "already-exists",
+        "This email is already registered.",
+      );
+    }
+    throw new HttpsError("internal", "Could not create shop account.");
   }
-};
+});
 
-export const createNgoAccountByAdmin = async (ngoData: NgoAdminFormValues, adminId: string): Promise<{ uid: string; }> => {
-  const tempPassword = generateTemporaryPassword();
-  const tempAppName = `temp-ngo-creation-${Date.now()}`;
-  const tempApp = initializeApp(app.options, tempAppName);
-  const tempAuth = getAuth(tempApp);
-  const adminAuth = getAuth(app); 
+export const createNgoAccount = onCall(callOptions, async (req) => {
+  if (req.auth?.token.admin !== true) {
+    throw new HttpsError(
+      "permission-denied",
+      "Only admins can create NGO accounts.",
+    );
+  }
+
+  const ngoData = req.data as NgoAdminFormValues;
+  const adminId = req.auth.uid;
+
+  if (!ngoData || !ngoData.email || !ngoData.ngoName) {
+    throw new HttpsError(
+      "invalid-argument",
+      "NGO name and email are required.",
+    );
+  }
 
   try {
-    const userCredential = await createUserWithEmailAndPassword(tempAuth, ngoData.email, tempPassword);
-    const newUser = userCredential.user;
-    
-    try {
-        await sendEmailVerification(newUser);
-        await sendPasswordResetEmail(tempAuth, newUser.email!);
-    } catch (emailError) {
-        console.warn("Could not send email during NGO account creation:", emailError);
-    }
+    const userRecord = await admin.auth().createUser({
+      email: ngoData.email,
+      emailVerified: false,
+      displayName: ngoData.ngoName,
+    });
 
-    const userProfileData: UserProfileData = {
-      email: newUser.email?.toLowerCase(),
-      role: 'ngo',
+    await admin.auth().setCustomUserClaims(userRecord.uid, { role: "ngo" });
+
+    const userProfileData = {
+      email: ngoData.email.toLowerCase(),
+      role: "ngo",
       isAdmin: false,
       ngoName: ngoData.ngoName,
       mission: ngoData.mission,
@@ -625,430 +961,130 @@ export const createNgoAccountByAdmin = async (ngoData: NgoAdminFormValues, admin
       address: ngoData.address,
       postalCode: ngoData.postalCode,
       publicWhatsapp: ngoData.publicWhatsapp,
-      website: ngoData.website || '',
+      website: ngoData.website || "",
       meetingDays: ngoData.meetingDays || [],
-      meetingTime: ngoData.meetingTime || '',
-      meetingPointMapsLink: ngoData.meetingPointMapsLink || '',
+      meetingTime: ngoData.meetingTime || "",
+      meetingPointMapsLink: ngoData.meetingPointMapsLink || "",
       contactName: ngoData.contactName,
       contactWhatsApp: ngoData.contactWhatsApp,
-      firstName: ngoData.contactName.split(' ')[0],
-      lastName: ngoData.contactName.split(' ').slice(1).join(' '),
+      createdBy: adminId,
     };
-    await updateUserDoc(newUser.uid, userProfileData);
 
-    await createAuditLog(adminId, 'createNGO', { ngoId: newUser.uid, ngoName: ngoData.ngoName, adminEmail: adminAuth.currentUser?.email });
+    await admin
+      .firestore()
+      .collection("users")
+      .doc(userRecord.uid)
+      .set(userProfileData);
 
-    return { uid: newUser.uid };
-  } catch (error: unknown) {
-    const authError = error as { code?: string, message?: string };
-    if (authError.code === 'auth/email-already-in-use') {
-      throw new Error('Este correo electrónico ya está registrado. Asigna el rol de "ONG/Colectivo" al usuario existente si es necesario.');
-    }
-    console.error("Error creating NGO account:", error);
-    throw new Error(`No se pudo crear la cuenta de ONG: ${authError.message || 'Error desconocido.'}`);
-  }
-};
+    const passwordResetLink = await admin
+      .auth()
+      .generatePasswordResetLink(ngoData.email);
+    console.log(
+      `NGO account created for ${ngoData.email}. ` +
+        `Password reset link: ${passwordResetLink}`,
+    );
 
-
-export const createCustomerWithTemporaryPassword = async (
-  email: string,
-  customerData: NewCustomerDataForShop,
-  shopIdCreatingThisAccount: string
-): Promise<{ uid: string; temporaryPassword: string }> => {
-  const tempPassword = generateTemporaryPassword();
-  const tempAppName = `temp-customer-creation-${Date.now()}`;
-  const tempApp = initializeApp(app.options, tempAppName);
-  const tempAuth = getAuth(tempApp);
-
-  try {
-    const userCredential = await createUserWithEmailAndPassword(tempAuth, email, tempPassword);
-    const newUser = userCredential.user;
-
-    try {
-        await sendEmailVerification(newUser);
-        await sendPasswordResetEmail(tempAuth, newUser.email!); 
-    } catch (emailError) {
-        console.warn(`Error sending email (verification or password reset) to ${email}:`, emailError);
-    }
-
-    const userProfileData: UserProfileData = {
-      email: newUser.email?.toLowerCase(),
-      firstName: customerData.firstName,
-      lastName: customerData.lastName,
-      whatsappPhone: customerData.whatsappPhone || '',
-      country: customerData.country || '',
-      profileState: customerData.profileState || '',
-      postalCode: customerData.postalCode || '',
-      gender: customerData.gender as UserProfileData['gender'] || '',
-      role: 'cyclist',
-      isAdmin: false,
-      registeredByShopId: shopIdCreatingThisAccount,
-    };
-    await updateUserDoc(newUser.uid, userProfileData);
-
-    return { uid: newUser.uid, temporaryPassword: tempPassword };
-  } catch (error: unknown) {
-    const authError = error as { code?: string, message?: string };
-    if (authError.code === 'auth/email-already-in-use') {
-      throw new Error('Este correo electrónico ya está registrado para un cliente. Considera buscarlo por su correo y registrar la bici para el usuario existente.');
-    }
-    console.error("Error creating customer pre-account:", error);
-    throw new Error(`No se pudo crear la pre-cuenta del cliente: ${authError.message || 'Error desconocido.'}`);
-  }
-};
-
-export const getShopRegisteredBikes = async (shopId: string, searchTerm?: string, limitResults: number = 10): Promise<Bike[]> => {
-  const bikesRef = collection(db, 'bikes');
-  const bikeQueryConstraints: QueryConstraint[] = [
-    where('registeredByShopId', '==', shopId),
-    orderBy('registrationDate', 'desc')
-  ];
-
-  if (!searchTerm) {
-    bikeQueryConstraints.push(limit(limitResults));
-  }
-
-  const bikeQuery = query(bikesRef, ...bikeQueryConstraints);
-  const bikeQuerySnapshot = await getDocs(bikeQuery);
-  let shopBikes = bikeQuerySnapshot.docs.map(docSnap => {
-    try {
-      return bikeFromDoc(docSnap);
-    } catch (e) {
-      console.error(`Error processing bike ${docSnap.id} for shop inventory:`, e);
-      return null;
-    }
-  }).filter((bike): bike is Bike => bike !== null);
-
-  const ownerIds = [...new Set(shopBikes.map(bike => bike.ownerId).filter(id => id !== null && id !== undefined) as string[])];
-  const ownerProfiles: Record<string, UserProfileData> = {};
-
-  if (ownerIds.length > 0) {
-    const MAX_IDS_PER_QUERY = 30; 
-    for (let i = 0; i < ownerIds.length; i += MAX_IDS_PER_QUERY) {
-      const batchOwnerIds = ownerIds.slice(i, i + MAX_IDS_PER_QUERY);
-      if (batchOwnerIds.length > 0) {
-        const usersRef = collection(db, 'users');
-        const ownerDetailsQuery = query(usersRef, where(documentId(), 'in', batchOwnerIds));
-        try {
-          const ownerQuerySnapshot = await getDocs(ownerDetailsQuery);
-          ownerQuerySnapshot.docs.forEach(docSnap => {
-            ownerProfiles[docSnap.id] = docSnap.data() as UserProfileData;
-          });
-        } catch (error: unknown){
-           console.warn(`Could not fetch batch owner details for shop inventory. This might be due to Firestore rules if user is not authenticated. Error: ${error}`);
-        }
-      }
-    }
-  }
-
-  shopBikes = shopBikes.map(bike => {
-    const ownerData = bike.ownerId ? ownerProfiles[bike.ownerId] : null;
     return {
-      ...bike,
-      ownerFirstName: ownerData?.firstName || bike.ownerFirstName, 
-      ownerLastName: ownerData?.lastName || bike.ownerLastName,
-      ownerEmail: ownerData?.email || bike.ownerEmail, 
-      ownerWhatsappPhone: ownerData?.whatsappPhone || bike.ownerWhatsappPhone,
+      uid: userRecord.uid,
+      message:
+        `NGO account for ${ngoData.ngoName} created. ` +
+        "An email has been sent to set the password.",
     };
-  });
-
-  if (searchTerm) {
-    const lowerSearchTerm = searchTerm.toLowerCase().trim();
-    if (lowerSearchTerm) { 
-        shopBikes = shopBikes.filter(bike =>
-            bike.serialNumber.toLowerCase().includes(lowerSearchTerm) ||
-            `${bike.ownerFirstName || ''} ${bike.ownerLastName || ''}`.toLowerCase().includes(lowerSearchTerm) ||
-            (bike.ownerEmail && bike.ownerEmail.toLowerCase().includes(lowerSearchTerm))
-        );
+  } catch (error: unknown) {
+    console.error("Error creating NGO account:", error);
+    if (
+      typeof error === "object" &&
+      error !== null &&
+      "code" in error &&
+      error.code === "auth/email-already-exists"
+    ) {
+      throw new HttpsError(
+        "already-exists",
+        "This email is already registered.",
+      );
     }
+    throw new HttpsError("internal", "Could not create NGO account.");
   }
-  return shopBikes;
-};
+});
 
-export const getShopAnalytics = async (shopId: string, dateRange?: { from?: Date; to?: Date }): Promise<ShopAnalyticsData> => {
-  const usersRef = collection(db, "users");
-  
-  const usersByRegistrationQuery = query(usersRef, where("registeredByShopId", "==", shopId));
-  const usersByReferralQuery = query(usersRef, where("referrerId", "==", shopId));
+export const createOrUpdateRide = onCall(callOptions, async (req) => {
+  if (!req.auth || !req.auth.uid) {
+    throw new HttpsError(
+      "unauthenticated",
+      "You must be logged in to manage rides.",
+    );
+  }
 
-  const [registrationSnapshot, referralSnapshot] = await Promise.all([
-    getDocs(usersByRegistrationQuery),
-    getDocs(usersByReferralQuery),
-  ]);
-
-  const shopUserIds = new Set<string>();
-  registrationSnapshot.forEach(doc => shopUserIds.add(doc.id));
-  referralSnapshot.forEach(doc => shopUserIds.add(doc.id));
-  
-  const results: ShopAnalyticsData = {
-    totalBikesByShop: 0,
-    totalUsersByShop: shopUserIds.size,
-    stolenBikes: 0,
-    transferredBikes: 0,
+  const { rideData, rideId } = req.data as {
+    rideData: BikeRideFormValues;
+    rideId?: string;
   };
 
-  if (shopUserIds.size === 0) {
-    return results;
+  const organizerId = req.auth.uid;
+
+  if (!rideData) {
+    throw new HttpsError("invalid-argument", "Ride data is missing.");
   }
 
-  const bikesRef = collection(db, "bikes");
-  const userIdsArray = Array.from(shopUserIds);
-  const allBikes: Bike[] = [];
-
-  const MAX_IDS_PER_QUERY = 30;
-  for (let i = 0; i < userIdsArray.length; i += MAX_IDS_PER_QUERY) {
-      const batchUserIds = userIdsArray.slice(i, i + MAX_IDS_PER_QUERY);
-      
-      const constraints: QueryConstraint[] = [where('ownerId', 'in', batchUserIds)];
-      if (dateRange?.from) {
-        constraints.push(where('registrationDate', '>=', Timestamp.fromDate(dateRange.from)));
-      }
-      if (dateRange?.to) {
-        const toDate = new Date(dateRange.to);
-        toDate.setHours(23, 59, 59, 999); 
-        constraints.push(where('registrationDate', '<=', Timestamp.fromDate(toDate)));
-      }
-
-      const q = query(bikesRef, ...constraints);
-      const bikeSnapshot = await getDocs(q);
-      
-      bikeSnapshot.forEach(doc => {
-          try {
-              allBikes.push(bikeFromDoc(doc));
-          } catch(e: unknown) {
-              console.warn(`Could not process bike doc ${doc.id} for shop analytics`, e);
-          }
-      });
-  }
-
-  let totalBikesByShop = 0;
-  let stolenCount = 0;
-  let transferredCount = 0;
-  
-  allBikes.forEach(bike => {
-    if (bike.registeredByShopId === shopId) {
-      const regDate = new Date(bike.registrationDate);
-      const fromOk = !dateRange?.from || regDate >= dateRange.from;
-      const toOk = !dateRange?.to || regDate <= dateRange.to;
-      if (fromOk && toOk) {
-        totalBikesByShop++;
-      }
+  try {
+    const organizerDoc = await admin
+      .firestore()
+      .collection("users")
+      .doc(organizerId)
+      .get();
+    if (!organizerDoc.exists) {
+      throw new HttpsError("not-found", "Organizer profile not found.");
     }
-    
-    bike.statusHistory.forEach(historyEntry => {
-        const statusDate = new Date(historyEntry.timestamp);
-        const fromOk = !dateRange?.from || statusDate >= dateRange.from;
-        const toOk = !dateRange?.to || statusDate <= dateRange.to;
-        if (fromOk && toOk) {
-            if (historyEntry.status === 'Robada') {
-                stolenCount++;
-            }
-            if (historyEntry.status === 'Transferida') {
-                transferredCount++;
-            }
-        }
-    });
-  });
+    const organizerProfile = organizerDoc.data();
 
-  results.totalBikesByShop = totalBikesByShop;
-  results.stolenBikes = stolenCount;
-  results.transferredBikes = transferredCount;
-
-  return results;
-};
-
-export const getNgoAnalytics = async (ngoId: string, dateRange?: { from?: Date; to?: Date }): Promise<NgoAnalyticsData> => {
-    const usersRef = collection(db, "users");
-    
-    try {
-        const referredUsersQuery = query(usersRef, where("referrerId", "==", ngoId));
-
-        const referredUsersSnapshot = await getDocs(referredUsersQuery);
-        const referredUserIds = referredUsersSnapshot.docs.map(doc => doc.id);
-
-        const results: NgoAnalyticsData = {
-            totalUsersReferred: referredUserIds.length,
-            totalBikesFromReferrals: 0,
-            stolenBikesFromReferrals: 0,
-            recoveredBikesFromReferrals: 0,
-        };
-
-        if (referredUserIds.length === 0) {
-            return results;
-        }
-
-        const bikesRef = collection(db, "bikes");
-        const allReferredBikes: Bike[] = [];
-
-        const MAX_IDS_PER_QUERY = 30;
-        for (let i = 0; i < referredUserIds.length; i += MAX_IDS_PER_QUERY) {
-            const batchUserIds = referredUserIds.slice(i, i + MAX_IDS_PER_QUERY);
-            
-            const constraints: QueryConstraint[] = [where('ownerId', 'in', batchUserIds)];
-            
-            const q = query(bikesRef, ...constraints);
-            const bikeSnapshot = await getDocs(q);
-            
-            bikeSnapshot.forEach(doc => {
-                try {
-                    allReferredBikes.push(bikeFromDoc(doc));
-                } catch (e: unknown) {
-                    console.warn(`Could not process bike doc ${doc.id} for NGO analytics`, e);
-                }
-            });
-        }
-
-        results.totalBikesFromReferrals = allReferredBikes.length;
-
-        let stolenCount = 0;
-        let recoveredCount = 0;
-
-        allReferredBikes.forEach(bike => {
-            let wasStolen = false;
-            bike.statusHistory.forEach(entry => {
-                const statusDate = new Date(entry.timestamp);
-                const fromOk = !dateRange?.from || statusDate >= dateRange.from;
-                const toOk = !dateRange?.to || statusDate <= dateRange.to;
-
-                if (fromOk && toOk) {
-                    if (entry.status === 'Robada') {
-                        stolenCount++;
-                        wasStolen = true;
-                    }
-                    if (wasStolen && entry.status === 'En Regla') {
-                        recoveredCount++;
-                        wasStolen = false; 
-                    }
-                }
-            });
-        });
-
-        results.stolenBikesFromReferrals = stolenCount;
-        results.recoveredBikesFromReferrals = recoveredCount;
-
-        return results;
-
-    } catch (error: unknown) {
-        const firestoreError = error as FirestoreError;
-        console.error("Raw error in getNgoAnalytics:", error);
-        console.error("Detailed Firestore Error in getNgoAnalytics:", {
-            code: firestoreError.code,
-            message: firestoreError.message,
-            stack: firestoreError.stack,
-        });
-        throw new Error(`No se pudieron cargar las analíticas. Verifica los permisos de la base de datos (Code: ${firestoreError.code || 'unknown'}).`);
-    }
-};
-
-export const getPublicRides = async (): Promise<BikeRide[]> => {
-    const ridesRef = collection(db, 'bikeRides');
-    const q = query(ridesRef, where('rideDate', '>=', Timestamp.now()), orderBy('rideDate', 'asc'));
-    const querySnapshot = await getDocs(q);
-    return querySnapshot.docs.map(doc => bikeRideFromDoc(doc));
-};
-
-export const getOrganizerRides = async (organizerId: string): Promise<BikeRide[]> => {
-    const ridesRef = collection(db, 'bikeRides');
-
-    // Query for new documents with 'organizerId'
-    const q1 = query(ridesRef, where('organizerId', '==', organizerId));
-
-    // Query for older documents that might have used 'ngoId'
-    const q2 = query(ridesRef, where('ngoId', '==', organizerId));
-
-    try {
-        const [snapshot1, snapshot2] = await Promise.all([
-            getDocs(q1),
-            getDocs(q2)
-        ]);
-
-        const ridesMap = new Map<string, BikeRide>();
-
-        // Process first query results
-        snapshot1.docs.forEach(doc => {
-            try {
-                ridesMap.set(doc.id, bikeRideFromDoc(doc));
-            } catch(e: unknown) {
-                console.warn(`Could not process ride doc ${doc.id} from organizerId query`, e);
-            }
-        });
-
-        // Process second query results, avoiding duplicates
-        snapshot2.docs.forEach(doc => {
-            if (!ridesMap.has(doc.id)) {
-                try {
-                    ridesMap.set(doc.id, bikeRideFromDoc(doc));
-                } catch(e: unknown) {
-                    console.warn(`Could not process ride doc ${doc.id} from ngoId query`, e);
-                }
-            }
-        });
-
-        const combinedRides = Array.from(ridesMap.values());
-        
-        // Sort the combined list by date
-        combinedRides.sort((a, b) => new Date(b.rideDate).getTime() - new Date(a.rideDate).getTime());
-
-        return combinedRides;
-
-    } catch (error: unknown) {
-        const firestoreError = error as FirestoreError;
-        console.error("Firestore Error in getOrganizerRides:", {
-            code: firestoreError.code,
-            message: firestoreError.message,
-            stack: firestoreError.stack,
-        });
-        // Re-throw a more user-friendly error or specific error to be caught by the UI
-        throw new Error(`No se pudieron cargar los eventos. Verifica los permisos de la base de datos (Error: ${firestoreError.code}).`);
-    }
-};
-
-export const getRideById = async (rideId: string): Promise<BikeRide | null> => {
-    const rideRef = doc(db, 'bikeRides', rideId);
-    const docSnap = await getDoc(rideRef);
-    if (docSnap.exists()) {
-        return bikeRideFromDoc(docSnap);
-    }
-    return null;
-};
-
-export const createOrUpdateRide = async (
-    rideData: BikeRideFormValues,
-    organizerProfile: UserProfile,
-    rideId?: string,
-): Promise<string> => {
+    // Normalize incoming data before saving
     const dataToSave = {
-        ...rideData,
-        rideDate: Timestamp.fromDate(rideData.rideDate),
-        updatedAt: serverTimestamp(),
+      title: rideData.title,
+      description: rideData.description,
+      rideDate: admin.firestore.Timestamp.fromDate(new Date(rideData.rideDate)),
+      country: rideData.country,
+      state: rideData.state,
+      distance: rideData.distance,
+      level: rideData.level || undefined,
+      meetingPoint: rideData.meetingPoint,
+      meetingPointMapsLink: rideData.meetingPointMapsLink || undefined,
+      modality: rideData.modality || undefined,
+      cost: rideData.cost ?? undefined,
+      organizerId: organizerId,
+      organizerName:
+        organizerProfile?.shopName ||
+        organizerProfile?.ngoName ||
+        "Organizador",
+      organizerLogoUrl: "", // Add logic for logo if needed
+      updatedAt: admin.firestore.FieldValue.serverTimestamp(),
     };
 
-    if (rideId) { 
-        const rideRef = doc(db, 'bikeRides', rideId);
-        const rideSnap = await getDoc(rideRef);
-        if (!rideSnap.exists() || rideSnap.data().organizerId !== organizerProfile.uid) {
-            throw new Error("No tienes permiso para editar este evento.");
-        }
-        await updateDoc(rideRef, dataToSave);
-        return rideId;
-    } else { 
-        const newRide = {
-            ...dataToSave,
-            organizerId: organizerProfile.uid,
-            organizerName: organizerProfile.shopName || organizerProfile.ngoName || 'Organizador',
-            organizerLogoUrl: '',
-            createdAt: serverTimestamp(),
-        };
-        const docRef = await addDoc(collection(db, 'bikeRides'), newRide);
-        return docRef.id;
+    if (rideId) {
+      // Update existing ride
+      const rideRef = admin.firestore().collection("bikeRides").doc(rideId);
+      const rideSnap = await rideRef.get();
+      if (!rideSnap.exists || rideSnap.data()?.organizerId !== organizerId) {
+        throw new HttpsError(
+          "permission-denied",
+          "You do not have permission to edit this ride.",
+        );
+      }
+      await rideRef.update(dataToSave);
+      return { rideId: rideId, message: "Ride updated successfully." };
+    } else {
+      // Create new ride
+      const newRideData = {
+        ...dataToSave,
+        createdAt: admin.firestore.FieldValue.serverTimestamp(),
+      };
+      const newRideRef = await admin
+        .firestore()
+        .collection("bikeRides")
+        .add(newRideData);
+      return { rideId: newRideRef.id, message: "Ride created successfully." };
     }
-};
-
-export const deleteRide = async (rideId: string, currentOrganizerId: string): Promise<void> => {
-    const rideRef = doc(db, 'bikeRides', rideId);
-    const rideSnap = await getDoc(rideRef);
-    if (!rideSnap.exists() || rideSnap.data().organizerId !== currentOrganizerId) {
-        throw new Error("No tienes permiso para eliminar este evento.");
-    }
-    await deleteDoc(rideRef);
-};
+  } catch (error) {
+    console.error("Error creating or updating ride:", error);
+    throw new HttpsError("internal", "Failed to save ride data.");
+  }
+});

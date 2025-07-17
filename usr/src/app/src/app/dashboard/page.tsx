@@ -1,514 +1,1090 @@
+// functions/src/index.ts
+import { onCall, HttpsError } from "firebase-functions/v2/https";
+import * as admin from "firebase-admin";
+import { setGlobalOptions } from "firebase-functions/v2";
+import type {
+  BikeRideFormValues,
+  BikeShopAdminFormValues,
+  NgoAdminFormValues,
+  UserRole,
+} from "./types";
 
-"use client";
+// Initialize Firebase Admin SDK
+admin.initializeApp();
 
-import { useEffect, useState, useCallback } from 'react';
-import Link from 'next/link';
-import { useAuth } from '@/context/AuthContext';
-import { getMyBikes, initiateTransferRequest, getUserTransferRequests, respondToTransferRequest, reportBikeStolen } from '@/lib/db';
-import type { Bike, TransferRequest, ReportTheftDialogData } from '@/lib/types';
-import BikeCard from '@/components/bike/BikeCard';
-import { Button } from '@/components/ui/button';
-import { PlusCircle, Loader2, CheckCircle, XCircle, RefreshCw, Bike as BikeIcon, UserCircle, Share2, MessageSquareText, ClipboardCopy } from 'lucide-react';
-import { useToast } from '@/hooks/use-toast';
-import { useRouter } from 'next/navigation';
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
-import {Tabs, TabsContent, TabsList, TabsTrigger} from "@/components/ui/tabs";
-import { Badge } from '@/components/ui/badge';
-import { formatDistanceToNow } from 'date-fns';
-import { es } from 'date-fns/locale';
-import {
-  AlertDialog,
-  AlertDialogAction,
-  AlertDialogCancel,
-  AlertDialogContent,
-  AlertDialogDescription,
-  AlertDialogFooter,
-  AlertDialogHeader,
-  AlertDialogTitle,
-} from "@/components/ui/alert-dialog";
-import { Dialog, DialogContent as DialogContentCustom, DialogDescription as DialogDescriptionCustom, DialogHeader as DialogHeaderCustom, DialogTitle as DialogTitleCustom, DialogTrigger as DialogTriggerCustom, DialogFooter as DialogFooterCustom } from "@/components/ui/dialog";
-import { Input } from '@/components/ui/input';
-import { Label } from '@/components/ui/label';
-import { APP_NAME } from '@/constants';
-import { getHomepageContent } from '@/lib/homepageContent';
-import { FirebaseError } from 'firebase/app';
+/**  Lista de orígenes que permitirás durante el desarrollo y en prod  */
+const allowedOrigins = [
+  "https://biciregistro.mx",
+  "https://www.biciregistro.mx",
+  "https://bike-guardian-hbbg6.firebaseapp.com",
+  "https://6000-firebase-studio-1749165459191.cluster-joak5ukfbnbyqspg4tewa33d24.cloudworkstations.dev",
+  // cloud workstation → usa un comodín para cualquier sub-dominio
+  /^https:\/\/.*\.cloudworkstations\.dev$/,
+  "http://localhost:3000",
+];
 
+// Set global options for all functions in this file.
+// CORS is now handled per-function via callOptions.
+setGlobalOptions({
+  region: "us-central1",
+  // Bypassing App Check for development. Change to true for production.
+  enforceAppCheck: false,
+});
 
-type TransferAction = 'accepted' | 'rejected' | 'cancelled';
-
-const translateActionForDisplay = (action: TransferAction | null): string => {
-  if (!action) return '';
-  switch (action) {
-    case 'accepted': return 'aceptada';
-    case 'rejected': return 'rechazada';
-    case 'cancelled': return 'cancelada';
-    default: return action;
-  }
+// This object now contains the CORS configuration to be applied to each function.
+const callOptions = {
+  cors: allowedOrigins,
 };
 
-const translateActionForConfirmation = (action: TransferAction | null): string => {
-  if (!action) return '';
-  switch (action) {
-    case 'accepted': return 'aceptar';
-    case 'rejected': return 'rechazar';
-    case 'cancelled': return 'cancelar';
-    default: return action;
+// ───────────────────────────
+//     Cloud Functions
+// ───────────────────────────
+
+/**
+ * Creates a new bike document in Firestore.
+ * This function performs a server-side check for duplicate serial numbers
+ * and sanitizes all incoming data.
+ */
+export const createBike = onCall(callOptions, async (req) => {
+  if (!req.auth) {
+    throw new HttpsError(
+      "unauthenticated",
+      "You must be logged in to create a bike.",
+    );
   }
-}
+  const { bikeData } = req.data;
+  const ownerId = req.auth.uid;
 
-const translateStatusBadge = (status: TransferAction): string => {
-    switch (status) {
-        case 'accepted': return 'Aceptada';
-        case 'rejected': return 'Rechazada';
-        case 'cancelled': return 'Cancelada';
-        default: return status;
-    }
-}
+  // --- Start of Robust Validation ---
+  if (!bikeData) {
+    throw new HttpsError("invalid-argument", "Bike data object is missing.");
+  }
+  const {
+    serialNumber,
+    brand,
+    model,
+    color,
+    description,
+    country,
+    state,
+    bikeType,
+    photoUrls,
+    ownershipDocumentUrl,
+    ownershipDocumentName,
+  } = bikeData;
 
+  if (
+    !serialNumber ||
+    typeof serialNumber !== "string" ||
+    serialNumber.trim() === ""
+  ) {
+    throw new HttpsError(
+      "invalid-argument",
+      "Bike data must include a valid 'serialNumber'.",
+    );
+  }
+  if (!brand || typeof brand !== "string" || brand.trim() === "") {
+    throw new HttpsError(
+      "invalid-argument",
+      "Bike data must include a valid 'brand'.",
+    );
+  }
+  if (!model || typeof model !== "string" || model.trim() === "") {
+    throw new HttpsError(
+      "invalid-argument",
+      "Bike data must include a valid 'model'.",
+    );
+  }
+  // --- End of Robust Validation ---
 
-export default function DashboardPage() {
-  const { user, loading: authLoading } = useAuth();
-  const [bikes, setBikes] = useState<Bike[]>([]);
-  const [transferRequests, setTransferRequests] = useState<TransferRequest[]>([]);
-  const [isLoading, setIsLoading] = useState(true);
-  const { toast } = useToast();
-  const router = useRouter();
+  const bikesRef = admin.firestore().collection("bikes");
+  const serialNumberCheckQuery = bikesRef.where(
+    "serialNumber",
+    "==",
+    serialNumber.trim(),
+  );
 
-  const [referralDialogOpen, setReferralDialogOpen] = useState(false);
-  const [friendPhoneNumber, setFriendPhoneNumber] = useState('');
-  const [referralMessageTemplate, setReferralMessageTemplate] = useState('');
-  const [isFetchingReferralMessage, setIsFetchingReferralMessage] = useState(true);
-
-
-  const fetchData = useCallback(async () => {
-    if (user && !user.isAnonymous) {
-      setIsLoading(true);
-      setIsFetchingReferralMessage(true);
-      try {
-        const [userBikesResult, userRequests, homepageContent] = await Promise.all([
-          getMyBikes(),
-          getUserTransferRequests(user.uid, user.email),
-          getHomepageContent(),
-        ]);
-        setBikes(userBikesResult);
-        setTransferRequests(userRequests);
-
-        if (homepageContent?.referralMessage) {
-          setReferralMessageTemplate(homepageContent.referralMessage);
-        } else {
-          setReferralMessageTemplate(`¡Hola! Te invito a unirte a ${APP_NAME}, una plataforma para registrar tu bicicleta y ayudar a la comunidad ciclista. ¡Es gratis! Regístrate aquí: [APP_LINK]`);
-        }
-
-      } catch (error) {
-        toast({ title: 'Error', description: 'No se pudieron cargar los datos del panel.', variant: 'destructive' });
-        console.error("Error fetching dashboard data:", error);
-      } finally {
-        setIsLoading(false);
-        setIsFetchingReferralMessage(false);
-      }
-    }
-  }, [user, toast]);
-
-  useEffect(() => {
-    if (!authLoading) {
-      if (!user || user.isAnonymous) {
-        router.push('/auth');
-        toast({ title: "Acceso Denegado", description: "Por favor, inicia sesión para ver tu panel.", variant: "destructive" });
-      } else {
-        fetchData();
-      }
-    }
-  }, [user, authLoading, router, fetchData, toast]);
-
-  const handleReportTheft = async (bikeId: string, theftData: ReportTheftDialogData) => {
-    try {
-      await reportBikeStolen(bikeId, theftData);
-      toast({ title: 'Bicicleta Reportada como Robada', description: 'El estado de la bicicleta ha sido actualizado con los nuevos detalles.' });
-      fetchData();
-    } catch (error) {
-      const err = error as FirebaseError;
-      toast({ title: 'Error al Reportar Robo', description: err.message || 'No se pudo reportar la bicicleta como robada.', variant: 'destructive' });
-    }
-  };
-
-  const handleInitiateTransfer = async (
-    bikeId: string,
-    recipientEmail: string,
-    transferDocumentUrl?: string | null,
-    transferDocumentName?: string | null
-  ) => {
-    if (!user) return;
-    try {
-      await initiateTransferRequest(bikeId, user.uid, recipientEmail, transferDocumentUrl, transferDocumentName);
-      toast({ title: 'Transferencia Iniciada', description: `Solicitud enviada a ${recipientEmail}.` });
-      fetchData();
-    } catch (error) {
-      const err = error as FirebaseError;
-      toast({ title: 'Error al Iniciar Transferencia', description: err.message || 'No se pudo iniciar la transferencia.', variant: 'destructive' });
-    }
-  };
-
-  const handleRespondToTransfer = async (requestId: string, action: TransferAction) => {
-    if (!user) return;
-    try {
-        await respondToTransferRequest(requestId, user.uid, action);
-        toast({title: 'Transferencia Respondida', description: `La solicitud ha sido ${translateActionForDisplay(action)}.`});
-        fetchData();
-    } catch (error)
-{
-        const err = error as FirebaseError;
-        toast({title: 'Error al Responder a Transferencia', description: err.message || 'No se pudo responder a la transferencia.', variant: 'destructive'});
-    }
-  };
-
-  const handleSendReferral = () => {
-    if (!user?.uid) return;
-    if (!friendPhoneNumber.trim()) {
-      toast({ title: "Número Requerido", description: "Por favor, ingresa el número de WhatsApp.", variant: "destructive" });
-      return;
+  try {
+    const serialNumberSnapshot = await serialNumberCheckQuery.get();
+    if (!serialNumberSnapshot.empty) {
+      throw new HttpsError(
+        "already-exists",
+        `Ya existe una bicicleta registrada con el número de serie: ${serialNumber}`,
+      );
     }
 
-    const processedPhoneNumber = friendPhoneNumber.trim();
-    let finalPhoneNumberForApi = '';
+    const ownerProfile = await admin
+      .firestore()
+      .collection("users")
+      .doc(ownerId)
+      .get();
 
-    if (processedPhoneNumber.startsWith('+')) {
-        finalPhoneNumberForApi = '+' + processedPhoneNumber.substring(1).replace(/\D/g, '');
-    } else {
-        const digitsOnly = processedPhoneNumber.replace(/\D/g, '');
-        if (digitsOnly.length === 10) { 
-            finalPhoneNumberForApi = `52${digitsOnly}`; 
-        } else {
-            toast({
-                title: "Formato de Número Inválido",
-                description: "Si es un número mexicano, ingresa los 10 dígitos. Para números internacionales, asegúrate de incluir el signo '+' y el código de país.",
-                variant: "destructive",
-                duration: 8000
-            });
-            return;
-        }
+    // Defensive check for user profile. Now it's not a blocking check.
+    const ownerData = ownerProfile.exists ? ownerProfile.data() : null;
+
+    // Defensive check for auth token email.
+    if (!req.auth.token.email) {
+      console.error(
+        `User token for UID: ${ownerId} is missing an email address.`,
+      );
+      throw new HttpsError(
+        "unauthenticated",
+        "Your user token is missing a valid email address.",
+      );
     }
 
-    const numericPartOfFinal = finalPhoneNumberForApi.startsWith('+') ? finalPhoneNumberForApi.substring(1) : finalPhoneNumberForApi;
-    if (!/^\d{10,15}$/.test(numericPartOfFinal)) { 
-         toast({
-            title: "Número Inválido",
-            description: "El número de teléfono no parece tener un formato válido después del procesamiento. Revisa el número e inténtalo de nuevo.",
-            variant: "destructive",
-            duration: 7000
-        });
-        return;
-    }
-    
-    const referralLink = `${window.location.origin}/auth?mode=signup&ref=${user.uid}`;
-    const message = referralMessageTemplate.replace(/\[APP_LINK\]/g, referralLink);
-    const encodedMessage = encodeURIComponent(message);
-    const whatsappUrl = `https://wa.me/${finalPhoneNumberForApi}?text=${encodedMessage}`;
+    // --- Start of Defensive Data Construction ---
+    const dataToSave = {
+      serialNumber: serialNumber.trim(),
+      brand: brand.trim(),
+      model: model.trim(),
+      ownerId: ownerId,
+      ownerFirstName: ownerData?.firstName ?? "",
+      ownerLastName: ownerData?.lastName ?? "",
+      // Fallback to auth token email if not present in the user document
+      ownerEmail: ownerData?.email || req.auth.token.email,
+      ownerWhatsappPhone: ownerData?.whatsappPhone ?? "",
+      status: "En Regla",
+      registrationDate: admin.firestore.FieldValue.serverTimestamp(),
+      statusHistory: [
+        {
+          status: "En Regla",
+          timestamp: admin.firestore.FieldValue.serverTimestamp(),
+          notes: "Registro inicial por ciclista",
+        },
+      ],
+      theftDetails: null,
+      // Optional fields are explicitly checked and defaulted to null/[]
+      color: color ?? null,
+      description: description ?? null,
+      country: country ?? null,
+      state: state ?? null,
+      bikeType: bikeType ?? null,
+      photoUrls: Array.isArray(photoUrls) ? photoUrls : [],
+      ownershipDocumentUrl: ownershipDocumentUrl ?? null,
+      ownershipDocumentName: ownershipDocumentName ?? null,
+    };
+    // --- End of Defensive Data Construction ---
 
-    window.open(whatsappUrl, '_blank');
-    setFriendPhoneNumber('');
-    setReferralDialogOpen(false);
-    toast({ title: "¡Listo!", description: "Se está abriendo WhatsApp para enviar tu invitación." });
-  };
+    const docRef = await bikesRef.add(dataToSave);
 
-  const handleCopyReferralLink = () => {
-    if (!user?.uid) return;
-    const referralLink = `${window.location.origin}/auth?mode=signup&ref=${user.uid}`;
-    navigator.clipboard.writeText(referralLink).then(() => {
-      toast({ title: "¡Enlace copiado!", description: "Tu enlace de referido ha sido copiado al portapapeles." });
-    }).catch(err => {
-      console.error('Error al copiar el enlace:', err);
-      toast({ title: "Error", description: "No se pudo copiar el enlace.", variant: "destructive" });
+    return { bikeId: docRef.id };
+  } catch (error: unknown) {
+    const isHttpsError = error instanceof HttpsError;
+    // Improved logging
+    console.error(`Error in createBike for user ${req.auth?.uid}:`, {
+      errorMessage: error instanceof Error ? error.message : "Unknown error",
+      errorCode: isHttpsError ? (error as HttpsError).code : undefined,
+      bikeData: {
+        // Log the data that caused the issue, but be careful with sensitive info
+        serialNumber: bikeData.serialNumber,
+        brand: bikeData.brand,
+        model: bikeData.model,
+      },
+      fullError: error,
     });
-  };
-
-
-  if (authLoading || isLoading || isFetchingReferralMessage) {
-    return (
-      <div className="flex justify-center items-center min-h-[calc(100vh-200px)]">
-        <Loader2 className="h-12 w-12 animate-spin text-primary" />
-        <p className="ml-4 text-lg">Cargando panel...</p>
-      </div>
-    );
-  }
-
-  if (!user) {
-    return <p>Redirigiendo a inicio de sesión...</p>;
-  }
-
-  const incomingRequests = transferRequests.filter(req => req.toUserEmail.toLowerCase() === user.email?.toLowerCase() && req.status === 'pending');
-  const outgoingRequests = transferRequests.filter(req => req.fromOwnerId === user.uid && req.status === 'pending');
-  const resolvedRequests = transferRequests.filter(req => req.status !== 'pending');
-
-  return (
-    <div className="space-y-8">
-      <div className="flex flex-col gap-4">
-        {/* Text Block */}
-        <div>
-          <h1 className="text-2xl sm:text-3xl md:text-4xl font-headline font-bold">
-            {user?.firstName ? `¡Hola ${user.firstName}!` : 'Tu Panel'}
-          </h1>
-          <p className="text-muted-foreground text-sm sm:text-base">Administra tus bicicletas y solicitudes de transferencia.</p>
-           {user && (typeof user.referralCount === 'number') && (
-            <Badge variant="secondary" className="mt-2 text-sm">
-              Amigos invitados: {user.referralCount}
-            </Badge>
-          )}
-        </div>
-
-        {/* Buttons Block */}
-        <div className="flex justify-start sm:justify-end">
-          <div className="flex flex-col sm:flex-row gap-2 w-full sm:w-auto">
-             <Button variant="outline" onClick={handleCopyReferralLink} className="w-full sm:w-auto">
-              <ClipboardCopy className="mr-2 h-4 w-4" />
-              Obtener mi enlace
-            </Button>
-            <Dialog open={referralDialogOpen} onOpenChange={setReferralDialogOpen}>
-              <DialogTriggerCustom asChild>
-                <Button variant="outline" className="w-full sm:w-auto">
-                  <Share2 className="mr-2 h-5 w-5" />
-                  Invitar Amigos
-                </Button>
-              </DialogTriggerCustom>
-               <DialogContentCustom className="sm:max-w-md">
-                <DialogHeaderCustom>
-                  <DialogTitleCustom>Invitar un Amigo a {APP_NAME}</DialogTitleCustom>
-                  <DialogDescriptionCustom>
-                    Ingresa el número de WhatsApp de tu amigo para enviarle una invitación. El mensaje incluirá tu enlace de referido personal.
-                  </DialogDescriptionCustom>
-                </DialogHeaderCustom>
-                <div className="space-y-4 py-4">
-                  <div className="space-y-2">
-                    <Label htmlFor="friendPhone">Número de WhatsApp</Label>
-                    <Input
-                      id="friendPhone"
-                      value={friendPhoneNumber}
-                      onChange={(e) => setFriendPhoneNumber(e.target.value)}
-                      placeholder="Ej: 5512345678 o +12345678900"
-                    />
-                  </div>
-                  <p className="text-xs text-muted-foreground">
-                    Al hacer clic en &quot;Enviar Invitación&quot;, se abrirá WhatsApp con un mensaje predefinido que incluye tu enlace de referido personal.
-                  </p>
-                </div>
-                <DialogFooterCustom>
-                  <Button variant="outline" onClick={() => setReferralDialogOpen(false)}>Cancelar</Button>
-                  <Button onClick={handleSendReferral}>
-                    <MessageSquareText className="mr-2 h-4 w-4" />
-                    Enviar Invitación
-                  </Button>
-                </DialogFooterCustom>
-              </DialogContentCustom>
-            </Dialog>
-
-            <Link href="/profile/edit" passHref className="w-full sm:w-auto">
-              <Button variant="outline" className="w-full">
-                <UserCircle className="mr-2 h-5 w-5" />
-                Editar Perfil
-              </Button>
-            </Link>
-            <Link href="/register-bike" passHref className="w-full sm:w-auto">
-              <Button className="w-full">
-                <PlusCircle className="mr-2 h-5 w-5" />
-                Registrar Bici
-              </Button>
-            </Link>
-          </div>
-        </div>
-      </div>
-
-      <Tabs defaultValue="bikes" className="w-full">
-        <TabsList className="grid w-full grid-cols-2">
-          <TabsTrigger value="bikes">Mis Bicis ({bikes.length})</TabsTrigger>
-          <TabsTrigger value="transfers">Solicitudes ({incomingRequests.length + outgoingRequests.length})</TabsTrigger>
-        </TabsList>
-        <TabsContent value="bikes" className="mt-6">
-          {bikes.length === 0 ? (
-            <Card className="text-center py-12 shadow-md">
-              <CardHeader>
-                 <BikeIcon className="mx-auto h-16 w-16 text-muted-foreground mb-4" />
-                <CardTitle className="text-xl sm:text-2xl">Aún No Hay Bicis Registradas</CardTitle>
-              </CardHeader>
-              <CardContent>
-                <CardDescription className="mb-6 text-sm sm:text-base">
-                  Comienza agregando tu bicicleta al registro de {APP_NAME}.
-                </CardDescription>
-                <Link href="/register-bike" passHref>
-                  <Button size="lg">
-                    <PlusCircle className="mr-2 h-5 w-5" />
-                    Registra Tu Primera Bici
-                  </Button>
-                </Link>
-              </CardContent>
-            </Card>
-          ) : (
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 sm:gap-6">
-              {bikes.map((bike) => (
-                <BikeCard
-                  key={bike.id}
-                  bike={bike}
-                  onReportTheft={handleReportTheft}
-                  onInitiateTransfer={handleInitiateTransfer}
-                />
-              ))}
-            </div>
-          )}
-        </TabsContent>
-        <TabsContent value="transfers" className="mt-6 space-y-6">
-          <TransferRequestsSection
-            title="Solicitudes Entrantes"
-            requests={incomingRequests}
-            onRespond={handleRespondToTransfer}
-            isRecipient={true}
-          />
-          <TransferRequestsSection
-            title="Solicitudes Salientes"
-            requests={outgoingRequests}
-            onRespond={handleRespondToTransfer}
-            isRecipient={false}
-          />
-           <TransferRequestsSection
-            title="Solicitudes Resueltas"
-            requests={resolvedRequests}
-            isRecipient={false}
-            isResolvedList={true}
-          />
-        </TabsContent>
-      </Tabs>
-    </div>
-  );
-}
-
-interface TransferRequestsSectionProps {
-  title: string;
-  requests: TransferRequest[];
-  onRespond?: (requestId: string, action: TransferAction) => Promise<void>;
-  isRecipient: boolean;
-  isResolvedList?: boolean;
-}
-
-const TransferRequestsSection: React.FC<TransferRequestsSectionProps> = ({ title, requests, onRespond, isRecipient, isResolvedList = false }) => {
-  const [dialogOpen, setDialogOpen] = useState(false);
-  const [currentRequest, setCurrentRequest] = useState<TransferRequest | null>(null);
-  const [currentAction, setCurrentAction] = useState<TransferAction | null>(null);
-  const { user } = useAuth();
-
-  const openConfirmationDialog = (request: TransferRequest, action: TransferAction) => {
-    setCurrentRequest(request);
-    setCurrentAction(action);
-    setDialogOpen(true);
-  };
-
-  const confirmAction = async () => {
-    if (currentRequest && currentAction && onRespond) {
-      await onRespond(currentRequest.id, currentAction);
+    if (isHttpsError) {
+      throw error;
     }
-    setDialogOpen(false);
-    setCurrentRequest(null);
-    setCurrentAction(null);
-  };
+    // Throw with the original error message for better client-side debugging
+    const errorMessage =
+      error instanceof Error
+        ? error.message
+        : "An internal error occurred while creating the bike.";
+    throw new HttpsError("internal", errorMessage);
+  }
+});
 
-  if (requests.length === 0 && !isResolvedList) {
-    return (
-      <Card>
-        <CardHeader>
-          <CardTitle className="text-lg sm:text-xl">{title}</CardTitle>
-        </CardHeader>
-        <CardContent>
-          <p className="text-muted-foreground text-sm sm:text-base">No hay {title.toLowerCase()} por el momento.</p>
-        </CardContent>
-      </Card>
+/**
+ * Fetches all bikes owned by the currently authenticated user.
+ */
+export const getMyBikes = onCall(callOptions, async (req) => {
+  if (!req.auth) {
+    throw new HttpsError(
+      "unauthenticated",
+      "You must be logged in to view your bikes.",
     );
   }
-  if (requests.length === 0 && isResolvedList) {
-     return null;
+  const ownerId = req.auth.uid;
+
+  try {
+    const bikesRef = admin.firestore().collection("bikes");
+    const q = bikesRef.where("ownerId", "==", ownerId);
+    const querySnapshot = await q.get();
+
+    const bikes = querySnapshot.docs.map((doc) => {
+      const data = doc.data();
+      // Convert Firestore Timestamps to ISO strings for the client
+      const statusHistory = (data.statusHistory || []).map(
+        (entry: { timestamp: admin.firestore.Timestamp }) => ({
+          ...entry,
+          timestamp: entry.timestamp?.toDate().toISOString(),
+        }),
+      );
+
+      return {
+        id: doc.id,
+        ...data,
+        registrationDate: data.registrationDate?.toDate().toISOString(),
+        statusHistory: statusHistory,
+      };
+    });
+    return { bikes };
+  } catch (error) {
+    console.error("Error fetching user's bikes:", error);
+    if (error instanceof HttpsError) {
+      throw error;
+    }
+    const errorMessage =
+      error instanceof Error
+        ? error.message
+        : "An unexpected server error while fetching bikes.";
+    throw new HttpsError("internal", errorMessage);
+  }
+});
+
+/**
+ * Fetches a bike's details by its serial number.
+ * Returns full details for the owner, and public details for others.
+ */
+export const getPublicBikeBySerial = onCall(callOptions, async (req) => {
+  const { serialNumber } = req.data;
+  if (!serialNumber || typeof serialNumber !== "string") {
+    throw new HttpsError(
+      "invalid-argument",
+      "Serial number must be a non-empty string.",
+    );
   }
 
-  return (
-    <Card className="shadow-md">
-      <CardHeader>
-        <CardTitle className="text-lg sm:text-xl">{title}</CardTitle>
-      </CardHeader>
-      <CardContent>
-        <ul className="space-y-4">
-          {requests.map(req => (
-            <li key={req.id} className="p-3 sm:p-4 border rounded-lg bg-card flex flex-col sm:flex-row justify-between items-start sm:items-center gap-2 sm:gap-4">
-              <div className="flex-grow">
-                <p className="font-semibold text-sm sm:text-base">
-                  Bicicleta: {req.bikeBrand || 'N/A'} {req.bikeModel || 'N/A'}
-                </p>
-                <p className="text-xs sm:text-sm text-muted-foreground">
-                  N/S: <Link href={`/bike/${req.serialNumber}`} className="text-primary hover:underline">{req.serialNumber}</Link>
-                </p>
-                {isRecipient && !isResolvedList && <p className="text-xs sm:text-sm text-muted-foreground">De: {req.fromOwnerId === user?.uid ? "Tú" : (req.fromOwnerEmail || "Usuario Desconocido")}</p>}
-                {!isRecipient && !isResolvedList && <p className="text-xs sm:text-sm text-muted-foreground">Para: {req.toUserEmail}</p>}
-                {isResolvedList && (
-                  <>
-                     <p className="text-xs sm:text-sm text-muted-foreground">De: {req.fromOwnerId === user?.uid ? "Tú" : (req.fromOwnerEmail || "Usuario Desconocido")}</p>
-                    <p className="text-xs sm:text-sm text-muted-foreground">Para: {req.toUserEmail}</p>
-                  </>
-                )}
-                <p className="text-xs text-muted-foreground">
-                  {isResolvedList ? "Resuelta" : "Solicitada"}: {formatDistanceToNow(new Date(isResolvedList && req.resolutionDate ? req.resolutionDate : req.requestDate), { addSuffix: true, locale: es })}
-                </p>
-                {isResolvedList && req.status !== 'pending' && (
-                  <Badge variant={
-                    req.status === 'accepted' ? 'default' :
-                    req.status === 'rejected' ? 'destructive' :
-                    'secondary'
-                  } className={`mt-1 capitalize text-xs ${req.status === 'accepted' ? 'bg-green-500' : ''}`}>
-                    {translateStatusBadge(req.status as TransferAction)}
-                  </Badge>
-                )}
-              </div>
-              {!isResolvedList && onRespond && (
-                <div className="flex gap-2 mt-2 sm:mt-0 self-end sm:self-center flex-shrink-0 flex-wrap justify-end">
-                  {isRecipient ? (
-                    <>
-                      <Button size="sm" variant="default" onClick={() => openConfirmationDialog(req, 'accepted')} className="bg-green-600 hover:bg-green-700 text-xs sm:text-sm">
-                        <CheckCircle className="mr-1 h-3 w-3 sm:h-4 sm:w-4" /> Aceptar
-                      </Button>
-                      <Button size="sm" variant="destructive" onClick={() => openConfirmationDialog(req, 'rejected')} className="text-xs sm:text-sm">
-                        <XCircle className="mr-1 h-3 w-3 sm:h-4 sm:w-4" /> Rechazar
-                      </Button>
-                    </>
-                  ) : (
-                    <Button size="sm" variant="outline" onClick={() => openConfirmationDialog(req, 'cancelled')} className="text-xs sm:text-sm">
-                       <RefreshCw className="mr-1 h-3 w-3 sm:h-4 sm:w-4" />
-                       <span className="hidden sm:inline">Cancelar Solicitud</span>
-                       <span className="sm:hidden">Cancelar</span>
-                    </Button>
-                  )}
-                </div>
-              )}
-            </li>
-          ))}
-        </ul>
-         <AlertDialog open={dialogOpen} onOpenChange={setDialogOpen}>
-            <AlertDialogContent>
-                <AlertDialogHeader>
-                <AlertDialogTitle>Confirmar Acción</AlertDialogTitle>
-                <AlertDialogDescription>
-                    ¿Estás seguro de que quieres {translateActionForConfirmation(currentAction)} esta solicitud de transferencia para la bici {currentRequest?.bikeBrand} {currentRequest?.bikeModel} (N/S: {currentRequest?.serialNumber})?
-                </AlertDialogDescription>
-                </AlertDialogHeader>
-                <AlertDialogFooter>
-                <AlertDialogCancel>Volver</AlertDialogCancel>
-                <AlertDialogAction onClick={confirmAction} className={
-                    currentAction === 'accepted' ? "bg-green-600 hover:bg-green-700" :
-                    currentAction === 'rejected' ? "bg-destructive hover:bg-destructive/90" :
-                    ""
-                }>
-                    Confirmar {currentAction ? translateActionForConfirmation(currentAction).replace(/^\w/, c => c.toUpperCase()) : ''}
-                </AlertDialogAction>
-                </AlertDialogFooter>
-            </AlertDialogContent>
-        </AlertDialog>
-      </CardContent>
-    </Card>
-  );
-}
+  try {
+    const bikesRef = admin.firestore().collection("bikes");
+    const q = bikesRef.where("serialNumber", "==", serialNumber).limit(1);
+    const querySnapshot = await q.get();
 
-    
+    if (querySnapshot.empty) {
+      return null;
+    }
 
-    
+    const bikeDoc = querySnapshot.docs[0];
+    const bikeData = bikeDoc.data();
+    const isOwner = req.auth?.uid === bikeData.ownerId;
 
+    // Helper to convert Firestore Timestamps to ISO strings safely
+    const toISO = (timestamp: admin.firestore.Timestamp | undefined) => {
+      return timestamp ? timestamp.toDate().toISOString() : undefined;
+    };
+
+    const statusHistory = (bikeData.statusHistory || []).map(
+      (entry: { timestamp: admin.firestore.Timestamp }) => ({
+        ...entry,
+        timestamp: toISO(entry.timestamp),
+      }),
+    );
+
+    const theftDetails = bikeData.theftDetails
+      ? {
+          ...bikeData.theftDetails,
+          reportedAt: toISO(bikeData.theftDetails.reportedAt),
+        }
+      : null;
+
+    // Base public data available to everyone
+    const publicData = {
+      id: bikeDoc.id,
+      serialNumber: bikeData.serialNumber,
+      brand: bikeData.brand,
+      model: bikeData.model,
+      status: bikeData.status,
+      photoUrls: bikeData.photoUrls || [],
+      color: bikeData.color || null,
+      description: bikeData.description || null,
+      country: bikeData.country || null,
+      state: bikeData.state || null,
+      bikeType: bikeData.bikeType || null,
+      ownerFirstName: bikeData.ownerFirstName || "",
+      ownerLastName: bikeData.ownerLastName || "",
+      registrationDate: toISO(bikeData.registrationDate),
+      statusHistory,
+      theftDetails,
+    };
+
+    if (isOwner) {
+      // For the owner, return all data including private fields
+      return {
+        ...publicData,
+        ownerId: bikeData.ownerId,
+        ownershipDocumentUrl: bikeData.ownershipDocumentUrl || null,
+        ownershipDocumentName: bikeData.ownershipDocumentName || null,
+        ownerEmail: bikeData.ownerEmail || "",
+        ownerWhatsappPhone: bikeData.ownerWhatsappPhone || "",
+        registeredByShopId: bikeData.registeredByShopId || null,
+      };
+    } else {
+      // For the public, return only the public data
+      return publicData;
+    }
+  } catch (error) {
+    console.error("Error in getPublicBikeBySerial:", error);
+    if (error instanceof HttpsError) {
+      throw error;
+    }
+    const errorMessage =
+      error instanceof Error
+        ? error.message
+        : "An unexpected server error while fetching bike details.";
+    throw new HttpsError("internal", errorMessage);
+  }
+});
+
+/**
+ * Reports a bike as stolen. Only the owner can call this.
+ * @param {string} bikeId The ID of the bike to report as stolen.
+ * @param {object} theftData Details about the theft incident.
+ */
+export const reportBikeStolen = onCall(callOptions, async (req) => {
+  if (!req.auth) {
+    throw new HttpsError(
+      "unauthenticated",
+      "You must be logged in to report a theft.",
+    );
+  }
+  const { bikeId, theftData } = req.data;
+  const { uid } = req.auth;
+
+  if (
+    !bikeId ||
+    typeof bikeId !== "string" ||
+    !theftData ||
+    typeof theftData !== "object"
+  ) {
+    throw new HttpsError(
+      "invalid-argument",
+      "Valid bikeId and theftData are required.",
+    );
+  }
+
+  const bikeRef = admin.firestore().collection("bikes").doc(bikeId);
+
+  try {
+    const bikeDoc = await bikeRef.get();
+    if (!bikeDoc.exists || bikeDoc.data()?.ownerId !== uid) {
+      throw new HttpsError(
+        "permission-denied",
+        "You do not own this bike or it does not exist.",
+      );
+    }
+
+    const fullTheftDetails = {
+      theftLocationState: theftData.theftLocationState,
+      theftLocationCountry: theftData.theftLocationCountry,
+      theftPerpetratorDetails: theftData.theftPerpetratorDetails || null,
+      theftIncidentDetails: theftData.theftIncidentDetails,
+      reportedAt: admin.firestore.FieldValue.serverTimestamp(),
+    };
+
+    const newStatusEntry = {
+      status: "Robada",
+      timestamp: admin.firestore.FieldValue.serverTimestamp(),
+      notes:
+        theftData.generalNotes ||
+        `Reportada como robada en ${theftData.theftLocationState}, ` +
+          `${theftData.theftLocationCountry}.`,
+    };
+
+    await bikeRef.update({
+      status: "Robada",
+      statusHistory: admin.firestore.FieldValue.arrayUnion(newStatusEntry),
+      theftDetails: fullTheftDetails,
+    });
+    return {
+      success: true,
+      message: "Bike successfully reported as stolen.",
+    };
+  } catch (error) {
+    console.error(`Error in reportBikeStolen for bike ${bikeId}:`, error);
+    if (error instanceof HttpsError) {
+      throw error;
+    }
+    const errorMessage =
+      error instanceof Error
+        ? error.message
+        : "An unexpected server error while reporting the theft.";
+    throw new HttpsError("internal", errorMessage);
+  }
+});
+
+/**
+ * Marks a stolen bike as recovered. Only the owner can call this.
+ * @param {string} bikeId The ID of the bike to mark as recovered.
+ */
+export const markBikeRecovered = onCall(callOptions, async (req) => {
+  if (!req.auth) {
+    throw new HttpsError("unauthenticated", "You must be logged in.");
+  }
+  const { bikeId } = req.data;
+  const { uid } = req.auth;
+
+  if (!bikeId || typeof bikeId !== "string") {
+    throw new HttpsError("invalid-argument", "A valid bikeId is required.");
+  }
+
+  const bikeRef = admin.firestore().collection("bikes").doc(bikeId);
+  try {
+    const bikeDoc = await bikeRef.get();
+    if (!bikeDoc.exists || bikeDoc.data()?.ownerId !== uid) {
+      throw new HttpsError("permission-denied", "You do not own this bike.");
+    }
+    if (bikeDoc.data()?.status !== "Robada") {
+      throw new HttpsError(
+        "failed-precondition",
+        "This bike is not currently reported as stolen.",
+      );
+    }
+
+    const newStatusEntry = {
+      status: "En Regla",
+      timestamp: admin.firestore.FieldValue.serverTimestamp(),
+      notes: "Bicicleta marcada como recuperada por el propietario.",
+    };
+
+    await bikeRef.update({
+      status: "En Regla",
+      statusHistory: admin.firestore.FieldValue.arrayUnion(newStatusEntry),
+      theftDetails: null,
+    });
+    return {
+      success: true,
+      message: "Bike successfully marked as recovered.",
+    };
+  } catch (error) {
+    console.error(`Error in markBikeRecovered for bike ${bikeId}:`, error);
+    if (error instanceof HttpsError) {
+      throw error;
+    }
+    const errorMessage =
+      error instanceof Error
+        ? error.message
+        : "An unexpected server error while marking the bike as recovered.";
+    throw new HttpsError("internal", errorMessage);
+  }
+});
+
+/**
+ * Initiates an ownership transfer request for a bike.
+ */
+export const initiateTransferRequest = onCall(callOptions, async (req) => {
+  if (!req.auth || !req.auth.token.email) {
+    throw new HttpsError(
+      "unauthenticated",
+      "You must be logged in with a verified email.",
+    );
+  }
+  const { bikeId, recipientEmail, transferDocumentUrl, transferDocumentName } =
+    req.data;
+  const { uid } = req.auth;
+  const fromOwnerEmail = req.auth.token.email;
+
+  if (!bikeId || !recipientEmail) {
+    throw new HttpsError(
+      "invalid-argument",
+      "Bike ID and recipient email are required.",
+    );
+  }
+
+  const bikeRef = admin.firestore().collection("bikes").doc(bikeId);
+  try {
+    const bikeDoc = await bikeRef.get();
+    if (!bikeDoc.exists || bikeDoc.data()?.ownerId !== uid) {
+      throw new HttpsError("permission-denied", "You do not own this bike.");
+    }
+    if (bikeDoc.data()?.status !== "En Regla") {
+      throw new HttpsError(
+        "failed-precondition",
+        "Only bikes 'En Regla' can be transferred.",
+      );
+    }
+
+    const requestsRef = admin.firestore().collection("transferRequests");
+    const q = requestsRef
+      .where("bikeId", "==", bikeId)
+      .where("status", "==", "pending");
+    const existingRequests = await q.get();
+    if (!existingRequests.empty) {
+      throw new HttpsError(
+        "already-exists",
+        "A transfer request for this bike is already pending.",
+      );
+    }
+
+    const newRequest = {
+      bikeId,
+      serialNumber: bikeDoc.data()?.serialNumber,
+      bikeBrand: bikeDoc.data()?.brand,
+      bikeModel: bikeDoc.data()?.model,
+      fromOwnerId: uid,
+      fromOwnerEmail,
+      toUserEmail: recipientEmail.toLowerCase(),
+      status: "pending",
+      requestDate: admin.firestore.FieldValue.serverTimestamp(),
+      transferDocumentUrl: transferDocumentUrl || null,
+      transferDocumentName: transferDocumentName || null,
+    };
+
+    await requestsRef.add(newRequest);
+    return { success: true, message: "Transfer request initiated." };
+  } catch (error) {
+    console.error(
+      `Error in initiateTransferRequest for bike ${bikeId}:`,
+      error,
+    );
+    if (error instanceof HttpsError) {
+      throw error;
+    }
+    const errorMessage =
+      error instanceof Error
+        ? error.message
+        : "An unexpected server error while initiating the transfer request.";
+    throw new HttpsError("internal", errorMessage);
+  }
+});
+
+/**
+ * Responds to an ownership transfer request.
+ */
+export const respondToTransferRequest = onCall(callOptions, async (req) => {
+  if (!req.auth || !req.auth.token.email) {
+    throw new HttpsError("unauthenticated", "You must be logged in.");
+  }
+  const { requestId, action } = req.data;
+  const { uid } = req.auth;
+  const respondingUserEmail = req.auth.token.email;
+
+  if (
+    !requestId ||
+    !action ||
+    !["accepted", "rejected", "cancelled"].includes(action)
+  ) {
+    throw new HttpsError(
+      "invalid-argument",
+      "Request ID and a valid action are required.",
+    );
+  }
+
+  const requestRef = admin
+    .firestore()
+    .collection("transferRequests")
+    .doc(requestId);
+
+  try {
+    return await admin.firestore().runTransaction(async (transaction) => {
+      const requestDoc = await transaction.get(requestRef);
+      if (!requestDoc.exists) {
+        throw new HttpsError("not-found", "Transfer request not found.");
+      }
+
+      const requestData = requestDoc.data();
+      if (requestData?.status !== "pending") {
+        throw new HttpsError(
+          "failed-precondition",
+          "This request has already been resolved.",
+        );
+      }
+
+      // Authorization checks
+      if (action === "cancelled") {
+        if (requestData.fromOwnerId !== uid) {
+          throw new HttpsError(
+            "permission-denied",
+            "Only the sender can cancel the request.",
+          );
+        }
+      } else {
+        // "accepted" or "rejected"
+        if (
+          requestData.toUserEmail.toLowerCase() !==
+          respondingUserEmail.toLowerCase()
+        ) {
+          throw new HttpsError(
+            "permission-denied",
+            "Only the recipient can respond to the request.",
+          );
+        }
+      }
+
+      // Perform action
+      transaction.update(requestRef, {
+        status: action,
+        resolutionDate: admin.firestore.FieldValue.serverTimestamp(),
+      });
+
+      if (action === "accepted") {
+        const bikeRef = admin
+          .firestore()
+          .collection("bikes")
+          .doc(requestData.bikeId);
+        const bikeDoc = await transaction.get(bikeRef);
+        if (
+          !bikeDoc.exists ||
+          bikeDoc.data()?.ownerId !== requestData.fromOwnerId
+        ) {
+          throw new HttpsError(
+            "failed-precondition",
+            "Bike ownership has changed or bike does not exist.",
+          );
+        }
+
+        const newOwnerDoc = await admin
+          .firestore()
+          .collection("users")
+          .doc(uid)
+          .get();
+        if (!newOwnerDoc.exists) {
+          throw new HttpsError(
+            "not-found",
+            "The recipient user profile does not exist.",
+          );
+        }
+        const newOwnerProfile = newOwnerDoc.data();
+
+        const transferNote =
+          "Propiedad transferida de " +
+          `${requestData.fromOwnerEmail} a ${requestData.toUserEmail}.`;
+        const historyEntry = {
+          status: "Transferida",
+          timestamp: admin.firestore.FieldValue.serverTimestamp(),
+          notes: transferNote,
+          transferDocumentUrl: requestData.transferDocumentUrl || null,
+          transferDocumentName: requestData.transferDocumentName || null,
+        };
+
+        transaction.update(bikeRef, {
+          ownerId: uid,
+          ownerFirstName: newOwnerProfile?.firstName || "",
+          ownerLastName: newOwnerProfile?.lastName || "",
+          ownerEmail: newOwnerProfile?.email || "",
+          ownerWhatsappPhone: newOwnerProfile?.whatsappPhone || "",
+          status: "En Regla",
+          statusHistory: admin.firestore.FieldValue.arrayUnion(historyEntry),
+        });
+      }
+
+      return {
+        success: true,
+        message: "Request successfully " + action + ".",
+      };
+    });
+  } catch (error) {
+    console.error(
+      `Error in respondToTransferRequest for request ${requestId}:`,
+      error,
+    );
+    if (error instanceof HttpsError) {
+      throw error;
+    }
+    const errorMessage =
+      error instanceof Error ? error.message : "An unexpected server error.";
+    throw new HttpsError("internal", errorMessage);
+  }
+});
+
+export const getUserTransferRequests = onCall(callOptions, async (req) => {
+  if (!req.auth || !req.auth.token.email) {
+    throw new HttpsError("unauthenticated", "You must be logged in.");
+  }
+
+  const uid = req.auth.uid;
+  const email = req.auth.token.email.toLowerCase();
+  const requestsRef = admin.firestore().collection("transferRequests");
+
+  const [sentSnap, receivedSnap] = await Promise.all([
+    requestsRef.where("fromOwnerId", "==", uid).get(),
+    requestsRef.where("toUserEmail", "==", email).get(),
+  ]);
+
+  const docs = [...sentSnap.docs, ...receivedSnap.docs];
+  const unique = new Map(docs.map((d) => [d.id, d]));
+
+  const requests = Array.from(unique.values()).map((d) => ({
+    id: d.id,
+    ...d.data(),
+    requestDate: d.data().requestDate?.toDate().toISOString(),
+    resolutionDate: d.data().resolutionDate?.toDate().toISOString(),
+  }));
+
+  return { requests };
+});
+
+// Admin-specific functions
+// -----------------------------------------------------------------------------
+
+/**
+ * Updates the custom claims for a user to grant/revoke admin privileges.
+ * Only callable by existing admins.
+ */
+export const updateUserRole = onCall(callOptions, async (req) => {
+  // Check if the caller is an admin
+  if (req.auth?.token.admin !== true) {
+    throw new HttpsError(
+      "permission-denied",
+      "Only admins can modify user roles.",
+    );
+  }
+
+  const { uid, role } = req.data as { uid: string; role: UserRole };
+  if (!uid || !role) {
+    throw new HttpsError(
+      "invalid-argument",
+      "The function must be called with a 'uid' and 'role'.",
+    );
+  }
+
+  try {
+    // Set custom claims
+    const isAdmin = role === "admin";
+    await admin.auth().setCustomUserClaims(uid, { admin: isAdmin, role });
+
+    // Update the user's role in their Firestore document
+    const userRef = admin.firestore().collection("users").doc(uid);
+    await userRef.set({ role, isAdmin }, { merge: true });
+
+    return {
+      message: `Success! User ${uid} has been made a(n) ${role}.`,
+    };
+  } catch (error) {
+    console.error("Error setting custom claims:", error);
+    throw new HttpsError("internal", "Unable to update user role.");
+  }
+});
+
+/**
+ * Deletes a user account and all their associated bikes.
+ * Only callable by existing admins.
+ */
+export const deleteUserAccount = onCall(callOptions, async (req) => {
+  if (req.auth?.token.admin !== true) {
+    throw new HttpsError(
+      "permission-denied",
+      "Only admins can delete user accounts.",
+    );
+  }
+
+  const { uid } = req.data as { uid: string };
+  if (!uid) {
+    throw new HttpsError(
+      "invalid-argument",
+      "The function must be called with a 'uid'.",
+    );
+  }
+
+  try {
+    // 1. Delete associated bikes
+    const bikesRef = admin.firestore().collection("bikes");
+    const userBikesQuery = bikesRef.where("ownerId", "==", uid);
+    const bikesSnapshot = await userBikesQuery.get();
+
+    const batch = admin.firestore().batch();
+    bikesSnapshot.docs.forEach((doc) => {
+      batch.delete(doc.ref);
+    });
+    await batch.commit();
+
+    // 2. Delete user's Firestore document
+    const userRef = admin.firestore().collection("users").doc(uid);
+    await userRef.delete();
+
+    // 3. Delete user from Firebase Authentication
+    await admin.auth().deleteUser(uid);
+
+    return { message: `Successfully deleted user ${uid} and their data.` };
+  } catch (error) {
+    console.error(`Error deleting user ${uid}:`, error);
+    throw new HttpsError("internal", "Unable to delete user account.");
+  }
+});
+
+/**
+ * Creates or updates the homepage content document.
+ * Only callable by existing admins.
+ */
+export const updateHomepageContent = onCall(callOptions, async (req) => {
+  if (req.auth?.token.admin !== true) {
+    throw new HttpsError(
+      "permission-denied",
+      "Only admins can update homepage content.",
+    );
+  }
+
+  const content = req.data;
+  if (!content) {
+    throw new HttpsError("invalid-argument", "Content data is missing.");
+  }
+
+  try {
+    const contentRef = admin
+      .firestore()
+      .collection("homepage_content")
+      .doc("config");
+    await contentRef.set(
+      { ...content, lastUpdated: admin.firestore.FieldValue.serverTimestamp() },
+      { merge: true },
+    );
+    return { message: "Homepage content updated successfully." };
+  } catch (error) {
+    console.error("Error updating homepage content:", error);
+    throw new HttpsError("internal", "Unable to update homepage content.");
+  }
+});
+
+export const createBikeShopAccount = onCall(callOptions, async (req) => {
+  if (req.auth?.token.admin !== true) {
+    throw new HttpsError(
+      "permission-denied",
+      "Only admins can create shop accounts.",
+    );
+  }
+
+  const shopData = req.data as BikeShopAdminFormValues;
+  const adminId = req.auth.uid;
+
+  if (!shopData || !shopData.email || !shopData.shopName) {
+    throw new HttpsError(
+      "invalid-argument",
+      "Shop name and email are required.",
+    );
+  }
+
+  try {
+    const userRecord = await admin.auth().createUser({
+      email: shopData.email,
+      emailVerified: false,
+      displayName: shopData.shopName,
+    });
+
+    await admin
+      .auth()
+      .setCustomUserClaims(userRecord.uid, { role: "bikeshop" });
+
+    const userProfileData = {
+      email: shopData.email.toLowerCase(),
+      role: "bikeshop",
+      isAdmin: false,
+      shopName: shopData.shopName,
+      country: shopData.country,
+      profileState: shopData.profileState,
+      address: shopData.address,
+      postalCode: shopData.postalCode,
+      phone: shopData.phone,
+      website: shopData.website || "",
+      mapsLink: shopData.mapsLink || "",
+      contactName: shopData.contactName,
+      contactEmail: shopData.contactEmail,
+      contactWhatsApp: shopData.contactWhatsApp,
+      createdBy: adminId,
+    };
+
+    await admin
+      .firestore()
+      .collection("users")
+      .doc(userRecord.uid)
+      .set(userProfileData);
+
+    const passwordResetLink = await admin
+      .auth()
+      .generatePasswordResetLink(shopData.email);
+
+    // Here you would typically use a transactional email service
+    // (e.g., SendGrid, Mailgun) to send a welcome email with the reset link.
+    // For this example, we'll log it.
+    console.log(
+      `Shop account created for ${shopData.email}. ` +
+        `Password reset link: ${passwordResetLink}`,
+    );
+
+    return {
+      uid: userRecord.uid,
+      message:
+        `Shop account for ${shopData.shopName} created. ` +
+        "An email has been sent to set the password.",
+    };
+  } catch (error: unknown) {
+    console.error("Error creating bike shop account:", error);
+    if (
+      typeof error === "object" &&
+      error !== null &&
+      "code" in error &&
+      error.code === "auth/email-already-exists"
+    ) {
+      throw new HttpsError(
+        "already-exists",
+        "This email is already registered.",
+      );
+    }
+    throw new HttpsError("internal", "Could not create shop account.");
+  }
+});
+
+export const createNgoAccount = onCall(callOptions, async (req) => {
+  if (req.auth?.token.admin !== true) {
+    throw new HttpsError(
+      "permission-denied",
+      "Only admins can create NGO accounts.",
+    );
+  }
+
+  const ngoData = req.data as NgoAdminFormValues;
+  const adminId = req.auth.uid;
+
+  if (!ngoData || !ngoData.email || !ngoData.ngoName) {
+    throw new HttpsError(
+      "invalid-argument",
+      "NGO name and email are required.",
+    );
+  }
+
+  try {
+    const userRecord = await admin.auth().createUser({
+      email: ngoData.email,
+      emailVerified: false,
+      displayName: ngoData.ngoName,
+    });
+
+    await admin.auth().setCustomUserClaims(userRecord.uid, { role: "ngo" });
+
+    const userProfileData = {
+      email: ngoData.email.toLowerCase(),
+      role: "ngo",
+      isAdmin: false,
+      ngoName: ngoData.ngoName,
+      mission: ngoData.mission,
+      country: ngoData.country,
+      profileState: ngoData.profileState,
+      address: ngoData.address,
+      postalCode: ngoData.postalCode,
+      publicWhatsapp: ngoData.publicWhatsapp,
+      website: ngoData.website || "",
+      meetingDays: ngoData.meetingDays || [],
+      meetingTime: ngoData.meetingTime || "",
+      meetingPointMapsLink: ngoData.meetingPointMapsLink || "",
+      contactName: ngoData.contactName,
+      contactWhatsApp: ngoData.contactWhatsApp,
+      createdBy: adminId,
+    };
+
+    await admin
+      .firestore()
+      .collection("users")
+      .doc(userRecord.uid)
+      .set(userProfileData);
+
+    const passwordResetLink = await admin
+      .auth()
+      .generatePasswordResetLink(ngoData.email);
+    console.log(
+      `NGO account created for ${ngoData.email}. ` +
+        `Password reset link: ${passwordResetLink}`,
+    );
+
+    return {
+      uid: userRecord.uid,
+      message:
+        `NGO account for ${ngoData.ngoName} created. ` +
+        "An email has been sent to set the password.",
+    };
+  } catch (error: unknown) {
+    console.error("Error creating NGO account:", error);
+    if (
+      typeof error === "object" &&
+      error !== null &&
+      "code" in error &&
+      error.code === "auth/email-already-exists"
+    ) {
+      throw new HttpsError(
+        "already-exists",
+        "This email is already registered.",
+      );
+    }
+    throw new HttpsError("internal", "Could not create NGO account.");
+  }
+});
+
+export const createOrUpdateRide = onCall(callOptions, async (req) => {
+  if (!req.auth || !req.auth.uid) {
+    throw new HttpsError(
+      "unauthenticated",
+      "You must be logged in to manage rides.",
+    );
+  }
+
+  const { rideData, rideId } = req.data as {
+    rideData: BikeRideFormValues;
+    rideId?: string;
+  };
+
+  const organizerId = req.auth.uid;
+
+  if (!rideData) {
+    throw new HttpsError("invalid-argument", "Ride data is missing.");
+  }
+
+  try {
+    const organizerDoc = await admin
+      .firestore()
+      .collection("users")
+      .doc(organizerId)
+      .get();
+    if (!organizerDoc.exists) {
+      throw new HttpsError("not-found", "Organizer profile not found.");
+    }
+    const organizerProfile = organizerDoc.data();
+
+    // Normalize incoming data before saving
+    const dataToSave = {
+      title: rideData.title,
+      description: rideData.description,
+      rideDate: admin.firestore.Timestamp.fromDate(new Date(rideData.rideDate)),
+      country: rideData.country,
+      state: rideData.state,
+      distance: rideData.distance,
+      level: rideData.level || undefined,
+      meetingPoint: rideData.meetingPoint,
+      meetingPointMapsLink: rideData.meetingPointMapsLink || undefined,
+      modality: rideData.modality || undefined,
+      cost: rideData.cost ?? undefined,
+      organizerId: organizerId,
+      organizerName:
+        organizerProfile?.shopName ||
+        organizerProfile?.ngoName ||
+        "Organizador",
+      organizerLogoUrl: "", // Add logic for logo if needed
+      updatedAt: admin.firestore.FieldValue.serverTimestamp(),
+    };
+
+    if (rideId) {
+      // Update existing ride
+      const rideRef = admin.firestore().collection("bikeRides").doc(rideId);
+      const rideSnap = await rideRef.get();
+      if (!rideSnap.exists || rideSnap.data()?.organizerId !== organizerId) {
+        throw new HttpsError(
+          "permission-denied",
+          "You do not have permission to edit this ride.",
+        );
+      }
+      await rideRef.update(dataToSave);
+      return { rideId: rideId, message: "Ride updated successfully." };
+    } else {
+      // Create new ride
+      const newRideData = {
+        ...dataToSave,
+        createdAt: admin.firestore.FieldValue.serverTimestamp(),
+      };
+      const newRideRef = await admin
+        .firestore()
+        .collection("bikeRides")
+        .add(newRideData);
+      return { rideId: newRideRef.id, message: "Ride created successfully." };
+    }
+  } catch (error) {
+    console.error("Error creating or updating ride:", error);
+    throw new HttpsError("internal", "Failed to save ride data.");
+  }
+});
