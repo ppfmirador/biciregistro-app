@@ -29,7 +29,7 @@ import { cn } from "@/lib/utils";
 import { getAllUsersForAdmin, createBikeShopAccountByAdmin, getAllBikeShops, updateUserDoc, createNgoAccountByAdmin, getAllNgos } from '@/lib/db';
 import { useAuth } from '@/context/AuthContext';
 import { useRouter } from 'next/navigation';
-import { getFunctions, httpsCallable, type FunctionsError } from 'firebase/functions';
+import { getFunctions, httpsCallable, type FunctionsError, type HttpsCallable } from 'firebase/functions';
 import { app } from '@/lib/firebase';
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { BikeShopForm } from '@/components/admin/BikeShopForm';
