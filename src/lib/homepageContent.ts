@@ -1,19 +1,22 @@
 
 
-import { db } from './firebase'; 
-import { collection, getDoc, doc } from 'firebase/firestore';
-import type { HomepageContent, SponsorConfig } from './types';
-import type { DocumentSnapshot, Timestamp } from 'firebase/firestore';
+import { adminDb } from './firebase-admin-config'; // Use the admin SDK for server-side fetching
+import { Timestamp, type DocumentSnapshot } from 'firebase-admin/firestore'; // Use admin types
+import type { HomepageContent } from './types';
 import { APP_NAME } from '@/constants';
 
 const CONTENT_COLLECTION = 'homepage_content';
 const CONTENT_DOC_ID = 'config';
 
 const homepageContentFromDoc = (docSnap: DocumentSnapshot): HomepageContent => {
-  if (!docSnap.exists()) {
+  if (!docSnap.exists) {
     throw new Error(`Document data not found for ${docSnap.id}`);
   }
   const data = docSnap.data();
+  if (!data) {
+    throw new Error(`Document data not found for ${docSnap.id}`);
+  }
+  
   return {
     id: docSnap.id,
     welcomeTitle: data.welcomeTitle,
@@ -29,17 +32,19 @@ const homepageContentFromDoc = (docSnap: DocumentSnapshot): HomepageContent => {
     communityDescription: data.communityDescription,
     communityImageUrl: data.communityImageUrl,
     sponsors: data.sponsors || [], 
+    referralMessage: data.referralMessage,
+    ngoReferralMessageTemplate: data.ngoReferralMessageTemplate,
     lastUpdated: data.lastUpdated instanceof Timestamp ? data.lastUpdated.toDate().toISOString() : data.lastUpdated,
   } as HomepageContent;
 };
 
-// This function can now be called from both client and server components.
+// This function is now correctly using the Admin SDK for server-side execution.
 export const getHomepageContent = async (): Promise<HomepageContent | null> => {
-  const contentRef = doc(db, CONTENT_COLLECTION, CONTENT_DOC_ID);
+  const contentRef = adminDb.collection(CONTENT_COLLECTION).doc(CONTENT_DOC_ID);
   
   try {
-    const docSnap = await getDoc(contentRef);
-    if (docSnap.exists()) {
+    const docSnap = await contentRef.get();
+    if (docSnap.exists) {
       return homepageContentFromDoc(docSnap);
     }
     console.log("Homepage content document does not exist.");

@@ -1,3 +1,4 @@
+
 // No "use client" here
 import type { Metadata } from 'next';
 import { getHomepageContent } from '@/lib/homepageContent';

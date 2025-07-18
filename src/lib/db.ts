@@ -34,7 +34,7 @@ import type {
 import type { UserProfileData, UserProfile, UserRole } from '@/lib/types';
 import type { BikeShopAdminFormValues, NgoAdminFormValues, BikeRideFormValues } from './schemas';
 import { BIKE_STATUSES, OTHER_BRAND_VALUE } from '@/constants';
-import { initializeApp } from 'firebase/app';
+import { initializeApp, deleteApp } from 'firebase/app';
 import { getAuth, createUserWithEmailAndPassword, sendEmailVerification, sendPasswordResetEmail } from 'firebase/auth';
 
 
@@ -53,6 +53,9 @@ const safeToISOString = (dateInput: unknown, fieldNameForLogging: string): strin
 };
 
 const bikeFromDoc = (docSnap: DocumentSnapshot): Bike => {
+  if (!docSnap.exists()) {
+    throw new Error(`Document data not found for document ${docSnap.id}`);
+  }
   const data = docSnap.data();
   if (!data) {
     throw new Error(`No data found for document ${docSnap.id}`);
@@ -95,6 +98,9 @@ const bikeFromDoc = (docSnap: DocumentSnapshot): Bike => {
 };
 
 const bikeRideFromDoc = (docSnap: DocumentSnapshot): BikeRide => {
+    if (!docSnap.exists()) {
+        throw new Error(`No data found for document ${docSnap.id}`);
+    }
     const data = docSnap.data();
     if (!data) {
         throw new Error(`No data found for document ${docSnap.id}`);
@@ -121,6 +127,9 @@ const bikeRideFromDoc = (docSnap: DocumentSnapshot): BikeRide => {
 };
 
 const userProfileFromDoc = (docSnap: DocumentSnapshot): UserProfile => {
+    if (!docSnap.exists()) {
+        throw new Error(`Document data not found for document ${docSnap.id}`);
+    }
     const data = docSnap.data();
     if (!data) {
         throw new Error(`No data found for document ${docSnap.id}`);
@@ -156,11 +165,16 @@ const userProfileFromDoc = (docSnap: DocumentSnapshot): UserProfile => {
         contactName: data.contactName,
         contactEmail: data.contactEmail,
         contactWhatsApp: data.contactWhatsApp,
+        // Shared field for Shops & NGOs
+        whatsappGroupLink: data.whatsappGroupLink || null,
     } as UserProfile;
 };
 
 
 const transferRequestFromDoc = (docSnap: DocumentSnapshot): TransferRequest => {
+  if (!docSnap.exists()) {
+      throw new Error(`No data found for document ${docSnap.id}`);
+  }
   const data = docSnap.data();
   if (!data) {
       throw new Error(`No data found for document ${docSnap.id}`);
@@ -272,7 +286,7 @@ export const addBikeToFirestore = async (
   
   const finalBrand = bikeData.brand === OTHER_BRAND_VALUE ? bikeData.otherBrand || '' : bikeData.brand;
 
-  const dataToSave = {
+  const dataToSave: { [key: string]: any } = {
       serialNumber: bikeData.serialNumber.trim(),
       brand: finalBrand,
       model: bikeData.model.trim(),
@@ -601,9 +615,15 @@ export const createBikeShopAccountByAdmin = async (shopData: BikeShopAdminFormVa
     await updateUserDoc(newUser.uid, userProfileData);
 
     await createAuditLog(adminId, 'createBikeShop', { shopId: newUser.uid, shopName: shopData.shopName, adminEmail: adminAuth.currentUser?.email });
-
+    
+    // Clean up temporary Firebase app instance
+    await deleteApp(tempApp);
+    
     return { uid: newUser.uid };
   } catch (error: unknown) {
+    // Clean up temporary Firebase app instance in case of error
+    await deleteApp(tempApp);
+    
     const authError = error as { code?: string, message?: string };
     if (authError.code === 'auth/email-already-in-use') {
       throw new Error('Este correo electrónico ya está registrado. Asigna el rol de "Tienda de Bicis" al usuario existente si es necesario, o verifica si ya es una tienda.');
@@ -654,9 +674,13 @@ export const createNgoAccountByAdmin = async (ngoData: NgoAdminFormValues, admin
     await updateUserDoc(newUser.uid, userProfileData);
 
     await createAuditLog(adminId, 'createNGO', { ngoId: newUser.uid, ngoName: ngoData.ngoName, adminEmail: adminAuth.currentUser?.email });
+    
+    await deleteApp(tempApp);
 
     return { uid: newUser.uid };
   } catch (error: unknown) {
+    await deleteApp(tempApp);
+    
     const authError = error as { code?: string, message?: string };
     if (authError.code === 'auth/email-already-in-use') {
       throw new Error('Este correo electrónico ya está registrado. Asigna el rol de "ONG/Colectivo" al usuario existente si es necesario.');
@@ -703,8 +727,11 @@ export const createCustomerWithTemporaryPassword = async (
     };
     await updateUserDoc(newUser.uid, userProfileData);
 
+    await deleteApp(tempApp);
     return { uid: newUser.uid, temporaryPassword: tempPassword };
   } catch (error: unknown) {
+    await deleteApp(tempApp);
+
     const authError = error as { code?: string, message?: string };
     if (authError.code === 'auth/email-already-in-use') {
       throw new Error('Este correo electrónico ya está registrado para un cliente. Considera buscarlo por su correo y registrar la bici para el usuario existente.');
@@ -1041,7 +1068,7 @@ export const createOrUpdateRide = async (
     organizerProfile: UserProfile,
     rideId?: string,
 ): Promise<string> => {
-    const dataToSave = {
+    const dataToSave: { [key: string]: any } = {
         ...rideData,
         rideDate: Timestamp.fromDate(rideData.rideDate),
         updatedAt: serverTimestamp(),
@@ -1078,3 +1105,4 @@ export const deleteRide = async (rideId: string, currentOrganizerId: string): Pr
 };
 
     
+
