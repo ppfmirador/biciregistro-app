@@ -1,23 +1,31 @@
-
-
-import { getFunctions, httpsCallable } from 'firebase/functions';
-import { app } from './firebase'; // Use the client SDK firebase instance
+import 'server-only'; // Mark this module as server-only
+import { adminDb } from './firebase-admin-config';
 import type { HomepageContent } from './types';
+import type { Timestamp } from 'firebase-admin/firestore';
 
-
-// This function now uses a callable Cloud Function to securely fetch data.
+/**
+ * Fetches homepage content directly from Firestore using the Admin SDK.
+ * This function is intended for use in Server Components.
+ */
 export const getHomepageContent = async (): Promise<HomepageContent | null> => {
-    // Note: 'us-central1' is often the default, but ensure it matches your function deployment region.
-    const functions = getFunctions(app, 'us-central1');
-    const getHomepageContentCallable = httpsCallable<void, HomepageContent>(functions, 'getHomepageContent');
-
     try {
-        const result = await getHomepageContentCallable();
-        return result.data;
-    } catch(error) {
-        console.error("Error calling getHomepageContent function:", error);
-        // You might want to return null or throw a more specific error
-        // for the UI to handle, e.g., showing a "Could not load content" message.
+        const contentRef = adminDb.collection('homepage_content').doc('config');
+        const docSnap = await contentRef.get();
+
+        if (docSnap.exists) {
+            const data = docSnap.data();
+            if (data) {
+                // Ensure timestamps are converted to ISO strings for JSON serialization
+                if (data.lastUpdated && data.lastUpdated instanceof admin.firestore.Timestamp) {
+                    data.lastUpdated = (data.lastUpdated as Timestamp).toDate().toISOString();
+                }
+                return data as HomepageContent;
+            }
+        }
+        return null; // Document does not exist
+    } catch (error) {
+        console.error("Error fetching homepage content via Admin SDK:", error);
+        // In a real-world scenario, you might want to log this error to a monitoring service.
         return null;
     }
 };

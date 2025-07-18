@@ -21,12 +21,13 @@ import {
   documentId,
   runTransaction,
   increment,
+  type QuerySnapshot,
   type QueryConstraint,
   type FirestoreError,
   type DocumentData,
   type DocumentSnapshot,
 } from 'firebase/firestore';
-import { getFunctions, httpsCallable } from 'firebase/functions';
+import { getFunctions, httpsCallable, type HttpsCallableResult } from 'firebase/functions';
 import type {
   Bike, BikeStatus, BikeType, TransferRequest, ReportTheftDialogData,
   NewCustomerDataForShop, ShopAnalyticsData, NgoAnalyticsData, BikeRide
@@ -286,7 +287,7 @@ export const addBikeToFirestore = async (
   
   const finalBrand = bikeData.brand === OTHER_BRAND_VALUE ? bikeData.otherBrand || '' : bikeData.brand;
 
-  const dataToSave: { [key: string]: any } = {
+  const dataToSave: { [key: string]: unknown } = {
       serialNumber: bikeData.serialNumber.trim(),
       brand: finalBrand,
       model: bikeData.model.trim(),
@@ -463,7 +464,7 @@ export const getUserProfileByEmail = async (email: string): Promise<UserProfile 
 
 export const updateUserDoc = async (uid: string, data: Partial<UserProfileData>): Promise<void> => {
   const userRef = doc(db, 'users', uid);
-  const updateData: { [key: string]: any } = { ...data };
+  const updateData: Partial<UserProfileData> = { ...data };
 
   const currentUserDoc = await getUserDoc(uid);
 
@@ -473,6 +474,7 @@ export const updateUserDoc = async (uid: string, data: Partial<UserProfileData>)
     updateData.email = (updateData.email as string).toLowerCase();
   }
 
+  // Remove empty string fields to avoid overwriting with empty values
   for (const key in updateData) {
     if (updateData[key as keyof typeof updateData] === '') {
       delete updateData[key as keyof typeof updateData];
@@ -531,22 +533,22 @@ export const incrementReferralCount = async (referrerId: string): Promise<void> 
 
 export const getAllUsersForAdmin = async (): Promise<(UserProfileData & {id: string})[]> => {
   const usersRef = collection(db, 'users');
-  const querySnapshot = await getDocs(usersRef);
-  return querySnapshot.docs.map(docSnap => ({ id: docSnap.id, ...docSnap.data() } as UserProfileData & {id: string}));
+  const querySnapshot: QuerySnapshot<UserProfileData> = await getDocs(usersRef);
+  return querySnapshot.docs.map(docSnap => ({ id: docSnap.id, ...docSnap.data() }));
 };
 
 export const getAllBikeShops = async (): Promise<(UserProfileData & {id: string})[]> => {
     const usersRef = collection(db, 'users');
     const q = query(usersRef, where('role', '==', 'bikeshop'));
-    const querySnapshot = await getDocs(q);
-    return querySnapshot.docs.map(docSnap => ({ id: docSnap.id, ...docSnap.data() } as UserProfileData & {id: string}));
+    const querySnapshot: QuerySnapshot<UserProfileData> = await getDocs(q);
+    return querySnapshot.docs.map(docSnap => ({ id: docSnap.id, ...docSnap.data() }));
 };
 
 export const getAllNgos = async (): Promise<(UserProfileData & {id: string})[]> => {
     const usersRef = collection(db, 'users');
     const q = query(usersRef, where('role', '==', 'ngo'));
-    const querySnapshot = await getDocs(q);
-    return querySnapshot.docs.map(docSnap => ({ id: docSnap.id, ...docSnap.data() } as UserProfileData & {id: string}));
+    const querySnapshot: QuerySnapshot<UserProfileData> = await getDocs(q);
+    return querySnapshot.docs.map(docSnap => ({ id: docSnap.id, ...docSnap.data() }));
 };
 
 
@@ -775,9 +777,9 @@ export const getShopRegisteredBikes = async (shopId: string, searchTerm?: string
         const usersRef = collection(db, 'users');
         const ownerDetailsQuery = query(usersRef, where(documentId(), 'in', batchOwnerIds));
         try {
-          const ownerQuerySnapshot = await getDocs(ownerDetailsQuery);
+          const ownerQuerySnapshot: QuerySnapshot<UserProfileData> = await getDocs(ownerDetailsQuery);
           ownerQuerySnapshot.docs.forEach(docSnap => {
-            ownerProfiles[docSnap.id] = docSnap.data() as UserProfileData;
+            ownerProfiles[docSnap.id] = docSnap.data();
           });
         } catch (error: unknown){
            console.warn(`Could not fetch batch owner details for shop inventory. This might be due to Firestore rules if user is not authenticated. Error: ${error}`);
