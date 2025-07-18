@@ -837,6 +837,25 @@ export const updateHomepageContent = onCall(callOptions, async (req) => {
   }
 });
 
+export const getHomepageContent = onCall(callOptions, async () => {
+  try {
+    const contentRef = admin.firestore().collection('homepage_content').doc('config');
+    const docSnap = await contentRef.get();
+    if (docSnap.exists) {
+      const data = docSnap.data();
+      // Ensure timestamps are converted to ISO strings for JSON serialization
+      if (data && data.lastUpdated instanceof admin.firestore.Timestamp) {
+        data.lastUpdated = data.lastUpdated.toDate().toISOString();
+      }
+      return data;
+    }
+    return null;
+  } catch (error) {
+    console.error("Error fetching homepage content in Cloud Function:", error);
+    throw new HttpsError("internal", "Could not fetch homepage content.");
+  }
+});
+
 export const createBikeShopAccount = onCall(callOptions, async (req) => {
   if (req.auth?.token.admin !== true) {
     throw new HttpsError(
