@@ -1,27 +1,40 @@
 'use server';
-// src/lib/firebase-admin-config.ts
+
 import * as admin from 'firebase-admin';
 
-// This function safely initializes the Firebase Admin SDK.
-// It checks if an app is already initialized to prevent errors on hot-reloads in development.
-function initializeAdminApp(): admin.app.App {
+let adminDb: admin.firestore.Firestore | null = null;
+
+// This function safely initializes the Firebase Admin SDK and returns the Firestore instance.
+// It uses a singleton pattern to ensure it only initializes once.
+export async function getAdminDb(): Promise<admin.firestore.Firestore | null> {
+  if (adminDb) {
+    return adminDb;
+  }
+
   if (admin.apps.length > 0) {
-    return admin.app();
+    adminDb = admin.firestore();
+    return adminDb;
   }
 
   const serviceAccountKey = process.env.FIREBASE_SERVICE_ACCOUNT_KEY;
   if (!serviceAccountKey) {
-    throw new Error('Firebase service account key not found in environment variables. Set FIREBASE_SERVICE_ACCOUNT_KEY.');
+    console.warn('Firebase service account key not found in environment variables. Server-side data fetching will be disabled. Set FIREBASE_SERVICE_ACCOUNT_KEY.');
+    return null;
   }
 
-  const serviceAccount = JSON.parse(serviceAccountKey);
+  try {
+    const serviceAccountJson = serviceAccountKey.replace(/\\n/g, '\n');
+    const serviceAccount = JSON.parse(serviceAccountJson);
+    
+    admin.initializeApp({
+      credential: admin.credential.cert(serviceAccount),
+    });
 
-  return admin.initializeApp({
-    credential: admin.credential.cert(serviceAccount),
-    // Add other config like databaseURL if needed
-  });
+    adminDb = admin.firestore();
+    return adminDb;
+
+  } catch (error) {
+    console.error("Error initializing Firebase Admin SDK. Make sure FIREBASE_SERVICE_ACCOUNT_KEY is a valid JSON.", error);
+    return null;
+  }
 }
-
-// Export a single initialized instance of the admin app.
-export const adminApp = initializeAdminApp();
-export const adminDb = admin.firestore();
