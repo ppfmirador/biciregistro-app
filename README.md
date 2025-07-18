@@ -173,7 +173,12 @@ The application will be available at `http://localhost:3000`.
 | `NEXT_PUBLIC_FIREBASE_MESSAGING_SENDER_ID`  | Firebase project messaging sender ID.                                                                                                                                   | `1234567890`                          |
 | `NEXT_PUBLIC_FIREBASE_APP_ID`               | Firebase project app ID.                                                                                                                                                | `1:12345...`                          |
 | `NEXT_PUBLIC_FIREBASE_APPCHECK_DEBUG_TOKEN` | **Optional.** The debug token for [Firebase App Check](https://firebase.google.com/docs/app-check/web/debug-provider) to allow local testing. Found in the browser console on first run. | `a-long-uuid-string...`               |
+| `FIREBASE_SERVICE_ACCOUNT_KEY` | JSON string for the Firebase service account key used by server-side code. | `{"type":"service_account",...}` |
 
+Example:
+```bash
+FIREBASE_SERVICE_ACCOUNT_KEY='{...}'
+```
 ## Testing
 
 This project uses [Playwright](https://playwright.dev/) for end-to-end (E2E) testing.
