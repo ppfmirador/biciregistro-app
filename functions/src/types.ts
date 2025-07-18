@@ -1,3 +1,4 @@
+
 // types.ts for Cloud Functions
 // These types are copied from the main application's type definitions
 // to make them available to the Cloud Functions environment.
@@ -11,7 +12,7 @@ import type {
 } from "./schemas";
 
 // Basic types
-export type BikeStatus = "En Regla" | "Robada" | "Transferida";
+export type BikeStatus = 'En Regla' | 'Robada' | 'Transferida';
 export type UserRole = "cyclist" | "bikeshop" | "admin" | "ngo";
 
 export type BikeType =
@@ -28,6 +29,14 @@ export type BikeType =
   | "";
 
 export type RideLevel = "Principiante" | "Intermedio" | "Experto" | "";
+
+export interface TheftReportData {
+  theftLocationState: string;
+  theftLocationCountry: string;
+  theftPerpetratorDetails?: string;
+  theftIncidentDetails: string;
+  generalNotes?: string;
+}
 
 // Interface for a bike ride event
 // Note: Optional string fields are `string | null | undefined` to accommodate
