@@ -6,7 +6,7 @@ import type {
   BikeRideFormValues,
   BikeShopAdminFormValues,
   NgoAdminFormValues,
-  ReportTheftDialogData,
+  TheftReportData, // Corrected from ReportTheftDialogData
   UserRole,
 } from "./types";
 
@@ -350,7 +350,7 @@ export const reportBikeStolen = onCall(callOptions, async (req) => {
   }
   const { bikeId, theftData } = req.data as {
     bikeId: string;
-    theftData: ReportTheftDialogData;
+    theftData: TheftReportData; // Corrected from ReportTheftDialogData
   };
   const { uid } = req.auth;
 
