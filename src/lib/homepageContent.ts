@@ -20,3 +20,4 @@ export const getHomepageContent = async (): Promise<HomepageContent | null> => {
         return null;
     }
 };
+

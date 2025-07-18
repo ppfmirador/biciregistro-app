@@ -1,3 +1,4 @@
+'use server';
 // src/lib/firebase-admin-config.ts
 import * as admin from 'firebase-admin';
 
