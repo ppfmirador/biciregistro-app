@@ -1,4 +1,3 @@
-
 // types.ts for Cloud Functions
 // These types are copied from the main application's type definitions
 // to make them available to the Cloud Functions environment.
@@ -12,7 +11,7 @@ import type {
 } from "./schemas";
 
 // Basic types
-export type BikeStatus = 'En Regla' | 'Robada' | 'Transferida';
+export type BikeStatus = "En Regla" | "Robada" | "Transferida";
 export type UserRole = "cyclist" | "bikeshop" | "admin" | "ngo";
 
 export type BikeType =
