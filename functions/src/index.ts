@@ -933,7 +933,7 @@ export const createBikeShopAccount = onCall(callOptions, async (req) => {
       typeof error === "object" &&
       error !== null &&
       "code" in error &&
-      error.code === "auth/email-already-exists"
+      error.code === "auth/email-already-in-use"
     ) {
       throw new HttpsError(
         "already-exists",
@@ -1017,7 +1017,7 @@ export const createNgoAccount = onCall(callOptions, async (req) => {
       typeof error === "object" &&
       error !== null &&
       "code" in error &&
-      error.code === "auth/email-already-exists"
+      error.code === "auth/email-already-in-use"
     ) {
       throw new HttpsError(
         "already-exists",

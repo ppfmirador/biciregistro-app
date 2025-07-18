@@ -23,7 +23,7 @@ import { es } from 'date-fns/locale';
 import { cn } from '@/lib/utils';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { BIKE_TYPES, PLACEHOLDER_NONE_VALUE, LAT_AM_LOCATIONS, RIDE_LEVELS } from '@/constants';
-import { FirebaseError } from 'firebase/app'; // FIX: lint issue
+import { FirebaseError } from 'firebase/app'; 
 
 function ManageRidePageContent() {
     const router = useRouter();
@@ -87,8 +87,9 @@ function ManageRidePageContent() {
                         cost: ride.cost || undefined,
                         level: ride.level || undefined,
                     });
-                } catch (error: unknown) { // FIX: lint issue
-                    toast({ title: "Error", description: "No se pudo cargar el evento.", variant: "destructive" });
+                } catch (error: unknown) { 
+                    const errorMessage = error instanceof Error ? error.message : "No se pudo cargar el evento.";
+                    toast({ title: "Error", description: errorMessage, variant: "destructive" });
                 } finally {
                     setIsLoading(false);
                 }
@@ -108,7 +109,7 @@ function ManageRidePageContent() {
                 description: `El evento "${data.title}" ha sido guardado.`,
             });
             router.push('/bikeshop/dashboard');
-        } catch (error: unknown) { // FIX: lint issue
+        } catch (error: unknown) { 
             const errorMessage = error instanceof FirebaseError ? error.message : "Error desconocido al guardar.";
             toast({ title: "Error al Guardar", description: errorMessage, variant: "destructive" });
         } finally {

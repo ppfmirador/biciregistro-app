@@ -627,7 +627,7 @@ export const createBikeShopAccountByAdmin = async (shopData: BikeShopAdminFormVa
     await deleteApp(tempApp);
     
     const authError = error as { code?: string, message?: string };
-    if (authError.code === 'auth/email-already-in-use') {
+    if (authError.code === 'auth/email-already-in-use' || authError.code === 'auth/email-already-exists') {
       throw new Error('Este correo electrónico ya está registrado. Asigna el rol de "Tienda de Bicis" al usuario existente si es necesario, o verifica si ya es una tienda.');
     }
     console.error("Error creating bike shop account:", error);
@@ -684,7 +684,7 @@ export const createNgoAccountByAdmin = async (ngoData: NgoAdminFormValues, admin
     await deleteApp(tempApp);
     
     const authError = error as { code?: string, message?: string };
-    if (authError.code === 'auth/email-already-in-use') {
+    if (authError.code === 'auth/email-already-in-use' || authError.code === 'auth/email-already-exists') {
       throw new Error('Este correo electrónico ya está registrado. Asigna el rol de "ONG/Colectivo" al usuario existente si es necesario.');
     }
     console.error("Error creating NGO account:", error);
@@ -735,7 +735,7 @@ export const createCustomerWithTemporaryPassword = async (
     await deleteApp(tempApp);
 
     const authError = error as { code?: string, message?: string };
-    if (authError.code === 'auth/email-already-in-use') {
+    if (authError.code === 'auth/email-already-in-use' || authError.code === 'auth/email-already-exists') {
       throw new Error('Este correo electrónico ya está registrado para un cliente. Considera buscarlo por su correo y registrar la bici para el usuario existente.');
     }
     console.error("Error creating customer pre-account:", error);
@@ -1057,12 +1057,18 @@ export const getOrganizerRides = async (organizerId: string): Promise<BikeRide[]
 };
 
 export const getRideById = async (rideId: string): Promise<BikeRide | null> => {
+  try {
     const rideRef = doc(db, 'bikeRides', rideId);
     const docSnap = await getDoc(rideRef);
     if (docSnap.exists()) {
-        return bikeRideFromDoc(docSnap);
+      return bikeRideFromDoc(docSnap);
     }
     return null;
+  } catch (error) {
+    console.error(`Error fetching ride by ID ${rideId}:`, error);
+    // Propagate the error to be handled by the caller, which is better for server components.
+    throw error;
+  }
 };
 
 export const createOrUpdateRide = async (
@@ -1107,4 +1113,3 @@ export const deleteRide = async (rideId: string, currentOrganizerId: string): Pr
 };
 
     
-
