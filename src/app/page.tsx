@@ -1,6 +1,6 @@
 // No "use client" here
 import type { Metadata } from "next";
-import { getHomepageContentServer } from "@/lib/homepageContentServer";
+import { getHomepageContentServer } from "@/lib/homepageContent";
 import type { HomepageContent } from "@/lib/types";
 import { APP_NAME } from "@/constants";
 import HomePageClient from "@/components/pageSpecific/HomePageClient";

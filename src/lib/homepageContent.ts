@@ -2,22 +2,32 @@
 // src/lib/homepageContent.ts
 import { getFunctions, httpsCallable, type HttpsCallableResult } from 'firebase/functions';
 import { app } from './firebase'; // Use the standard client-side Firebase app
+import { adminDb } from './firebase-admin-config';
+import * as admin from 'firebase-admin';
 import type { HomepageContent } from './types';
 
+
 /**
- * Fetches homepage content by calling a dedicated Cloud Function.
- * This function is safe to use on both server and client components.
+ * Fetches homepage content directly from Firestore using the Admin SDK.
+ * Intended for server-side use to avoid callable function overhead.
  */
-export const getHomepageContent = async (): Promise<HomepageContent | null> => {
+export const getHomepageContentServer = async (): Promise<HomepageContent | null> => {
+    if (!process.env.FIREBASE_SERVICE_ACCOUNT_KEY) {
+        // Fall back to callable function if admin credentials are not available
+        return getHomepageContent();
+    }
     try {
-        const functions = getFunctions(app, 'us-central1');
-        const getHomepageContentCallable = httpsCallable<void, HomepageContent>(functions, 'getHomepageContent');
-        const result: HttpsCallableResult<HomepageContent> = await getHomepageContentCallable();
-        return result.data;
+        const docSnap = await adminDb.collection('homepage_content').doc('config').get();
+        if (docSnap.exists) {
+            const data = docSnap.data();
+            if (data && data.lastUpdated instanceof admin.firestore.Timestamp) {
+                data.lastUpdated = data.lastUpdated.toDate().toISOString();
+            }
+            return data as HomepageContent;
+        }
+        return null;
     } catch (error) {
-        console.error("Error fetching homepage content via Cloud Function:", error);
-        // This will allow the component to fall back to default content.
+        console.error('Error fetching homepage content with Admin SDK:', error);
         return null;
     }
 };
-
