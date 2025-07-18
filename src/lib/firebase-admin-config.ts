@@ -1,30 +1,83 @@
-// src/lib/firebase-admin-config.ts
-import * as admin from 'firebase-admin';
-
-// This function safely initializes the Firebase Admin SDK.
-// It checks if an app is already initialized to prevent errors on hot-reloads in development.
-export function initializeAdminApp() {
-  if (admin.apps.length > 0) {
-    return admin.app();
+{
+  "name": "nextn",
+  "version": "0.1.0",
+  "private": true,
+  "scripts": {
+    "dev": "next dev --turbopack",
+    "genkit:dev": "genkit start -- tsx src/ai/dev.ts",
+    "genkit:watch": "genkit start -- tsx --watch src/ai/dev.ts",
+    "build": "next build",
+    "start": "next start",
+    "lint": "next lint",
+    "typecheck": "tsc --noEmit",
+    "format": "prettier --write .",
+    "format:check": "prettier --check .",
+    "validate": "npm run format:check && npm run lint && npm run typecheck",
+    "e2e": "playwright test",
+    "deploy:staging": "firebase deploy -P staging --only functions,firestore,storage,hosting",
+    "deploy:prod": "firebase deploy -P default --only functions,firestore,storage,hosting",
+    "emulate:staging": "firebase emulators:start --project staging",
+    "emulate:prod": "firebase emulators:start --project default"
+  },
+  "dependencies": {
+    "@genkit-ai/googleai": "^1.8.0",
+    "@genkit-ai/next": "^1.8.0",
+    "@hookform/resolvers": "^4.1.3",
+    "@radix-ui/react-accordion": "^1.2.3",
+    "@radix-ui/react-alert-dialog": "^1.1.6",
+    "@radix-ui/react-avatar": "^1.1.3",
+    "@radix-ui/react-checkbox": "^1.1.4",
+    "@radix-ui/react-dialog": "^1.1.6",
+    "@radix-ui/react-dropdown-menu": "^2.1.6",
+    "@radix-ui/react-label": "^2.1.2",
+    "@radix-ui/react-menubar": "^1.1.6",
+    "@radix-ui/react-popover": "^1.1.6",
+    "@radix-ui/react-progress": "^1.1.2",
+    "@radix-ui/react-radio-group": "^1.2.3",
+    "@radix-ui/react-scroll-area": "^1.2.3",
+    "@radix-ui/react-select": "^2.1.6",
+    "@radix-ui/react-separator": "^1.1.2",
+    "@radix-ui/react-slider": "^1.2.3",
+    "@radix-ui/react-slot": "^1.1.2",
+    "@radix-ui/react-switch": "^1.1.3",
+    "@radix-ui/react-tabs": "^1.1.3",
+    "@radix-ui/react-toast": "^1.2.6",
+    "@radix-ui/react-tooltip": "^1.1.8",
+    "class-variance-authority": "^0.7.1",
+    "clsx": "^2.1.1",
+    "date-fns": "^3.6.0",
+    "dotenv": "^16.5.0",
+    "firebase": "^11.9.0",
+    "genkit": "^1.8.0",
+    "jspdf": "^2.5.1",
+    "lucide-react": "^0.475.0",
+    "next": "15.2.3",
+    "patch-package": "^8.0.0",
+    "qrcode.react": "^3.1.0",
+    "react": "^18.3.1",
+    "react-day-picker": "^8.10.1",
+    "react-dom": "^18.3.1",
+    "react-hook-form": "^7.54.2",
+    "recharts": "^2.15.1",
+    "tailwind-merge": "^3.0.1",
+    "tailwindcss-animate": "^1.0.7",
+    "uuid": "^10.0.0",
+    "zod": "^3.24.2"
+  },
+  "devDependencies": {
+    "@next/eslint-plugin-next": "^15.4.1",
+    "@playwright/test": "^1.45.3",
+    "@types/node": "^20",
+    "@types/react": "^18",
+    "@types/react-dom": "^18",
+    "@types/uuid": "^10.0.0",
+    "eslint": "^9.31.0",
+    "eslint-config-next": "15.4.1",
+    "genkit-cli": "^1.8.0",
+    "postcss": "^8",
+    "prettier": "^3.3.3",
+    "tailwind-scrollbar": "^3.1.0",
+    "tailwindcss": "^3.4.1",
+    "typescript": "^5.5.4"
   }
-
-  // The service account key is retrieved from environment variables.
-  // This is the secure way to handle credentials on the server.
-  const serviceAccount = process.env.FIREBASE_SERVICE_ACCOUNT_KEY
-    ? JSON.parse(process.env.FIREBASE_SERVICE_ACCOUNT_KEY)
-    : undefined;
-
-  if (!serviceAccount) {
-    throw new Error('Firebase service account key not found in environment variables. Set FIREBASE_SERVICE_ACCOUNT_KEY.');
-  }
-
-  return admin.initializeApp({
-    credential: admin.credential.cert(serviceAccount),
-    // Optionally add your databaseURL if needed for Realtime Database
-    // databaseURL: `https://YOUR_PROJECT_ID.firebaseio.com`
-  });
 }
-
-// Initialize and export the admin app instance
-export const adminApp = initializeAdminApp();
-export const adminDb = admin.firestore();
