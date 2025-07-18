@@ -1,67 +1,51 @@
 
-'use server';
 
-import { getFirestore, Timestamp, type DocumentSnapshot, type DocumentData } from 'firebase-admin/firestore';
-import * as admin from 'firebase-admin';
-import type { HomepageContent } from './types';
-
-// --- Safe Firebase Admin SDK Initialization ---
-// This pattern prevents re-initialization errors in hot-reload environments.
-if (!admin.apps.length) {
-  try {
-    admin.initializeApp({
-      credential: admin.credential.applicationDefault(),
-    });
-    console.log("Firebase Admin SDK initialized successfully.");
-  } catch (error: any) {
-    if (error.code === 'GCLOUD_PROJECT_NOT_SET') {
-        console.warn("Firebase Admin SDK not initialized: GCLOUD_PROJECT_NOT_SET. This is expected in client-side rendering but may cause errors in server-side logic.");
-    } else if (error.code !== 'auth/invalid-credential') {
-        console.error("Firebase Admin SDK initialization error:", error);
-    }
-    // For other errors, especially 'auth/invalid-credential' during local dev without credentials,
-    // we can let it fail gracefully as it might not be needed for all paths.
-  }
-}
-
-const db = getFirestore();
-// --- End Initialization ---
-
+import { db } from './firebase'; 
+import { collection, getDoc, doc } from 'firebase/firestore';
+import type { HomepageContent, SponsorConfig } from './types';
+import type { DocumentSnapshot, Timestamp } from 'firebase/firestore';
+import { APP_NAME } from '@/constants';
 
 const CONTENT_COLLECTION = 'homepage_content';
 const CONTENT_DOC_ID = 'config';
 
-const homepageContentFromDoc = (docSnap: DocumentSnapshot<DocumentData>): HomepageContent => {
-  const data = docSnap.data();
-  if (!data) {
-      throw new Error(`Document data not found for ${docSnap.id}`);
+const homepageContentFromDoc = (docSnap: DocumentSnapshot): HomepageContent => {
+  if (!docSnap.exists()) {
+    throw new Error(`Document data not found for ${docSnap.id}`);
   }
+  const data = docSnap.data();
   return {
     id: docSnap.id,
-    ...data,
-    sponsors: data.sponsors || [], // Ensure sponsors is always an array
+    welcomeTitle: data.welcomeTitle,
+    welcomeDescription: data.welcomeDescription,
+    whyAppNameTitle: data.whyAppNameTitle,
+    feature1Title: data.feature1Title,
+    feature1Description: data.feature1Description,
+    feature2Title: data.feature2Title,
+    feature2Description: data.feature2Description,
+    feature3Title: data.feature3Title,
+    feature3Description: data.feature3Description,
+    communityTitle: data.communityTitle,
+    communityDescription: data.communityDescription,
+    communityImageUrl: data.communityImageUrl,
+    sponsors: data.sponsors || [], 
     lastUpdated: data.lastUpdated instanceof Timestamp ? data.lastUpdated.toDate().toISOString() : data.lastUpdated,
   } as HomepageContent;
 };
 
+// This function can now be called from both client and server components.
 export const getHomepageContent = async (): Promise<HomepageContent | null> => {
-  // Guard clause in case Admin SDK fails to initialize (e.g., no credentials in local dev)
-  if (!admin.apps.length) {
-    console.warn("getHomepageContent: Firebase Admin SDK not available. Returning null.");
-    return null;
-  }
+  const contentRef = doc(db, CONTENT_COLLECTION, CONTENT_DOC_ID);
   
-  const contentRef = db.collection(CONTENT_COLLECTION).doc(CONTENT_DOC_ID);
-
   try {
-    const docSnap = await contentRef.get();
-    if (docSnap.exists) {
+    const docSnap = await getDoc(contentRef);
+    if (docSnap.exists()) {
       return homepageContentFromDoc(docSnap);
     }
     console.log("Homepage content document does not exist.");
     return null;
   } catch(error) {
-     console.error("Error fetching homepage content document from Admin SDK:", error);
-     return null;
+     console.error("Error fetching homepage content document:", error);
+     return null; 
   }
 };

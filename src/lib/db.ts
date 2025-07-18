@@ -24,6 +24,7 @@ import {
   type QueryConstraint,
   type FirestoreError,
   type DocumentData,
+  type DocumentSnapshot,
 } from 'firebase/firestore';
 import { getFunctions, httpsCallable } from 'firebase/functions';
 import type {
@@ -51,7 +52,7 @@ const safeToISOString = (dateInput: unknown, fieldNameForLogging: string): strin
   return new Date(0).toISOString(); 
 };
 
-const bikeFromDoc = (docSnap: { id: string; data: () => DocumentData; }): Bike => {
+const bikeFromDoc = (docSnap: DocumentSnapshot): Bike => {
   const data = docSnap.data();
   if (!data) {
     throw new Error(`No data found for document ${docSnap.id}`);
@@ -93,8 +94,11 @@ const bikeFromDoc = (docSnap: { id: string; data: () => DocumentData; }): Bike =
   } as Bike;
 };
 
-const bikeRideFromDoc = (docSnap: { id: string, data: () => DocumentData }): BikeRide => {
+const bikeRideFromDoc = (docSnap: DocumentSnapshot): BikeRide => {
     const data = docSnap.data();
+    if (!data) {
+        throw new Error(`No data found for document ${docSnap.id}`);
+    }
     return {
         id: docSnap.id,
         organizerId: data.organizerId || data.ngoId, // Backwards compatibility
@@ -116,8 +120,11 @@ const bikeRideFromDoc = (docSnap: { id: string, data: () => DocumentData }): Bik
     } as BikeRide;
 };
 
-const userProfileFromDoc = (docSnap: { id: string; data: () => DocumentData; }): UserProfile => {
+const userProfileFromDoc = (docSnap: DocumentSnapshot): UserProfile => {
     const data = docSnap.data();
+    if (!data) {
+        throw new Error(`No data found for document ${docSnap.id}`);
+    }
     return {
         uid: docSnap.id,
         email: data.email,
@@ -153,8 +160,11 @@ const userProfileFromDoc = (docSnap: { id: string; data: () => DocumentData; }):
 };
 
 
-const transferRequestFromDoc = (docSnap: { id: string; data: () => DocumentData; }): TransferRequest => {
+const transferRequestFromDoc = (docSnap: DocumentSnapshot): TransferRequest => {
   const data = docSnap.data();
+  if (!data) {
+      throw new Error(`No data found for document ${docSnap.id}`);
+  }
   return {
     id: docSnap.id,
     bikeId: data.bikeId,
@@ -344,6 +354,9 @@ export const updateBike = async (bikeId: string, updates: Partial<Omit<Bike, 'id
   }
   
   const updatedBikeSnap = await getDoc(bikeRef);
+  if (!updatedBikeSnap.exists()) {
+    return null;
+  }
   return bikeFromDoc(updatedBikeSnap);
 };
 
@@ -422,7 +435,11 @@ export const getUserProfileByEmail = async (email: string): Promise<UserProfile 
     return null;
   }
   try {
-    return userProfileFromDoc(querySnapshot.docs[0]);
+    const docSnap = querySnapshot.docs[0];
+    if (!docSnap.exists()) {
+        return null;
+    }
+    return userProfileFromDoc(docSnap);
   } catch (e) {
     console.error(`Error processing user profile for email ${email}:`, e);
     return null;
@@ -432,7 +449,7 @@ export const getUserProfileByEmail = async (email: string): Promise<UserProfile 
 
 export const updateUserDoc = async (uid: string, data: Partial<UserProfileData>): Promise<void> => {
   const userRef = doc(db, 'users', uid);
-  const updateData: { [key: string]: unknown } = { ...data };
+  const updateData: { [key: string]: any } = { ...data };
 
   const currentUserDoc = await getUserDoc(uid);
 
@@ -711,6 +728,7 @@ export const getShopRegisteredBikes = async (shopId: string, searchTerm?: string
   const bikeQuery = query(bikesRef, ...bikeQueryConstraints);
   const bikeQuerySnapshot = await getDocs(bikeQuery);
   let shopBikes = bikeQuerySnapshot.docs.map(docSnap => {
+    if (!docSnap.exists()) return null;
     try {
       return bikeFromDoc(docSnap);
     } catch (e) {
@@ -813,6 +831,7 @@ export const getShopAnalytics = async (shopId: string, dateRange?: { from?: Date
       const bikeSnapshot = await getDocs(q);
       
       bikeSnapshot.forEach(doc => {
+          if (!doc.exists()) return;
           try {
               allBikes.push(bikeFromDoc(doc));
           } catch(e: unknown) {
@@ -890,6 +909,7 @@ export const getNgoAnalytics = async (ngoId: string, dateRange?: { from?: Date; 
             const bikeSnapshot = await getDocs(q);
             
             bikeSnapshot.forEach(doc => {
+                if (!doc.exists()) return;
                 try {
                     allReferredBikes.push(bikeFromDoc(doc));
                 } catch (e: unknown) {
@@ -944,7 +964,10 @@ export const getPublicRides = async (): Promise<BikeRide[]> => {
     const ridesRef = collection(db, 'bikeRides');
     const q = query(ridesRef, where('rideDate', '>=', Timestamp.now()), orderBy('rideDate', 'asc'));
     const querySnapshot = await getDocs(q);
-    return querySnapshot.docs.map(doc => bikeRideFromDoc(doc));
+    return querySnapshot.docs.map(doc => {
+        if (!doc.exists()) return null;
+        return bikeRideFromDoc(doc);
+    }).filter((ride): ride is BikeRide => ride !== null);
 };
 
 export const getOrganizerRides = async (organizerId: string): Promise<BikeRide[]> => {
@@ -966,6 +989,7 @@ export const getOrganizerRides = async (organizerId: string): Promise<BikeRide[]
 
         // Process first query results
         snapshot1.docs.forEach(doc => {
+            if (!doc.exists()) return;
             try {
                 ridesMap.set(doc.id, bikeRideFromDoc(doc));
             } catch(e: unknown) {
@@ -975,7 +999,7 @@ export const getOrganizerRides = async (organizerId: string): Promise<BikeRide[]
 
         // Process second query results, avoiding duplicates
         snapshot2.docs.forEach(doc => {
-            if (!ridesMap.has(doc.id)) {
+            if (!ridesMap.has(doc.id) && doc.exists()) {
                 try {
                     ridesMap.set(doc.id, bikeRideFromDoc(doc));
                 } catch(e: unknown) {
