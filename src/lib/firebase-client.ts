@@ -27,7 +27,7 @@ export function initializeClientSideFirebase() {
     // In dev environments, this forces the SDK to generate a debug token in the console
     // for you to copy into your .env.local file.
     if (isDev) {
-      self.FIREBASE_APPCHECK_DEBUG_TOKEN =
+      (self as any).FIREBASE_APPCHECK_DEBUG_TOKEN =
         process.env.NEXT_PUBLIC_FIREBASE_APPCHECK_DEBUG_TOKEN ?? true;
     }
     
