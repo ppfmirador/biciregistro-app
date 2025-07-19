@@ -132,8 +132,10 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
       setLoading(false);
       if (authError.code === 'auth/invalid-credential' || authError.code === 'auth/user-not-found' || authError.code === 'auth/wrong-password') {
         throw new Error('Correo electrónico o contraseña incorrectos. Por favor, verifica tus datos.');
+      } else if (authError.code === 'auth/network-request-failed') {
+          throw new Error('Error de red. Verifica tu conexión a internet o la configuración del entorno (CORS, App Check).');
       } else {
-        throw new Error('Ocurrió un error inesperado al iniciar sesión. Por favor, inténtalo de nuevo.');
+        throw new Error('Ocurrió un error inesperado. Por favor, inténtalo de nuevo.');
       }
     }
   };
@@ -314,3 +316,5 @@ export const useAuth = (): AuthContextType => {
   }
   return context;
 };
+
+    
