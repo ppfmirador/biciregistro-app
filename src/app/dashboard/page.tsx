@@ -89,7 +89,7 @@ export default function DashboardPage() {
       try {
         const [userBikesResult, userRequests, homepageContent] = await Promise.all([
           getMyBikes(),
-          getUserTransferRequests(user.uid, user.email),
+          getUserTransferRequests(),
           getHomepageContent(),
         ]);
         setBikes(userBikesResult);
@@ -116,6 +116,12 @@ export default function DashboardPage() {
       if (!user || user.isAnonymous) {
         router.push('/auth');
         toast({ title: "Acceso Denegado", description: "Por favor, inicia sesión para ver tu panel.", variant: "destructive" });
+      } else if (user.role === 'admin') {
+        router.push('/admin');
+      } else if (user.role === 'bikeshop') {
+        router.push('/bikeshop/dashboard');
+      } else if (user.role === 'ngo') {
+        router.push('/ngo/dashboard');
       } else {
         fetchData();
       }
@@ -262,7 +268,9 @@ export default function DashboardPage() {
     return <p>Redirigiendo a inicio de sesión...</p>;
   }
 
-  const incomingRequests = transferRequests.filter(req => req.toUserEmail.toLowerCase() === user.email?.toLowerCase() && req.status === 'pending');
+  const incomingRequests = transferRequests.filter(
+    req => req.toUserEmail && req.toUserEmail.toLowerCase() === user.email?.toLowerCase() && req.status === 'pending'
+  );
   const outgoingRequests = transferRequests.filter(req => req.fromOwnerId === user.uid && req.status === 'pending');
   const resolvedRequests = transferRequests.filter(req => req.status !== 'pending');
 

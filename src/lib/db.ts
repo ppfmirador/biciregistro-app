@@ -419,7 +419,7 @@ export const markBikeRecovered = async (bikeId: string): Promise<void> => {
   }
 };
 
-export const getUserTransferRequests = async (userId: string, userEmail: string | null): Promise<TransferRequest[]> => {
+export const getUserTransferRequests = async (): Promise<TransferRequest[]> => {
     const functions = getFunctions(app, 'us-central1');
     const getUserTransferRequestsCallable = httpsCallable<void, { requests: TransferRequest[] }>(functions, 'getUserTransferRequests');
     try {
