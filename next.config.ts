@@ -21,7 +21,7 @@ const nextConfig: NextConfig = {
       {
         source: '/__/auth/:path*',
         destination:
-          'https://bike-guardian-hbbg6.firebaseapp.com/__/auth/:path*',
+          `${process.env.FIREBASE_AUTH_HOSTING_URL}/__/auth/:path*`,
       },
     ];
   },

@@ -1,3 +1,4 @@
+
 # Bike Guardian / Biciregistro
 
 A modern platform for bicycle registration and community-based theft prevention.
@@ -124,8 +125,6 @@ cd functions && npm install && cd ..
 ```
 
 **3. Configure Firebase**
-The project uses Firebase for its backend services.
-
 - **Link the CLI to your project:**
   ```bash
   # Authenticate with Google
@@ -134,27 +133,15 @@ The project uses Firebase for its backend services.
   # Add your Firebase project alias (e.g., 'default' or 'dev')
   firebase use --add
   ```
-- **Set up your Firebase configuration keys:** The current codebase hardcodes keys in `src/lib/firebase.ts`. **This is not secure for production but acceptable for development.** The recommended practice is to use environment variables. Create a file named `.env.local` in the root of the project and add your Firebase project's web configuration:
-  ```plaintext
-  # .env.local
-  NEXT_PUBLIC_FIREBASE_API_KEY="YOUR_API_KEY"
-  NEXT_PUBLIC_FIREBASE_AUTH_DOMAIN="YOUR_AUTH_DOMAIN"
-  NEXT_PUBLIC_FIREBASE_PROJECT_ID="YOUR_PROJECT_ID"
-  NEXT_PUBLIC_FIREBASE_STORAGE_BUCKET="YOUR_STORAGE_BUCKET"
-  NEXT_PUBLIC_FIREBASE_MESSAGING_SENDER_ID="YOUR_MESSAGING_SENDER_ID"
-  NEXT_PUBLIC_FIREBASE_APP_ID="YOUR_APP_ID"
-
-  # For local development with App Check
-  NEXT_PUBLIC_FIREBASE_APPCHECK_DEBUG_TOKEN="YOUR_APP_CHECK_DEBUG_TOKEN"
-  ```
-  > **Note:** You would then refactor `src/lib/firebase.ts` to use `process.env.NEXT_PUBLIC_...` instead of the hardcoded values.
+- **Set up your environment variables:** Create a file named `.env.local` in the **root** of the project. Copy the contents of `.env.example` into it and fill in your Firebase project's web configuration. See the **Environment Configuration** section below for details on each variable.
 
 **4. Create the First Admin User (One-Time Setup)**
-To manage the platform, you need an administrator account. This is a manual, one-time process using a special Cloud Function.
-- **Deploy the functions:** `npm run deploy:staging` or `npm run deploy:prod`
-- **Create the user:** Ensure the user you want to promote exists in Firebase Authentication (e.g., register them via the app).
-- **Run the function:** Open the developer console in your browser on the deployed site and execute the `createFirstAdmin` callable function, passing the user's email.
-- **IMPORTANT:** After creating the admin, you should instruct the AI Prototyper to **remove the `createFirstAdmin` function** from the codebase for security.
+To manage the platform, you need an administrator account. This is done through the app's Admin Panel.
+- **Deploy the project:** `npm run deploy:staging` or `npm run deploy:prod`.
+- **Create the user:** Register a new user account through the app's signup form. This user will be the first administrator.
+- **Navigate to the Admin Panel:** Log in as the user you just created and go to `/admin`.
+- **Assign Admin Role:** In the user management section, find your user and change their role to "Admin". You may need to log out and log back in for the changes to take effect.
+- **IMPORTANT:** Ensure that your Firestore security rules are configured to only allow existing admins to modify user roles.
 
 **5. Run the Development Server**
 ```bash
@@ -164,6 +151,8 @@ The application will be available at `http://localhost:3000`.
 
 ## Environment Configuration
 
+Create a `.env.local` file in the project root for local development. For production/staging, set these variables in your hosting provider's settings.
+
 | Variable                                  | Description                                                                                                                                                             | Example                               |
 |-------------------------------------------|-------------------------------------------------------------------------------------------------------------------------------------------------------------------------|---------------------------------------|
 | `NEXT_PUBLIC_FIREBASE_API_KEY`              | Firebase project API key.                                                                                                                                               | `AIzaSy...`                           |
@@ -172,13 +161,20 @@ The application will be available at `http://localhost:3000`.
 | `NEXT_PUBLIC_FIREBASE_STORAGE_BUCKET`       | Firebase project storage bucket.                                                                                                                                        | `my-project.appspot.com`              |
 | `NEXT_PUBLIC_FIREBASE_MESSAGING_SENDER_ID`  | Firebase project messaging sender ID.                                                                                                                                   | `1234567890`                          |
 | `NEXT_PUBLIC_FIREBASE_APP_ID`               | Firebase project app ID.                                                                                                                                                | `1:12345...`                          |
-| `NEXT_PUBLIC_FIREBASE_APPCHECK_DEBUG_TOKEN` | **Optional.** The debug token for [Firebase App Check](https://firebase.google.com/docs/app-check/web/debug-provider) to allow local testing. Found in the browser console on first run. | `a-long-uuid-string...`               |
-| `FIREBASE_SERVICE_ACCOUNT_KEY` | JSON string for the Firebase service account key used by server-side code. | `{"type":"service_account",...}` |
+| `NEXT_PUBLIC_FIREBASE_APPCHECK_DEBUG_TOKEN` | **Optional.** The debug token for [Firebase App Check](https://firebase.google.com/docs/app-check/web/debug-provider) to allow local testing. Found in the browser console. | `a-long-uuid-string...`               |
+| `FIREBASE_AUTH_HOSTING_URL`                 | **Required.** The full URL of your production Firebase Hosting environment. Used for auth redirects.                                                                        | `https://my-project.web.app`          |
+| `FIREBASE_SERVICE_ACCOUNT_KEY` | **Server-side only.** JSON string for the Firebase service account key. Required for server-side rendering with Admin SDK. | `{"type":"service_account",...}` |
 
-Example:
+**For Cloud Functions:**
+You must set environment variables for the functions to know the allowed origins. Use the Firebase CLI:
 ```bash
-FIREBASE_SERVICE_ACCOUNT_KEY='{...}'
+# Set variables for PRODUCTION (alias: default)
+firebase functions:config:set prod.url="https://biciregistro.mx" prod.url_www="https://www.biciregistro.mx" -P default
+
+# Set variables for STAGING
+firebase functions:config:set staging.url="https://bike-guardian-staging.web.app" -P staging
 ```
+
 ## Testing
 
 This project uses [Playwright](https://playwright.dev/) for end-to-end (E2E) testing.
@@ -234,9 +230,9 @@ Test files are located in the `e2e/` directory.
 
 ## Troubleshooting & FAQ
 
-- **CORS Errors:** If you experience CORS errors from Cloud Functions, ensure your local development URL (e.g., `http://localhost:3000` or your Gitpod/Cloud Workstation URL) is added to `cors.json` in the root directory.
+- **CORS Errors:** If you experience CORS errors from Cloud Functions, ensure your local development URL (e.g., `http://localhost:3000` or your Gitpod/Cloud Workstation URL) is added to `cors.json` AND that your production/staging URLs are set as environment variables for the functions.
 - **App Check Errors (403 Forbidden):** When running locally, App Check will block requests. Open the browser's developer console. You will see an App Check message with a debug token. Copy this token and add it to `.env.local` as `NEXT_PUBLIC_FIREBASE_APPCHECK_DEBUG_TOKEN`.
-- **Firebase Auth Redirects:** For authentication to work correctly on a custom domain, the `apphosting.yaml` file contains necessary rewrite rules. Ensure this is not modified unless you understand the implications.
+- **Firebase Auth Redirects:** For authentication to work correctly on a custom domain, the `apphosting.yaml` file contains necessary rewrite rules. The `next.config.ts` file also uses `FIREBASE_AUTH_HOSTING_URL` for this purpose. Ensure this variable is set correctly.
 
 ## Contributing Guidelines
 
