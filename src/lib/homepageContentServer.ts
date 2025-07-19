@@ -34,3 +34,8 @@ export const getHomepageContentServer = async (): Promise<HomepageContent | null
     return null; 
   }
 };
+
+/**
+ * Alias for getHomepageContentServer to be used in client components that call server actions.
+ */
+export const getHomepageContent = getHomepageContentServer;
