@@ -9,25 +9,13 @@ import type {
   NgoAdminFormValues,
   UserRole,
 } from "./types";
+import * as corsConfig from "../../../cors.json";
 
 // Initialize Firebase Admin SDK
 admin.initializeApp();
 
-/**
- * Defines a list of allowed origins for CORS.
- * Reads from environment variables for production and staging,
- * and includes localhost and cloud workstations for development.
- */
-const allowedOrigins = [
-  // Production
-  process.env.PROD_URL,
-  process.env.PROD_URL_WWW,
-  // Staging
-  process.env.STAGING_URL,
-  // Development
-  /^https:\/\/.*\.cloudworkstations\.dev$/,
-  "http://localhost:3000",
-].filter(Boolean); // filter(Boolean) removes any undefined/null entries
+// Centralized CORS configuration from cors.json
+const allowedOrigins = corsConfig.map(c => c.origin).flat();
 
 // Set global options for all functions in this file.
 // CORS is handled per-function via callOptions.

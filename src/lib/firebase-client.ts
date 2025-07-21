@@ -28,10 +28,9 @@ export function initializeClientSideFirebase() {
     // In dev environments, this logic forces the SDK to generate a new debug token in the console
     // if the one in .env.local is the placeholder. Once you have a real token, it will use that.
     if (isDev) {
-      const debugTokenFromEnv = process.env.NEXT_PUBLIC_FIREBASE_APPCHECK_DEBUG_TOKEN;
-      (self as any).FIREBASE_APPCHECK_DEBUG_TOKEN = debugTokenFromEnv && debugTokenFromEnv !== 'YOUR_DEBUG_TOKEN_HERE' 
-        ? debugTokenFromEnv 
-        : true;
+      // This is the variable that the App Check SDK reads.
+      // It's set on the window object to be globally available.
+      (self as any).FIREBASE_APPCHECK_DEBUG_TOKEN = process.env.NEXT_PUBLIC_FIREBASE_APPCHECK_DEBUG_TOKEN;
     }
     
     // 3. Initialize App Check
