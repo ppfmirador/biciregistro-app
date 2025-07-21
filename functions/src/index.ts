@@ -1,3 +1,4 @@
+
 // functions/src/index.ts
 import { onCall, HttpsError } from "firebase-functions/v2/https";
 import * as admin from "firebase-admin";
@@ -7,15 +8,18 @@ import type {
   BikeShopAdminFormValues,
   NgoAdminFormValues,
   UserRole,
+  CorsConfigItem,
 } from "./types";
-// Use require for JSON files in this Cloud Functions environment for robustness.
-const corsConfig = require("../../../cors.json");
+import * as corsConfig from "../../../cors.json";
 
 // Initialize Firebase Admin SDK
 admin.initializeApp();
 
 // Centralized CORS configuration from cors.json
-const allowedOrigins = corsConfig.map((c: any) => c.origin).flat();
+// Explicitly type corsConfig to avoid 'any' type error from linter.
+const allowedOrigins = (corsConfig as CorsConfigItem[])
+  .map((c) => c.origin)
+  .flat();
 
 // Set global options for all functions in this file.
 // CORS is handled per-function via callOptions.
@@ -664,7 +668,7 @@ export const respondToTransferRequest = onCall(callOptions, async (req) => {
 
       return {
         success: true,
-        message: "Request successfully " + action + ".",
+        message: `Request successfully ${action}.`,
       };
     });
   } catch (error) {
