@@ -5,6 +5,7 @@ import { setGlobalOptions } from "firebase-functions/v2";
 import type {
   BikeRideFormValues,
   BikeShopAdminFormValues,
+  CorsConfigItem,
   NgoAdminFormValues,
   UserRole,
 } from "./types";
@@ -14,7 +15,9 @@ import corsConfig from "../cors.json";
 admin.initializeApp();
 
 // Centralized CORS configuration from cors.json
-const allowedOrigins = corsConfig.map((c) => c.origin).flat();
+const allowedOrigins = (corsConfig as CorsConfigItem[])
+  .map((c) => c.origin)
+  .flat();
 
 // Set global options for all functions in this file.
 // CORS is handled per-function via callOptions.
