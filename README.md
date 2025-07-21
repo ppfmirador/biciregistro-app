@@ -1,4 +1,3 @@
-
 # Bike Guardian / Biciregistro
 
 A modern platform for bicycle registration and community-based theft prevention.
@@ -166,14 +165,7 @@ Create a `.env.local` file in the project root for local development. For produc
 | `FIREBASE_SERVICE_ACCOUNT_KEY` | **Server-side only.** JSON string for the Firebase service account key. Required for server-side rendering with Admin SDK. | `{"type":"service_account",...}` |
 
 **For Cloud Functions:**
-You must set environment variables for the functions to know the allowed origins. Use the Firebase CLI:
-```bash
-# Set variables for PRODUCTION (alias: default)
-firebase functions:config:set prod.url="https://biciregistro.mx" prod.url_www="https://www.biciregistro.mx" -P default
-
-# Set variables for STAGING
-firebase functions:config:set staging.url="https://bike-guardian-staging.web.app" -P staging
-```
+The configuration for `allowedOrigins` is now managed within the `functions` directory in the file `functions/src/cors.json`. This file is automatically copied to the `lib/` directory during the build process, ensuring it's available at runtime. The script `postbuild` in `functions/package.json` handles this copy.
 
 ## Testing
 
@@ -230,9 +222,13 @@ Test files are located in the `e2e/` directory.
 
 ## Troubleshooting & FAQ
 
-- **CORS Errors:** If you experience CORS errors from Cloud Functions, ensure your local development URL (e.g., `http://localhost:3000` or your Gitpod/Cloud Workstation URL) is added to `cors.json` AND that your production/staging URLs are set as environment variables for the functions.
+- **CORS Errors:** If you experience CORS errors from Cloud Functions, ensure your local development URL (e.g., `http://localhost:3000` or your Gitpod/Cloud Workstation URL) is added to `functions/src/cors.json`. This file is the single source of truth for allowed origins.
 - **App Check Errors (403 Forbidden):** When running locally, App Check will block requests. Open the browser's developer console. You will see an App Check message with a debug token. Copy this token and add it to `.env.local` as `NEXT_PUBLIC_FIREBASE_APPCHECK_DEBUG_TOKEN`.
 - **Firebase Auth Redirects:** For authentication to work correctly on a custom domain, the `apphosting.yaml` file contains necessary rewrite rules. The `next.config.ts` file also uses `FIREBASE_AUTH_HOSTING_URL` for this purpose. Ensure this variable is set correctly.
+- **Cloud Functions Deploy Error `Cannot find module`**: This often happens if non-TypeScript files (like `.json`) are not correctly included in the build process. The standard solution in this project is:
+  1.  Place the resource file (e.g., `cors.json`) inside the `functions/src` directory.
+  2.  Ensure a `postbuild` script in `functions/package.json` copies the file from `src/` to the output `lib/` directory.
+  3.  Update the `import` path in your `.ts` file to be relative to its final location in the `lib/` directory (e.g., `import config from './config.json'`).
 
 ## Contributing Guidelines
 

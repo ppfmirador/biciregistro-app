@@ -15,6 +15,7 @@ Para asegurar una colaboración fluida y efectiva, acordamos lo siguiente:
     *   Configurar elementos en la consola de Firebase o Google Cloud (ej. habilitar APIs, establecer reglas de seguridad).
     *   Obtener y configurar variables de entorno o claves secretas (ej. tokens de App Check, claves de API).
 4.  **Claridad en la Comunicación**: Ambas partes se esforzarán por ser claras y concisas. Si una solicitud es ambigua, el asistente de IA pedirá aclaraciones antes de proceder.
+5.  **Conocimiento del Entorno de Compilación**: Se ha aprendido que el entorno de Cloud Functions tiene un proceso de compilación (TypeScript a JavaScript) que afecta las rutas de los archivos. El asistente de IA debe tener esto en cuenta, especialmente al manejar recursos como archivos `.json`, y proponer soluciones que funcionen tanto en el código fuente como en el código compilado que se despliega.
 
 ---
 
@@ -56,6 +57,9 @@ Estos son los comandos más comunes que necesitarás para este proyecto. Ejecút
 -   **Ejecutar Linters y Chequeo de Tipos**: Verifica la calidad del código antes de hacer un commit.
     ```bash
     npm run validate
+
+    # Para arreglar problemas de formato en las funciones:
+    cd functions && npm run format && cd ..
     ```
 
 ---
@@ -80,7 +84,7 @@ Asegúrate de que los siguientes elementos estén configurados correctamente en 
 - [ ] **Aplicación Forzosa**: En la sección de App Check de cada servicio (Cloud Functions, Storage, etc.), establece la aplicación forzosa (`enforce`) para producción.
 
 ### **Cloud Functions**
-- [ ] **CORS**: El archivo `functions/src/index.ts` debe tener configurados los orígenes permitidos (`allowedOrigins`) para aceptar solicitudes de todos tus entornos (desarrollo, staging, producción), idealmente usando variables de entorno de Firebase Functions.
+- [ ] **CORS**: El archivo `functions/src/index.ts` debe tener configurados los orígenes permitidos (`allowedOrigins`) para aceptar solicitudes de todos tus entornos. **Importante**: El archivo de configuración (`cors.json`) debe estar *dentro* del directorio `functions/src` y ser copiado al directorio `lib` durante la compilación.
 - [ ] **Permisos IAM**: El service account por defecto de las funciones (`PROJECT_ID@appspot.gserviceaccount.com`) debe tener los roles necesarios, como `Firebase Admin` y `Cloud Functions Invoker`.
 
 ### **Firestore (Base de Datos)**
