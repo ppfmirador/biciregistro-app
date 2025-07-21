@@ -1,3 +1,4 @@
+
 // functions/src/index.ts
 import { onCall, HttpsError } from "firebase-functions/v2/https";
 import * as admin from "firebase-admin";
@@ -9,7 +10,7 @@ import type {
   UserRole,
   CorsConfigItem,
 } from "./types";
-import corsConfig from "../cors.json";
+import corsConfig from "./cors.json";
 
 // Initialize Firebase Admin SDK
 admin.initializeApp();
@@ -1106,3 +1107,5 @@ export const createOrUpdateRide = onCall(callOptions, async (req) => {
     throw new HttpsError("internal", "Failed to save ride data.");
   }
 });
+
+    
