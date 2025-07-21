@@ -9,7 +9,7 @@ import type {
   UserRole,
   CorsConfigItem,
 } from "./types";
-import * as corsConfig from "../../../cors.json";
+import * as corsConfig from "../../cors.json";
 
 // Initialize Firebase Admin SDK
 admin.initializeApp();
