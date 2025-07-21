@@ -8,13 +8,14 @@ import type {
   NgoAdminFormValues,
   UserRole,
 } from "./types";
-import * as corsConfig from "../../../cors.json";
+// Use require for JSON files in this Cloud Functions environment for robustness.
+const corsConfig = require("../../../cors.json");
 
 // Initialize Firebase Admin SDK
 admin.initializeApp();
 
 // Centralized CORS configuration from cors.json
-const allowedOrigins = corsConfig.map((c) => c.origin).flat();
+const allowedOrigins = corsConfig.map((c: any) => c.origin).flat();
 
 // Set global options for all functions in this file.
 // CORS is handled per-function via callOptions.

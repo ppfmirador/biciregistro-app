@@ -65,14 +65,3 @@ export interface BikeRide {
 export type BikeRideFormValues = z.infer<typeof bikeRideSchema>;
 export type BikeShopAdminFormValues = z.infer<typeof bikeShopAdminSchema>;
 export type NgoAdminFormValues = z.infer<typeof ngoAdminSchema>;
-
-// Declaration for the imported JSON module
-declare module "../../../cors.json" {
-  const value: Array<{
-    origin: string[];
-    method: string[];
-    responseHeader: string[];
-    maxAgeSeconds: number;
-  }>;
-  export default value;
-}
