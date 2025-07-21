@@ -21,18 +21,21 @@ export function initializeClientSideFirebase() {
     // 1. Define Development Environment
     const isDev =
       process.env.NODE_ENV !== "production" ||
-      location.hostname.endsWith(".cloudworkstations.dev");
+      location.hostname.endsWith(".cloudworkstations.dev") ||
+      location.hostname === "localhost";
 
     // 2. Set Debug Token
-    // In dev environments, this forces the SDK to generate a debug token in the console
-    // for you to copy into your .env.local file.
+    // In dev environments, this logic forces the SDK to generate a new debug token in the console
+    // if the one in .env.local is the placeholder. Once you have a real token, it will use that.
     if (isDev) {
-      (self as any).FIREBASE_APPCHECK_DEBUG_TOKEN =
-        process.env.NEXT_PUBLIC_FIREBASE_APPCHECK_DEBUG_TOKEN ?? true;
+      const debugTokenFromEnv = process.env.NEXT_PUBLIC_FIREBASE_APPCHECK_DEBUG_TOKEN;
+      (self as any).FIREBASE_APPCHECK_DEBUG_TOKEN = debugTokenFromEnv && debugTokenFromEnv !== 'YOUR_DEBUG_TOKEN_HERE' 
+        ? debugTokenFromEnv 
+        : true;
     }
     
     // 3. Initialize App Check
-    // In dev, the debug token above will be used. In production, reCAPTCHA v3 will be used.
+    // In dev, the debug token logic above will be used. In production, reCAPTCHA v3 will be used.
     // The try/catch prevents the app from crashing if reCAPTCHA fails to load (e.g., ad-blockers).
     if (process.env.NEXT_PUBLIC_RECAPTCHA_SITE_KEY) {
       try {
