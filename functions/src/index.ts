@@ -1,4 +1,3 @@
-
 // functions/src/index.ts
 import { onCall, HttpsError } from "firebase-functions/v2/https";
 import * as admin from "firebase-admin";
@@ -1107,5 +1106,3 @@ export const createOrUpdateRide = onCall(callOptions, async (req) => {
     throw new HttpsError("internal", "Failed to save ride data.");
   }
 });
-
-    
