@@ -5,11 +5,11 @@ import { setGlobalOptions } from "firebase-functions/v2";
 import type {
   BikeRideFormValues,
   BikeShopAdminFormValues,
-  CorsConfigItem,
   NgoAdminFormValues,
   UserRole,
+  CorsConfigItem,
 } from "./types";
-import corsConfig from "../cors.json";
+import corsConfig from "../../cors.json";
 
 // Initialize Firebase Admin SDK
 admin.initializeApp();
