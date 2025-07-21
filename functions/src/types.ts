@@ -65,11 +65,3 @@ export interface BikeRide {
 export type BikeRideFormValues = z.infer<typeof bikeRideSchema>;
 export type BikeShopAdminFormValues = z.infer<typeof bikeShopAdminSchema>;
 export type NgoAdminFormValues = z.infer<typeof ngoAdminSchema>;
-
-// Type for the structure of an item in cors.json
-export interface CorsConfigItem {
-  origin: string[];
-  method: string[];
-  responseHeader: string[];
-  maxAgeSeconds: number;
-}

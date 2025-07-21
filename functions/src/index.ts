@@ -1,3 +1,4 @@
+
 // functions/src/index.ts
 import { onCall, HttpsError } from "firebase-functions/v2/https";
 import * as admin from "firebase-admin";
@@ -7,17 +8,14 @@ import type {
   BikeShopAdminFormValues,
   NgoAdminFormValues,
   UserRole,
-  CorsConfigItem,
 } from "./types";
-const corsConfig = require("../cors.json");
+import corsConfig from "../cors.json";
 
 // Initialize Firebase Admin SDK
 admin.initializeApp();
 
 // Centralized CORS configuration from cors.json
-const allowedOrigins = (corsConfig as CorsConfigItem[])
-  .map((c: CorsConfigItem) => c.origin)
-  .flat();
+const allowedOrigins = corsConfig.map((c) => c.origin).flat();
 
 // Set global options for all functions in this file.
 // CORS is handled per-function via callOptions.
