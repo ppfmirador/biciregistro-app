@@ -6,7 +6,7 @@
       "https://www.biciregistro.mx",
       "https://bike-guardian-hbbg6.firebaseapp.com",
       "https://bike-guardian-staging.web.app",
-      "6000-firebase-studio-1749165459191.cluster-joak5ukfbnbyqspg4tewa33d24.cloudworkstations.dev",
+      "https://6000-firebase-studio-1749165459191.cluster-joak5ukfbnbyqspg4tewa33d24.cloudworkstations.dev",
       "http://localhost:3000"
     ],
     "method": ["GET", "POST", "PUT", "DELETE", "HEAD", "OPTIONS"],
