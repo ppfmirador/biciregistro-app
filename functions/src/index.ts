@@ -1106,5 +1106,3 @@ export const createOrUpdateRide = onCall(callOptions, async (req) => {
     throw new HttpsError("internal", "Failed to save ride data.");
   }
 });
-
-    
