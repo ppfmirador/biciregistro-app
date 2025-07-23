@@ -1,4 +1,4 @@
-# Bike Guardian / Biciregistro
+# BiciRegistro
 
 A modern platform for bicycle registration and community-based theft prevention.
 
@@ -61,11 +61,11 @@ This diagram explains the high-level interaction between the system components.
 
 | # | Feature                    | User Roles Involved      | Description                                                                                              | Key Files / Modules                                                                                                             |
 |---|----------------------------|--------------------------|----------------------------------------------------------------------------------------------------------|---------------------------------------------------------------------------------------------------------------------------------|
-| 1 | **User Authentication**    | All                      | Email/Password and Google sign-in. Role-based access control (cyclist, bikeshop, ngo, admin).             | `src/context/AuthContext.tsx`, `src/app/auth/page.tsx`                                                                          |
-| 2 | **Bike Registration**      | Cyclist, Bike Shop       | Register a bike with serial number, brand, model, photos, and optional ownership document.               | `src/app/register-bike/page.tsx`, `src/components/bike/BikeForm.tsx`, `functions/src/bikeFunctions.ts` (createBike)           |
+| 1 | **User Authentication**    | All                      | Email/Password and Google sign-in. Role-based access control (cyclist, bikeshop, ngo, admin). Registration requires Name, Last Name, Country, and State. | `src/context/AuthContext.tsx`, `src/app/auth/page.tsx`                                                                          |
+| 2 | **Bike Registration**      | Cyclist, Bike Shop       | Register a bike with serial number, brand, model, photos, and optional ownership document.               | `src/app/register-bike/page.tsx`, `src/components/bike/BikeForm.tsx`, `functions/src/index.ts` (createBike)           |
 | 3 | **Bike Details View**      | All                      | Public view shows status and basic details. Owner view includes private info and management tools.         | `src/app/bike/[serialNumber]/page.tsx`                                                                                            |
-| 4 | **Theft Reporting**        | Cyclist (Owner)          | Mark a bike as "Stolen" with incident details, alerting the community.                                     | `src/components/bike/ReportTheftDialog.tsx`, `functions/src/bikeFunctions.ts` (reportBikeStolen)                               |
-| 5 | **Ownership Transfer**     | Cyclist (Owner)          | Initiate a transfer request to another registered user via email.                                          | `src/components/bike/TransferOwnershipDialog.tsx`, `functions/src/bikeFunctions.ts` (initiateTransferRequest, respondToTransferRequest) |
+| 4 | **Theft Reporting**        | Cyclist (Owner)          | Mark a bike as "Stolen" with incident details, alerting the community.                                     | `src/components/bike/ReportTheftDialog.tsx`, `functions/src/index.ts` (reportBikeStolen)                               |
+| 5 | **Ownership Transfer**     | Cyclist (Owner)          | Initiate a transfer request to another registered user via email.                                          | `src/components/bike/TransferOwnershipDialog.tsx`, `functions/src/index.ts` (initiateTransferRequest, respondToTransferRequest) |
 | 6 | **Dashboard**              | Cyclist                  | View personal bikes and manage incoming/outgoing transfer requests.                                        | `src/app/dashboard/page.tsx`, `src/components/bike/BikeCard.tsx`                                                                |
 | 7 | **Admin Panel**            | Admin                    | Manage users, roles, homepage content, and create Bike Shop/NGO accounts.                                | `src/app/admin/page.tsx`, `functions/src/index.ts` (admin functions)                                                          |
 | 8 | **Bike Shop Portal**       | Bike Shop, Admin         | Shops can register bikes for customers, view their registration history, and create public events.    | `src/app/bikeshop/dashboard/page.tsx`, `src/app/bikeshop/register-sold-bike/page.tsx`                                             |
@@ -165,7 +165,7 @@ Create a `.env.local` file in the project root for local development. For produc
 | `FIREBASE_SERVICE_ACCOUNT_KEY` | **Server-side only.** JSON string for the Firebase service account key. Required for server-side rendering with Admin SDK. | `{"type":"service_account",...}` |
 
 **For Cloud Functions:**
-The configuration for `allowedOrigins` is now managed within the `functions` directory in the file `functions/src/cors.json`. This file is automatically copied to the `lib/` directory during the build process, ensuring it's available at runtime. The script `postbuild` in `functions/package.json` handles this copy.
+The configuration for `allowedOrigins` is now managed within the `functions` directory in the file `functions/src/index.ts`. Review the `allowedOrigins` array to ensure it includes all necessary domains for your environments (e.g., `localhost`, development URLs, and production URLs).
 
 ## Testing
 
@@ -222,7 +222,7 @@ Test files are located in the `e2e/` directory.
 
 ## Troubleshooting & FAQ
 
-- **CORS Errors:** If you experience CORS errors from Cloud Functions, ensure your local development URL (e.g., `http://localhost:3000` or your Gitpod/Cloud Workstation URL) is added to `functions/src/cors.json`. This file is the single source of truth for allowed origins.
+- **CORS Errors:** If you experience CORS errors from Cloud Functions, ensure your local development URL (e.g., `http://localhost:3000` or your Gitpod/Cloud Workstation URL) is added to the `allowedOrigins` array in `functions/src/index.ts`.
 - **App Check Errors (403 Forbidden):** When running locally, App Check will block requests. Open the browser's developer console. You will see an App Check message with a debug token. Copy this token and add it to `.env.local` as `NEXT_PUBLIC_FIREBASE_APPCHECK_DEBUG_TOKEN`.
 - **Firebase Auth Redirects:** For authentication to work correctly on a custom domain, the `apphosting.yaml` file contains necessary rewrite rules. The `next.config.ts` file also uses `FIREBASE_AUTH_HOSTING_URL` for this purpose. Ensure this variable is set correctly.
 - **Cloud Functions Deploy Error `Cannot find module`**: This often happens if non-TypeScript files (like `.json`) are not correctly included in the build process. The standard solution in this project is:
