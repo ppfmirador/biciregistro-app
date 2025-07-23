@@ -5,11 +5,10 @@ import React, { useRef } from 'react';
 import { QRCodeCanvas, QRCodeSVG } from 'qrcode.react';
 import { jsPDF } from 'jspdf';
 import { Button } from '@/components/ui/button';
-import { FileText, Image as ImageIcon, Code, ShieldCheck } from 'lucide-react';
-import { SITE_URL, APP_NAME } from '@/constants';
+import { FileText, Image as ImageIcon, Code } from 'lucide-react';
+import { SITE_URL } from '@/constants';
 import type { Bike } from '@/lib/types';
 import { useToast } from '@/hooks/use-toast';
-import logoSrc from '../../../public/logo_biciregistro_completo_color.png'; // Import the logo
 
 interface QrCodeDisplayProps {
   bike: Bike;
@@ -70,12 +69,12 @@ const QrCodeDisplay: React.FC<QrCodeDisplayProps> = ({ bike }) => {
     
     const qrDataUrl = canvas.toDataURL('image/png');
     const logoImg = new window.Image();
-    logoImg.src = logoSrc.src; 
+    logoImg.src = '/logo_biciregistro_completo_color.png'; 
     
     logoImg.onload = () => {
         const doc = new jsPDF({
             unit: 'mm',
-            format: [50, 100]
+            format: [50, 100] // 5cm width, 10cm height
         });
 
         const primaryColor = '#3B82F6'; 
@@ -149,7 +148,7 @@ const QrCodeDisplay: React.FC<QrCodeDisplayProps> = ({ bike }) => {
       </div>
 
       <p className="max-w-xs text-center text-xs text-muted-foreground">
-         Escanear para verificar en {APP_NAME}
+         Escanear para verificar en Biciregistro
       </p>
 
       <div className="mt-auto flex w-full flex-col gap-2 pt-4">
