@@ -84,7 +84,7 @@ export const AuthForm: React.FC<AuthFormProps> = ({ mode, userType = 'cyclist' }
           description: 'Tu cuenta ha sido creada. Por favor, revisa tu correo electrónico para verificar tu cuenta.'
         });
       }
-    } catch (error: unknown) { // FIX: lint issue
+    } catch (error: unknown) {
       const errorMessage = error instanceof FirebaseError ? error.message : 'Ocurrió un error inesperado.';
       toast({
         title: 'Autenticación Fallida',
@@ -101,7 +101,7 @@ export const AuthForm: React.FC<AuthFormProps> = ({ mode, userType = 'cyclist' }
     const referrerId = searchParams.get('ref');
     try {
       await signInWithGoogle(referrerId);
-    } catch (error: unknown) { // FIX: lint issue
+    } catch (error: unknown) {
       // Error is handled in AuthContext
     } finally {
       setIsGoogleSubmitting(false);
@@ -130,7 +130,7 @@ export const AuthForm: React.FC<AuthFormProps> = ({ mode, userType = 'cyclist' }
         description: `Si existe una cuenta para ${email}, se ha enviado un enlace para restablecer la contraseña. Revisa tu bandeja de entrada y spam.`,
         duration: 7000,
       });
-    } catch (error: unknown) { // FIX: lint issue
+    } catch (error: unknown) {
       console.error("Error requesting password reset:", error);
       toast({
         title: 'Error',

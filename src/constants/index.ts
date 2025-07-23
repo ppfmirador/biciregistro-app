@@ -1,5 +1,3 @@
-
-
 import type { BikeStatus, BikeType, RideLevel } from '@/lib/types';
 
 export const BIKE_STATUSES: BikeStatus[] = ['En Regla', 'Robada', 'Transferida'];

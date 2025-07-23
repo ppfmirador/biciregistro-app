@@ -1,8 +1,9 @@
+
 // No "use client" here
 import type { Metadata } from "next";
 import { getHomepageContentServer } from "@/lib/homepageContentServer"; // Corrected import
 import type { HomepageContent } from "@/lib/types";
-import { APP_NAME } from "@/constants";
+import { APP_NAME } from '@/constants';
 import HomePageClient from "@/components/pageSpecific/HomePageClient";
 
 // Default content, used as fallback or if Firestore data is unavailable

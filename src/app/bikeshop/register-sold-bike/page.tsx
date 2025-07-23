@@ -20,7 +20,7 @@ import { getUserProfileByEmail, createCustomerWithTemporaryPassword, addBikeToFi
 import { uploadFileToStorage } from '@/lib/storage';
 import { v4 as uuidv4 } from 'uuid';
 import { bikeShopRegisterSchema, type BikeShopRegisterFormValues } from '@/lib/schemas';
-import { FirebaseError } from 'firebase/app'; // FIX: lint issue
+import { FirebaseError } from 'firebase/app';
 
 export default function RegisterSoldBikePage() {
   const { user, loading: authLoading } = useAuth();
@@ -246,7 +246,7 @@ export default function RegisterSoldBikePage() {
       // Optionally delay navigation or let user click away
       // router.push('/bikeshop/dashboard');
 
-    } catch (error: unknown) { // FIX: lint issue
+    } catch (error: unknown) {
       const errorMessage = error instanceof FirebaseError ? error.message : "No se pudo registrar la bicicleta.";
       console.error("Error registering bike by shop:", error);
       if (errorMessage.includes('Ya existe una bicicleta registrada con el número de serie:')) {
@@ -532,7 +532,7 @@ export default function RegisterSoldBikePage() {
                         </p>
                         <ul className="list-disc list-inside text-xs text-green-600 mt-1 space-y-0.5">
                             <li>Verificar su dirección de correo electrónico.</li>
-                            <li>Establecer su contraseña para acceder a Bike Guardian.</li>
+                            <li>Establecer su contraseña para acceder a BiciRegistro.</li>
                         </ul>
                         <p className="text-xs text-green-500 mt-2">
                             Por favor, informa al cliente que revise su bandeja de entrada (y spam).

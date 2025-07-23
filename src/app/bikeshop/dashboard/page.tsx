@@ -97,7 +97,7 @@ export default function BikeShopDashboardPage() {
     if (auth.currentUser) {
       refreshUserProfile();
     }
-  }, [refreshUserProfile]); // FIX: lint issue
+  }, [refreshUserProfile]);
 
   const handleApplyFilters = () => {
     fetchDashboardData();
@@ -146,7 +146,7 @@ export default function BikeShopDashboardPage() {
         description: `El evento "${rideToDelete.title}" ha sido eliminado.`,
       });
       fetchDashboardData(); // Refresh the list
-    } catch (error: unknown) { // FIX: lint issue
+    } catch (error: unknown) {
       const errorMessage = error instanceof Error ? error.message : "Error desconocido al eliminar.";
       toast({
         title: "Error al Eliminar",

@@ -634,7 +634,7 @@ export default function AdminPage() {
                     id="referralMessage"
                     {...register('referralMessage')}
                     rows={3}
-                    placeholder="Ej: ¡Hola! Te invito a unirte a BiciGuardian. Registra tu bici aquí: [APP_LINK]"
+                    placeholder="Ej: ¡Hola! Te invito a unirte a BiciRegistro. Registra tu bici aquí: [APP_LINK]"
                     className={errors.referralMessage ? 'border-destructive' : ''}
                   />
                   {errors.referralMessage && <p className="text-sm text-destructive">{errors.referralMessage.message}</p>}

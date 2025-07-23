@@ -105,7 +105,7 @@ export default function NgoDashboardPage() {
     if (auth.currentUser) {
       refreshUserProfile();
     }
-  }, [refreshUserProfile]); // FIX: lint issue
+  }, [refreshUserProfile]);
 
   const handleApplyFilters = () => {
     fetchDashboardData();
@@ -187,7 +187,7 @@ export default function NgoDashboardPage() {
         description: `El evento "${rideToDelete.title}" ha sido eliminado.`,
       });
       fetchDashboardData(); // Refresh the list
-    } catch (error: unknown) { // FIX: lint issue
+    } catch (error: unknown) {
       const errorMessage = error instanceof Error ? error.message : "Error desconocido al eliminar.";
       toast({
         title: "Error al Eliminar",
@@ -218,7 +218,7 @@ export default function NgoDashboardPage() {
             {user?.ngoName || user?.email}
           </h1>
           <p className="text-muted-foreground text-sm sm:text-base">
-            Mide el impacto y gestiona los eventos de tu comunidad en ${APP_NAME}.
+            Mide el impacto y gestiona los eventos de tu comunidad en {APP_NAME}.
           </p>
         </div>
         <div className="flex justify-start sm:justify-end">
