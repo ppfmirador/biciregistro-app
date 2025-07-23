@@ -7,7 +7,6 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { useSearchParams, useRouter } from 'next/navigation';
 import { useEffect, useState, Suspense } from 'react'; 
 import { ShieldCheck, Loader2 } from 'lucide-react'; 
-import { APP_NAME } from '@/constants';
 
 function AuthPageContent() {
   const searchParams = useSearchParams();
@@ -35,7 +34,7 @@ function AuthPageContent() {
           <div className="flex justify-center items-center mb-3 sm:mb-4">
             <ShieldCheck className="h-10 w-10 sm:h-12 sm:w-12 text-primary" />
           </div>
-          <CardTitle className="text-2xl sm:text-3xl font-headline">{APP_NAME}</CardTitle>
+          <CardTitle className="text-2xl sm:text-3xl font-headline">BiciRegistro</CardTitle>
           <CardDescription className="text-sm sm:text-base">
             {activeTab === 'login' ? '¡Bienvenido de nuevo! Inicia sesión para administrar tus bicicletas.' : 'Crea una cuenta para proteger tu rodada.'}
           </CardDescription>
@@ -71,4 +70,3 @@ export default function AuthPage() {
     </Suspense>
   );
 }
-

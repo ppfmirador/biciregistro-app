@@ -3,23 +3,22 @@ import './globals.css';
 import { Toaster } from '@/components/ui/toaster';
 import { AuthProvider } from '@/context/AuthContext';
 import AppShell from '@/components/layout/AppShell';
-import { APP_NAME } from '@/constants';
 
 const siteUrl = 'https://biciregistro.mx'; // Replace with your actual production domain
 
 export const metadata: Metadata = {
   metadataBase: new URL(siteUrl),
   title: {
-    default: `${APP_NAME} - Registro y Seguridad de Bicicletas`,
-    template: `%s | ${APP_NAME}`,
+    default: `BiciRegistro - Registro y Seguridad de Bicicletas`,
+    template: `%s | BiciRegistro`,
   },
-  description: `Registra tu bicicleta, reporta robos y consulta el historial. Únete a la comunidad ${APP_NAME} para proteger tu rodada y fomentar un ciclismo más seguro en México.`,
-  keywords: ['registro de bicicletas', 'reportar robo bicicleta', 'seguridad ciclista', APP_NAME, 'consultar número de serie bicicleta', 'México', 'bike registration', 'report stolen bike', 'bike security'],
-  applicationName: APP_NAME,
+  description: `Registra tu bicicleta, reporta robos y consulta el historial. Únete a la comunidad BiciRegistro para proteger tu rodada y fomentar un ciclismo más seguro en México.`,
+  keywords: ['registro de bicicletas', 'reportar robo bicicleta', 'seguridad ciclista', 'BiciRegistro', 'consultar número de serie bicicleta', 'México', 'bike registration', 'report stolen bike', 'bike security'],
+  applicationName: 'BiciRegistro',
   referrer: 'origin-when-cross-origin',
-  authors: [{ name: APP_NAME }], // Or your company/developer name
-  creator: APP_NAME, // Or your company/developer name
-  publisher: APP_NAME, // Or your company/developer name
+  authors: [{ name: 'BiciRegistro' }], // Or your company/developer name
+  creator: 'BiciRegistro', // Or your company/developer name
+  publisher: 'BiciRegistro', // Or your company/developer name
   formatDetection: {
     email: false,
     address: false,
@@ -37,20 +36,20 @@ export const metadata: Metadata = {
     },
   },
   openGraph: {
-    title: `${APP_NAME} - Registro y Seguridad de Bicicletas`,
-    description: `Registra tu bicicleta, reporta robos y consulta el historial. Únete a la comunidad ${APP_NAME} para proteger tu rodada.`,
+    title: `BiciRegistro - Registro y Seguridad de Bicicletas`,
+    description: `Registra tu bicicleta, reporta robos y consulta el historial. Únete a la comunidad BiciRegistro para proteger tu rodada.`,
     url: siteUrl,
-    siteName: APP_NAME,
+    siteName: 'BiciRegistro',
     locale: 'es_MX',
     type: 'website',
   },
   twitter: {
     card: 'summary_large_image',
-    title: `${APP_NAME} - Registro y Seguridad de Bicicletas`,
-    description: `Registra tu bicicleta, reporta robos y consulta el historial. Únete a la comunidad ${APP_NAME} para proteger tu rodada.`,
+    title: `BiciRegistro - Registro y Seguridad de Bicicletas`,
+    description: `Registra tu bicicleta, reporta robos y consulta el historial. Únete a la comunidad BiciRegistro para proteger tu rodada.`,
   },
   appleWebApp: {
-    title: APP_NAME,
+    title: 'BiciRegistro',
     statusBarStyle: 'default',
     capable: true,
   },
@@ -77,7 +76,7 @@ export default function RootLayout({
           dangerouslySetInnerHTML={{ __html: JSON.stringify({
             "@context": "https://schema.org",
             "@type": "Organization",
-            "name": APP_NAME,
+            "name": 'BiciRegistro',
             "url": siteUrl
           }) }}
         />
@@ -86,7 +85,7 @@ export default function RootLayout({
           dangerouslySetInnerHTML={{ __html: JSON.stringify({
             "@context": "https://schema.org",
             "@type": "WebSite",
-            "name": APP_NAME,
+            "name": 'BiciRegistro',
             "url": siteUrl,
             "potentialAction": {
               "@type": "SearchAction",

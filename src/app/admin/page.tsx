@@ -15,7 +15,7 @@ import { useToast } from '@/hooks/use-toast';
 import { getHomepageContent } from '@/lib/homepageContent';
 import type { HomepageContent, SponsorConfig, UserProfileData, UserRole } from '@/lib/types';
 import type { BikeShopAdminFormValues, NgoAdminFormValues } from '@/lib/schemas';
-import { APP_NAME, MEXICAN_STATES, BIKE_STATUSES } from '@/constants';
+import { MEXICAN_STATES, BIKE_STATUSES } from '@/constants';
 import NextImage from 'next/image';
 import { uploadFileToStorage, deleteFileFromStorage, getPathFromStorageUrl } from '@/lib/storage';
 import { v4 as uuidv4 } from 'uuid';
@@ -72,21 +72,22 @@ interface SponsorAdminItem extends SponsorConfig {
 }
 
 const defaultContentValues: HomepageContent = {
-    welcomeTitle: `Bienvenido a ${APP_NAME}`,
+    welcomeTitle: `Bienvenido a BiciRegistro`,
     welcomeDescription: `Tu aliado de confianza en la seguridad de bicicletas. Registra tu bici, reporta robos y ayuda a construir una comunidad ciclista más segura.`,
-    whyAppNameTitle: `¿Por qué ${APP_NAME}?`,
+    whyAppNameTitle: `¿Por qué BiciRegistro?`,
     feature1Title: "Registro Seguro",
     feature1Description: "Registra fácilmente tu bicicleta con su número de serie único, marca y modelo. Mantén la información de tu bici segura y accesible.",
     feature2Title: "Reporte de Robo",
     feature2Description: "En caso de robo, repórtalo rápidamente para alertar a la comunidad y a las autoridades. Aumenta las posibilidades de recuperación.",
     feature3Title: "Vigilancia Comunitaria",
-    feature3Description: "Utiliza nuestra búsqueda pública para verificar el estado de una bicicleta antes de comprar una usada. Promueve la transparencia y disuade los robos.",
+    feature3Description:
+      "Utiliza nuestra búsqueda pública para verificar el estado de una bicicleta antes de comprar una usada. Promueve la transparencia y disuade los robos.",
     communityTitle: "Únete a Nuestra Creciente Comunidad",
-    communityDescription: `${APP_NAME} es más que una base de datos; es una red de ciclistas comprometidos con la protección de sus bienes y el apoyo mutuo. Al registrar tu bici, contribuyes a un entorno más seguro para todos.`,
+    communityDescription: `BiciRegistro es más que una base de datos; es una red de ciclistas comprometidos con la protección de sus bienes y el apoyo mutuo. Al registrar tu bici, contribuyes a un entorno más seguro para todos.`,
     communityImageUrl: "https://placehold.co/600x400.png",
     sponsors: [],
-    referralMessage: `¡Hola! Te invito a unirte a ${APP_NAME}, una plataforma para registrar tu bicicleta y ayudar a la comunidad ciclista. ¡Es gratis! Regístrate aquí: [APP_LINK]`,
-    ngoReferralMessageTemplate: `¡Hola! En {{ngoName}} sabemos lo importante que son nuestras bicis. Únete a ${APP_NAME} aquí: {{ngoLink}}`,
+    referralMessage: `¡Hola! Te invito a unirte a BiciRegistro, una plataforma para registrar tu bicicleta y ayudar a la comunidad ciclista. ¡Es gratis! Regístrate aquí: [APP_LINK]`,
+    ngoReferralMessageTemplate: `¡Hola! En {{ngoName}} sabemos lo importante que son nuestras bicis. Únete a BiciRegistro aquí: {{ngoLink}}`,
 };
 
 interface StatCardProps {
@@ -563,7 +564,7 @@ export default function AdminPage() {
                   {errors.welcomeDescription && <p className="text-sm text-destructive">{errors.welcomeDescription.message}</p>}
                 </div>
 
-                <h2 className="text-xl font-semibold pt-4 border-t">Sección &quot;¿Por qué {APP_NAME}?&quot;</h2>
+                <h2 className="text-xl font-semibold pt-4 border-t">Sección &quot;¿Por qué BiciRegistro?&quot;</h2>
                 <div className="space-y-2">
                   <Label htmlFor="whyAppNameTitle">Título de la Sección</Label>
                   <Input id="whyAppNameTitle" {...register('whyAppNameTitle')} className={errors.whyAppNameTitle ? 'border-destructive' : ''} />

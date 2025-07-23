@@ -7,7 +7,6 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { useSearchParams, useRouter } from 'next/navigation';
 import { useEffect, useState, Suspense } from 'react'; 
 import { Store, Loader2 } from 'lucide-react'; 
-import { APP_NAME } from '@/constants';
 
 function BikeShopAuthPageContent() {
   const searchParams = useSearchParams();
@@ -36,7 +35,7 @@ function BikeShopAuthPageContent() {
           <div className="flex justify-center items-center mb-3 sm:mb-4">
             <Store className="h-10 w-10 sm:h-12 sm:w-12 text-primary" />
           </div>
-          <CardTitle className="text-2xl sm:text-3xl font-headline">{APP_NAME} - Portal Tiendas</CardTitle>
+          <CardTitle className="text-2xl sm:text-3xl font-headline">BiciRegistro - Portal Tiendas</CardTitle>
           <CardDescription className="text-sm sm:text-base">
             {activeTab === 'login' ? 'Inicia sesión para acceder al portal de tiendas.' : 'Registro para Tiendas (Próximamente desde Admin)'}
           </CardDescription>
@@ -75,4 +74,3 @@ export default function BikeShopAuthPage() {
     </Suspense>
   );
 }
-

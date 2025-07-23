@@ -177,7 +177,7 @@ function EditNgoProfilePageContent() {
                     <Textarea id="mission" {...register('mission')} className={errors.mission ? 'border-destructive' : ''} />
                     {errors.mission && <p className="text-xs text-destructive">{errors.mission.message}</p>}
                 </div>
-                <div className="space-y-1">
+                 <div className="space-y-1">
                     <Label htmlFor="address">Dirección Postal</Label>
                     <Input id="address" {...register('address')} className={errors.address ? 'border-destructive' : ''} />
                     {errors.address && <p className="text-xs text-destructive">{errors.address.message}</p>}

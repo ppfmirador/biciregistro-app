@@ -1,7 +1,6 @@
 
 "use client";
 
-import { APP_NAME } from '@/constants';
 import { useState, useEffect } from 'react';
 
 const Footer = () => {
@@ -16,7 +15,7 @@ const Footer = () => {
     <footer className="bg-card shadow-md py-6 mt-auto">
       <div className="container mx-auto px-4 text-center text-muted-foreground">
         {/* Render the structure, but the year is empty on the server and initial client render */}
-        <p>&copy; {currentYear} {APP_NAME}. Todos los derechos reservados.</p>
+        <p>&copy; {currentYear} BiciRegistro. Todos los derechos reservados.</p>
       </div>
     </footer>
   );

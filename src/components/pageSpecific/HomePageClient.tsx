@@ -7,23 +7,23 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { ShieldCheck, LockKeyhole, Users, User } from 'lucide-react';
 import Image from 'next/image';
-import { APP_NAME } from '@/constants';
 import SponsorCarousel from '@/components/SponsorCarousel';
 import type { HomepageContent } from '@/lib/types';
 
 // Fallback content in case initialContent is not properly passed (should be rare)
 const fallbackContent: HomepageContent = {
-  welcomeTitle: `Bienvenido a ${APP_NAME}`,
+  welcomeTitle: `Bienvenido a BiciRegistro`,
   welcomeDescription: `Tu aliado de confianza en la seguridad de bicicletas. Registra tu bici, reporta robos y ayuda a construir una comunidad ciclista más segura.`,
-  whyAppNameTitle: `¿Por qué ${APP_NAME}?`,
+  whyAppNameTitle: `¿Por qué BiciRegistro?`,
   feature1Title: "Registro Seguro",
   feature1Description: "Registra fácilmente tu bicicleta con su número de serie único, marca y modelo. Mantén la información de tu bici segura y accesible.",
   feature2Title: "Reporte de Robo",
   feature2Description: "En caso de robo, repórtalo rápidamente para alertar a la comunidad y a las autoridades. Aumenta las posibilidades de recuperación.",
   feature3Title: "Vigilancia Comunitaria",
-  feature3Description: "Utiliza nuestra búsqueda pública para verificar el estado de una bicicleta antes de comprar una usada. Promueve la transparencia y disuade los robos.",
+  feature3Description:
+    "Utiliza nuestra búsqueda pública para verificar el estado de una bicicleta antes de comprar una usada. Promueve la transparencia y disuade los robos.",
   communityTitle: "Únete a Nuestra Creciente Comunidad",
-  communityDescription: `${APP_NAME} es más que una base de datos; es una red de ciclistas comprometidos con la protección de sus bienes y el apoyo mutuo. Al registrar tu bici, contribuyes a un entorno más seguro para todos.`,
+  communityDescription: `BiciRegistro es más que una base de datos; es una red de ciclistas comprometidos con la protección de sus bienes y el apoyo mutuo. Al registrar tu bici, contribuyes a un entorno más seguro para todos.`,
   communityImageUrl: "https://placehold.co/600x400.png",
   sponsors: [
     { id: 'def1', name: 'Sponsor Ejemplo 1', logoUrl: 'https://placehold.co/150x80.png', link: '#', dataAiHint: 'company logo' },
@@ -44,7 +44,7 @@ export default function HomePageClient({ initialContent }: HomePageClientProps) 
         <div className="container mx-auto px-4">
           <ShieldCheck className="mx-auto h-16 w-16 sm:h-20 sm:w-20 text-white mb-4 sm:mb-6" />
           <h1 className="text-3xl sm:text-4xl md:text-5xl font-headline font-bold text-primary-foreground mb-3 sm:mb-4">
-            {content.welcomeTitle.replace('{APP_NAME}', APP_NAME)}
+            {content.welcomeTitle.replace('{APP_NAME}', 'BiciRegistro')}
           </h1>
           <p className="text-md sm:text-lg md:text-xl text-primary-foreground/90 mb-6 sm:mb-8 max-w-xl sm:max-w-2xl mx-auto">
             {content.welcomeDescription}
@@ -65,7 +65,7 @@ export default function HomePageClient({ initialContent }: HomePageClientProps) 
       <section className="py-8 sm:py-12">
         <div className="container mx-auto px-4">
           <h2 className="text-2xl sm:text-3xl font-headline font-semibold text-center mb-8 sm:mb-10">
-            {content.whyAppNameTitle.replace('{APP_NAME}', APP_NAME)}
+            {content.whyAppNameTitle.replace('{APP_NAME}', 'BiciRegistro')}
           </h2>
           <div className="grid grid-cols-1 md:grid-cols-3 gap-6 sm:gap-8">
             <Card className="shadow-lg hover:shadow-xl transition-shadow duration-300">
@@ -116,7 +116,7 @@ export default function HomePageClient({ initialContent }: HomePageClientProps) 
           <div className="md:w-1/2">
             <Image 
               src={content.communityImageUrl || fallbackContent.communityImageUrl}
-              alt="Comunidad ciclista unida y segura gracias a Biciregistro"
+              alt="Comunidad ciclista unida y segura gracias a BiciRegistro"
               width={600}
               height={400}
               className="rounded-lg shadow-md w-full h-auto"
@@ -132,7 +132,7 @@ export default function HomePageClient({ initialContent }: HomePageClientProps) 
           <div className="md:w-1/2 text-center md:text-left">
             <h2 className="text-2xl sm:text-3xl font-headline font-semibold mb-3 sm:mb-4">{content.communityTitle}</h2>
             <p className="text-base sm:text-lg text-muted-foreground mb-4 sm:mb-6">
-              {content.communityDescription.replace('{APP_NAME}', APP_NAME)}
+              {content.communityDescription.replace('{APP_NAME}', 'BiciRegistro')}
             </p>
             <div className="flex justify-center md:justify-start">
               <Link href="/auth?mode=signup" passHref>

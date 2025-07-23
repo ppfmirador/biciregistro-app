@@ -17,7 +17,6 @@ import { Label } from '@/components/ui/label';
 import { Input } from '@/components/ui/input';
 import { ArrowRightLeft, Loader2, Paperclip } from 'lucide-react';
 import type { Bike } from '@/lib/types';
-import { APP_NAME } from '@/constants';
 import { useToast } from '@/hooks/use-toast';
 import { uploadFileToStorage } from '@/lib/storage';
 import { useAuth } from '@/context/AuthContext';
@@ -104,7 +103,7 @@ const TransferOwnershipDialog: React.FC<TransferOwnershipDialogProps> = ({ bike,
           </DialogTitle>
           <DialogDescription>
             Iniciar transferencia para: {bike.brand} {bike.model} (N/S: {bike.serialNumber}).
-            Ingresa el correo del nuevo propietario. Debe tener una cuenta en {APP_NAME}.
+            Ingresa el correo del nuevo propietario. Debe tener una cuenta en BiciRegistro.
             Opcionalmente, adjunta un documento de transferencia (ej. contrato).
           </DialogDescription>
         </DialogHeader>

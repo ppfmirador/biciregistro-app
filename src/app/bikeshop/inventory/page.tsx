@@ -13,7 +13,6 @@ import { useToast } from '@/hooks/use-toast';
 import { useRouter } from 'next/navigation';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import BikeStatusBadge from '@/components/bike/BikeStatusBadge';
-import { APP_NAME } from '@/constants';
 
 interface ShopBikeListItemProps {
   bike: Bike;
@@ -118,7 +117,7 @@ export default function BikeShopInventoryPage() {
             Bicicletas Registradas por {user.shopName || user.email}
           </h1>
           <p className="text-muted-foreground text-sm sm:text-base">
-            Visualiza y busca las bicicletas que tu tienda ha registrado en {APP_NAME}.
+            Visualiza y busca las bicicletas que tu tienda ha registrado en BiciRegistro.
           </p>
         </div>
         <Button variant="outline" onClick={() => router.push('/bikeshop/dashboard')} className="w-full sm:w-auto">

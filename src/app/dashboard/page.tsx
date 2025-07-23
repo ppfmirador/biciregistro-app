@@ -31,7 +31,6 @@ import {
 import { Dialog, DialogContent as DialogContentCustom, DialogDescription as DialogDescriptionCustom, DialogHeader as DialogHeaderCustom, DialogTitle as DialogTitleCustom, DialogTrigger as DialogTriggerCustom, DialogFooter as DialogFooterCustom } from "@/components/ui/dialog";
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
-import { APP_NAME } from '@/constants';
 import { getHomepageContent } from '@/lib/homepageContent';
 import { FirebaseError } from 'firebase/app';
 
@@ -98,7 +97,7 @@ export default function DashboardPage() {
         if (homepageContent?.referralMessage) {
           setReferralMessageTemplate(homepageContent.referralMessage);
         } else {
-          setReferralMessageTemplate(`¡Hola! Te invito a unirte a ${APP_NAME}, una plataforma para registrar tu bicicleta y ayudar a la comunidad ciclista. ¡Es gratis! Regístrate aquí: [APP_LINK]`);
+          setReferralMessageTemplate(`¡Hola! Te invito a unirte a BiciRegistro, una plataforma para registrar tu bicicleta y ayudar a la comunidad ciclista. ¡Es gratis! Regístrate aquí: [APP_LINK]`);
         }
 
       } catch (error) {
@@ -306,7 +305,7 @@ export default function DashboardPage() {
               </DialogTriggerCustom>
                <DialogContentCustom className="sm:max-w-md">
                 <DialogHeaderCustom>
-                  <DialogTitleCustom>Invitar un Amigo a {APP_NAME}</DialogTitleCustom>
+                  <DialogTitleCustom>Invitar un Amigo a BiciRegistro</DialogTitleCustom>
                   <DialogDescriptionCustom>
                     Ingresa el número de WhatsApp de tu amigo para enviarle una invitación. El mensaje incluirá tu enlace de referido personal.
                   </DialogDescriptionCustom>
@@ -365,7 +364,7 @@ export default function DashboardPage() {
               </CardHeader>
               <CardContent>
                 <CardDescription className="mb-6 text-sm sm:text-base">
-                  Comienza agregando tu bicicleta al registro de {APP_NAME}.
+                  Comienza agregando tu bicicleta al registro de BiciRegistro.
                 </CardDescription>
                 <Link href="/register-bike" passHref>
                   <Button size="lg">

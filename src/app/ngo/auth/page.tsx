@@ -7,7 +7,6 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { useSearchParams, useRouter } from 'next/navigation';
 import { useEffect, useState, Suspense } from 'react'; 
 import { HeartHandshake, Loader2 } from 'lucide-react'; 
-import { APP_NAME } from '@/constants';
 
 function NgoAuthPageContent() {
   const searchParams = useSearchParams();
@@ -35,7 +34,7 @@ function NgoAuthPageContent() {
           <div className="flex justify-center items-center mb-3 sm:mb-4">
             <HeartHandshake className="h-10 w-10 sm:h-12 sm:w-12 text-primary" />
           </div>
-          <CardTitle className="text-2xl sm:text-3xl font-headline">{APP_NAME} - Portal ONGs y Colectivos</CardTitle>
+          <CardTitle className="text-2xl sm:text-3xl font-headline">BiciRegistro - Portal ONGs y Colectivos</CardTitle>
           <CardDescription className="text-sm sm:text-base">
             Inicia sesión para acceder al panel de tu organización.
           </CardDescription>

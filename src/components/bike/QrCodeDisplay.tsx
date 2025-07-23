@@ -6,7 +6,7 @@ import { QRCodeCanvas, QRCodeSVG } from 'qrcode.react';
 import { jsPDF } from 'jspdf';
 import { Button } from '@/components/ui/button';
 import { FileText, Image as ImageIcon, Code } from 'lucide-react';
-import { SITE_URL, APP_NAME } from '@/constants';
+import { SITE_URL } from '@/constants';
 import type { Bike } from '@/lib/types';
 import { useToast } from '@/hooks/use-toast';
 
@@ -36,7 +36,7 @@ const QrCodeDisplay: React.FC<QrCodeDisplayProps> = ({ bike }) => {
     const pngUrl = canvas.toDataURL('image/png');
     const downloadLink = document.createElement('a');
     downloadLink.href = pngUrl;
-    downloadLink.download = `${APP_NAME.toLowerCase()}-qr-${bike.serialNumber}.png`;
+    downloadLink.download = `BiciRegistro-qr-${bike.serialNumber}.png`;
     document.body.appendChild(downloadLink);
     downloadLink.click();
     document.body.removeChild(downloadLink);
@@ -53,7 +53,7 @@ const QrCodeDisplay: React.FC<QrCodeDisplayProps> = ({ bike }) => {
     
     const downloadLink = document.createElement('a');
     downloadLink.href = svgUrl;
-    downloadLink.download = `${APP_NAME.toLowerCase()}-qr-${bike.serialNumber}.svg`;
+    downloadLink.download = `BiciRegistro-qr-${bike.serialNumber}.svg`;
     document.body.appendChild(downloadLink);
     downloadLink.click();
     document.body.removeChild(downloadLink);
@@ -63,20 +63,19 @@ const QrCodeDisplay: React.FC<QrCodeDisplayProps> = ({ bike }) => {
   const handleDownloadPdf = () => {
     const canvas = getCanvas();
     if (!canvas) {
-      toast({ title: "Error", description: "No se pudo generar el código QR para PDF.", variant: "destructive" });
-      return;
+        toast({ title: "Error", description: "No se pudo generar el código QR para el PDF.", variant: "destructive" });
+        return;
     }
-    
+
     const qrDataUrl = canvas.toDataURL('image/png');
-    
     const doc = new jsPDF({
         unit: 'mm',
         format: [50, 100] // 5cm width, 10cm height
     });
 
-    const primaryColor = '#3B82F6'; 
-    const textColor = '#1E293B'; 
-    const lightTextColor = '#64748B'; 
+    const primaryColor = '#3B82F6';
+    const textColor = '#1E293B';
+    const lightTextColor = '#64748B';
     const backgroundColor = '#FFFFFF';
     
     doc.setFillColor(backgroundColor);
@@ -86,7 +85,7 @@ const QrCodeDisplay: React.FC<QrCodeDisplayProps> = ({ bike }) => {
     doc.setTextColor(primaryColor);
     doc.setFontSize(16);
     doc.setFont('helvetica', 'bold');
-    doc.text(APP_NAME, 25, 15, { align: 'center' });
+    doc.text("BiciRegistro", 25, 15, { align: 'center' });
 
     doc.setTextColor(textColor);
     doc.setFontSize(9);
@@ -120,7 +119,7 @@ const QrCodeDisplay: React.FC<QrCodeDisplayProps> = ({ bike }) => {
     doc.rect(2, 2, 46, 96, 'S'); // Draw rectangle with a 2mm margin
 
     doc.save(`etiqueta-qr-${bike.serialNumber}.pdf`);
-  };
+};
 
   return (
     <div className="flex flex-col items-center justify-center gap-4 rounded-lg border bg-white p-4">
@@ -146,7 +145,7 @@ const QrCodeDisplay: React.FC<QrCodeDisplayProps> = ({ bike }) => {
       </div>
 
       <p className="max-w-xs text-center text-xs text-muted-foreground">
-         Escanear para verificar en {APP_NAME}
+         Escanear para verificar en BiciRegistro
       </p>
 
       <div className="mt-auto flex w-full flex-col gap-2 pt-4">

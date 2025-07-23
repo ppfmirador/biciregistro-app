@@ -5,7 +5,6 @@ import Link from 'next/link';
 import { LogOut, Settings, User, Store, LayoutDashboard, ShieldCheck, HeartHandshake, UserPlus, LogIn, CalendarDays } from 'lucide-react'; 
 import { Button } from '@/components/ui/button';
 import { useAuth } from '@/context/AuthContext';
-import { APP_NAME } from '@/constants';
 import { useRouter } from 'next/navigation';
 import {
   DropdownMenu,
@@ -111,7 +110,7 @@ const Header = () => {
       <div className="container mx-auto px-4 py-3 flex flex-col sm:flex-row justify-between items-center gap-3 sm:gap-0">
         <Link href="/" className="flex items-center gap-2 text-primary hover:text-primary/80 transition-colors">
           <ShieldCheck className="h-7 w-7 sm:h-8 sm:w-8 text-primary" />
-          <h1 className="text-xl sm:text-2xl font-headline font-semibold">{APP_NAME}</h1>
+          <h1 className="text-xl sm:text-2xl font-headline font-semibold">BiciRegistro</h1>
         </Link>
         <nav className="flex flex-wrap justify-center sm:justify-end items-center gap-1 sm:gap-2">
           <Link href="/" className="text-sm font-medium text-foreground hover:text-primary transition-colors px-2 py-1">

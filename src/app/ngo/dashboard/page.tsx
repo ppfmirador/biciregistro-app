@@ -9,7 +9,6 @@ import { Button } from '@/components/ui/button';
 import { Label } from '@/components/ui/label';
 import { Loader2, HeartHandshake, Bike, Users, ShieldAlert, CheckCircle, RefreshCw, Download, BarChart, CalendarIcon as CalendarIconLucid, Share2, ClipboardCopy, UserCircle, PlusCircle, Edit, Trash2 } from 'lucide-react';
 import Link from 'next/link';
-import { APP_NAME } from '@/constants';
 import { auth } from '@/lib/firebase';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { getNgoAnalytics, getOrganizerRides, deleteRide } from '@/lib/db';
@@ -76,7 +75,7 @@ export default function NgoDashboardPage() {
       ]);
       setAnalyticsData(analytics);
       setRides(ngoRides);
-      setInviteTemplate(content?.ngoReferralMessageTemplate || `¡Hola! En {{ngoName}} te invitamos a ${APP_NAME}. Regístrate aquí: {{ngoLink}}`);
+      setInviteTemplate(content?.ngoReferralMessageTemplate || `¡Hola! En {{ngoName}} te invitamos a BiciRegistro. Regístrate aquí: {{ngoLink}}`);
     } catch (error) {
       console.error("Failed to fetch NGO data:", error);
       toast({
@@ -218,7 +217,7 @@ export default function NgoDashboardPage() {
             {user?.ngoName || user?.email}
           </h1>
           <p className="text-muted-foreground text-sm sm:text-base">
-            Mide el impacto y gestiona los eventos de tu comunidad en {APP_NAME}.
+            Mide el impacto y gestiona los eventos de tu comunidad en BiciRegistro.
           </p>
         </div>
         <div className="flex justify-start sm:justify-end">

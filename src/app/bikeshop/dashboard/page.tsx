@@ -9,7 +9,6 @@ import { Button } from '@/components/ui/button';
 import { Label } from '@/components/ui/label';
 import { Loader2, Store, Bike, Search, PlusCircle, ClipboardList, LayoutGrid, Filter, Users, AlertTriangle, ArrowRightLeft, RefreshCw, Download, BarChart, CalendarIcon, Edit, Trash2, Share2, Calendar as CalendarIconLucid, UserCircle } from 'lucide-react';
 import Link from 'next/link';
-import { APP_NAME } from '@/constants';
 import { auth } from '@/lib/firebase';
 import SearchBikeForm from '@/components/SearchBikeForm';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
@@ -107,7 +106,7 @@ export default function BikeShopDashboardPage() {
     const formattedDate = format(new Date(ride.rideDate), "PPPP 'a las' p", { locale: es });
 
     const messageParts = [
-      `¡Hola comunidad! 🚴‍♀️🚴‍♂️ Te invitamos a nuestro próximo evento desde ${user?.shopName || APP_NAME}:`,
+      `¡Hola comunidad! 🚴‍♀️🚴‍♂️ Te invitamos a nuestro próximo evento desde ${user?.shopName || 'BiciRegistro'}:`,
       `*${ride.title}*`,
       `🗓️ *Fecha:* ${formattedDate}`,
       `📍 *Punto de encuentro:* ${ride.meetingPoint}`,

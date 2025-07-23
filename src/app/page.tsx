@@ -3,14 +3,13 @@
 import type { Metadata } from "next";
 import { getHomepageContentServer } from "@/lib/homepageContentServer"; // Corrected import
 import type { HomepageContent } from "@/lib/types";
-import { APP_NAME } from '@/constants';
 import HomePageClient from "@/components/pageSpecific/HomePageClient";
 
 // Default content, used as fallback or if Firestore data is unavailable
 const defaultContent: HomepageContent = {
-  welcomeTitle: `Bienvenido a ${APP_NAME}`,
+  welcomeTitle: `Bienvenido a BiciRegistro`,
   welcomeDescription: `Tu aliado de confianza en la seguridad de bicicletas. Registra tu bici, reporta robos y ayuda a construir una comunidad ciclista más segura.`,
-  whyAppNameTitle: `¿Por qué ${APP_NAME}?`,
+  whyAppNameTitle: `¿Por qué BiciRegistro?`,
   feature1Title: "Registro Seguro",
   feature1Description:
     "Registra fácilmente tu bicicleta con su número de serie único, marca y modelo. Mantén la información de tu bici segura y accesible.",
@@ -21,7 +20,7 @@ const defaultContent: HomepageContent = {
   feature3Description:
     "Utiliza nuestra búsqueda pública para verificar el estado de una bicicleta antes de comprar una usada. Promueve la transparencia y disuade los robos.",
   communityTitle: "Únete a Nuestra Creciente Comunidad",
-  communityDescription: `${APP_NAME} es más que una base de datos; es una red de ciclistas comprometidos con la protección de sus bienes y el apoyo mutuo. Al registrar tu bici, contribuyes a un entorno más seguro para todos.`,
+  communityDescription: `BiciRegistro es más que una base de datos; es una red de ciclistas comprometidos con la protección de sus bienes y el apoyo mutuo. Al registrar tu bici, contribuyes a un entorno más seguro para todos.`,
   communityImageUrl: "https://placehold.co/600x400.png",
   sponsors: [
     {
@@ -50,7 +49,7 @@ export async function generateMetadata(): Promise<Metadata> {
   }
   const title =
     fetchedContent?.welcomeTitle ||
-    defaultContent.welcomeTitle.replace("{APP_NAME}", APP_NAME);
+    defaultContent.welcomeTitle.replace("{APP_NAME}", "BiciRegistro");
   const description =
     fetchedContent?.welcomeDescription || defaultContent.welcomeDescription;
 
