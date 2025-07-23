@@ -55,12 +55,12 @@ export const BikeForm: React.FC<BikeFormProps> = ({ onSubmit, initialData, isLoa
     <form onSubmit={handleSubmit(onSubmit)} className="space-y-6">
       <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
         <div className="space-y-2">
-          <Label htmlFor="serialNumber">Número de Serie</Label>
+          <Label htmlFor="serialNumber">Número de Serie <span className="text-destructive">*</span></Label>
           <Input id="serialNumber" {...register('serialNumber')} className={errors.serialNumber ? 'border-destructive' : ''} />
           {errors.serialNumber && <p className="text-sm text-destructive">{errors.serialNumber.message}</p>}
         </div>
         <div className="space-y-2">
-           <Label htmlFor="brand">Marca</Label>
+           <Label htmlFor="brand">Marca <span className="text-destructive">*</span></Label>
            <Controller
             name="brand"
             control={control}
@@ -84,7 +84,7 @@ export const BikeForm: React.FC<BikeFormProps> = ({ onSubmit, initialData, isLoa
       
       {watchedBrand === OTHER_BRAND_VALUE && (
         <div className="space-y-2">
-          <Label htmlFor="otherBrand">Especifica la Marca</Label>
+          <Label htmlFor="otherBrand">Especifica la Marca <span className="text-destructive">*</span></Label>
           <Input id="otherBrand" {...register('otherBrand')} className={errors.otherBrand ? 'border-destructive' : ''} placeholder="Ej. Bicicletas Patito" />
           {errors.otherBrand && <p className="text-sm text-destructive">{errors.otherBrand.message}</p>}
         </div>
@@ -93,7 +93,7 @@ export const BikeForm: React.FC<BikeFormProps> = ({ onSubmit, initialData, isLoa
 
       <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
         <div className="space-y-2">
-          <Label htmlFor="model">Modelo</Label>
+          <Label htmlFor="model">Modelo <span className="text-destructive">*</span></Label>
           <Input id="model" {...register('model')} className={errors.model ? 'border-destructive' : ''} />
           {errors.model && <p className="text-sm text-destructive">{errors.model.message}</p>}
         </div>

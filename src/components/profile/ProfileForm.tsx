@@ -18,11 +18,11 @@ const PLACEHOLDER_NONE_VALUE = "_PLACEHOLDER_NONE_";
 const profileFormSchema = z.object({
   firstName: z.string().min(1, 'El nombre es obligatorio.'),
   lastName: z.string().min(1, 'El apellido es obligatorio.'),
+  country: z.string().min(1, 'El país es obligatorio.'),
+  profileState: z.string().min(1, 'El estado/provincia es obligatorio.'),
   whatsappPhone: z.string().optional().refine(val => !val || /^\+?[0-9\s-()]*$/.test(val), {
     message: "Número de WhatsApp inválido."
   }),
-  country: z.string().optional(),
-  profileState: z.string().optional(),
   postalCode: z.string().optional().refine(val => !val || /^\d{5}$/.test(val), {
     message: "El código postal debe tener 5 dígitos."
   }),
@@ -99,7 +99,7 @@ export const ProfileForm = ({
       
       <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
          <div className="space-y-2">
-          <Label htmlFor="country">País de Residencia (Opcional)</Label>
+          <Label htmlFor="country">País de Residencia</Label>
           <Controller
             name="country"
             control={control}
@@ -123,7 +123,7 @@ export const ProfileForm = ({
           {errors.country && <p className="text-sm text-destructive">{errors.country.message}</p>}
         </div>
         <div className="space-y-2">
-          <Label htmlFor="profileState">Estado/Provincia (Opcional)</Label>
+          <Label htmlFor="profileState">Estado/Provincia</Label>
           <Controller
             name="profileState"
             control={control}

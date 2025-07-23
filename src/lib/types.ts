@@ -95,11 +95,11 @@ export interface AuthUser {
 }
 
 export interface UserProfileData {
-  firstName?: string;
-  lastName?: string;
+  firstName: string;
+  lastName: string;
+  country: string;
+  profileState: string;
   whatsappPhone?: string;
-  country?: string;
-  profileState?: string;
   postalCode?: string;
   age?: number | null;
   gender?: 'masculino' | 'femenino' | 'otro' | 'prefiero_no_decir' | '';
@@ -118,6 +118,8 @@ export interface UserProfileData {
   contactName?: string;
   contactEmail?: string;
   contactWhatsApp?: string;
+  // Shared field for Shops & NGOs
+  whatsappGroupLink?: string | null;
   // NGO Specific Fields
   ngoName?: string;
   mission?: string;
@@ -125,11 +127,9 @@ export interface UserProfileData {
   meetingDays?: string[];
   meetingTime?: string;
   meetingPointMapsLink?: string | null;
-  // Shared field for Shops & NGOs
-  whatsappGroupLink?: string | null;
 }
 
-export interface UserProfile extends AuthUser, Omit<UserProfileData, 'email'> {}
+export interface UserProfile extends AuthUser, Partial<UserProfileData> {}
 
 export interface TransferRequest {
   id:string;
@@ -179,9 +179,9 @@ export interface HomepageContent {
 export interface NewCustomerDataForShop {
     firstName: string;
     lastName: string;
+    country: string;
+    profileState: string;
     whatsappPhone?: string;
-    country?: string;
-    profileState?: string;
     postalCode?: string;
     gender?: UserProfileData['gender'];
 }

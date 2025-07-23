@@ -69,9 +69,9 @@ function EditProfilePageContent() {
       const profileToSave: UserProfileData = {
         firstName: data.firstName,
         lastName: data.lastName,
+        country: data.country,
+        profileState: data.profileState,
         whatsappPhone: data.whatsappPhone || '',
-        country: data.country || '',
-        profileState: data.profileState || '',
         postalCode: data.postalCode || '',
         age: data.age || null,
         gender: data.gender || '',

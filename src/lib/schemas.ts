@@ -1,4 +1,5 @@
 
+
 import * as z from 'zod';
 import type { BikeType, RideLevel } from './types';
 import { OTHER_BRAND_VALUE } from '@/constants';
@@ -71,13 +72,13 @@ export type BikeFormValues = z.infer<typeof bikeFormSchema>;
 
 export const bikeShopRegisterSchema = z.object({
   customerEmail: z.string().email({ message: 'Correo electrónico del cliente inválido.' }),
-  customerFirstName: z.string().optional(),
-  customerLastName: z.string().optional(),
+  customerFirstName: z.string().min(1, 'El nombre del cliente es obligatorio.'),
+  customerLastName: z.string().min(1, 'El apellido del cliente es obligatorio.'),
+  customerCountry: z.string().min(1, 'El país del cliente es obligatorio.'),
+  customerProfileState: z.string().min(1, 'El estado/provincia del cliente es obligatorio.'),
   customerWhatsappPhone: z.string().optional().refine(val => !val || /^\+?[0-9\s-()]*$/.test(val), {
     message: "Número de WhatsApp inválido."
   }),
-  customerCountry: z.string().optional(),
-  customerProfileState: z.string().optional(),
   customerPostalCode: z.string().optional().refine(val => !val || /^\d{5}$/.test(val), {
     message: "El código postal debe tener 5 dígitos."
   }),

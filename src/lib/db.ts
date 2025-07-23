@@ -718,9 +718,9 @@ export const createCustomerWithTemporaryPassword = async (
       email: newUser.email?.toLowerCase(),
       firstName: customerData.firstName,
       lastName: customerData.lastName,
+      country: customerData.country,
+      profileState: customerData.profileState,
       whatsappPhone: customerData.whatsappPhone || '',
-      country: customerData.country || '',
-      profileState: customerData.profileState || '',
       postalCode: customerData.postalCode || '',
       gender: customerData.gender as UserProfileData['gender'] || '',
       role: 'cyclist',
@@ -1111,5 +1111,3 @@ export const deleteRide = async (rideId: string, currentOrganizerId: string): Pr
     }
     await deleteDoc(rideRef);
 };
-
-    

@@ -2,7 +2,7 @@
 "use client";
 
 import { useState, useEffect } from 'react';
-import { useForm, type SubmitHandler } from 'react-hook-form';
+import { useForm, Controller, type SubmitHandler } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import * as z from 'zod';
 import { Button } from '@/components/ui/button';
@@ -14,13 +14,22 @@ import { useToast } from '@/hooks/use-toast';
 import { Loader2, Eye, EyeOff } from 'lucide-react';
 import type { UserRole } from '@/lib/types';
 import { FirebaseError } from 'firebase/app';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import { LAT_AM_LOCATIONS } from '@/constants';
 
 const formSchema = z.object({
+  firstName: z.string().min(1, 'El nombre es obligatorio.'),
+  lastName: z.string().min(1, 'El apellido es obligatorio.'),
   email: z.string().email({ message: 'Dirección de correo inválida.' }),
   password: z.string().min(6, { message: 'La contraseña debe tener al menos 6 caracteres.' }),
+  country: z.string().min(1, 'El país es obligatorio.'),
+  profileState: z.string().min(1, 'El estado/provincia es obligatorio.'),
 });
 
+const loginSchema = formSchema.omit({ firstName: true, lastName: true, country: true, profileState: true });
+
 type FormValues = z.infer<typeof formSchema>;
+type LoginValues = z.infer<typeof loginSchema>;
 
 interface AuthFormProps {
   mode: 'login' | 'signup';
@@ -46,39 +55,57 @@ export const AuthForm: React.FC<AuthFormProps> = ({ mode, userType = 'cyclist' }
   const searchParams = useSearchParams();
   const { toast } = useToast();
 
-  const { register, handleSubmit, formState: { errors }, getValues } = useForm<FormValues>({
-    resolver: zodResolver(formSchema),
+  const currentSchema = mode === 'signup' ? formSchema : loginSchema;
+
+  const { register, handleSubmit, formState: { errors }, getValues, control, watch, setValue } = useForm<FormValues>({
+    resolver: zodResolver(currentSchema),
   });
+
+  const watchedCountry = watch("country");
+
+  useEffect(() => {
+    setValue('profileState', '');
+  }, [watchedCountry, setValue]);
 
   useEffect(() => {
     if (!isSubmitting && !authLoading && user) {
-      if (mode === 'login' || isGoogleSubmitting) { // Redirect after login or Google sign-in
+      if (mode === 'login' || isGoogleSubmitting) { 
         if (user.role === 'bikeshop') {
           router.push('/bikeshop/dashboard');
         } else if (user.role === 'ngo') {
             router.push('/ngo/dashboard');
         } else if (user.role === 'admin') {
           router.push('/admin');
-        } else if (!user.firstName && !user.lastName) { // Profile is incomplete for any user type
+        } else if (!user.firstName && !user.lastName) { 
            router.push('/profile/edit');
         }
         else {
           router.push('/dashboard');
         }
-      } else if (mode === 'signup') { // Email/pass signup always goes to edit profile
+      } else if (mode === 'signup') { 
         router.push('/profile/edit');
       }
     }
   }, [user, authLoading, router, mode, isSubmitting, isGoogleSubmitting]);
 
-  const onSubmit: SubmitHandler<FormValues> = async (data) => {
+  const onSubmit: SubmitHandler<FormValues | LoginValues> = async (data) => {
     setIsSubmitting(true);
     try {
       if (mode === 'login') {
         await signIn(data.email, data.password);
       } else {
+        const signupData = data as FormValues;
         const referrerId = searchParams.get('ref');
-        await signUp(data.email, data.password, userType, referrerId);
+        await signUp({
+          email: signupData.email,
+          password: signupData.password,
+          firstName: signupData.firstName,
+          lastName: signupData.lastName,
+          country: signupData.country,
+          profileState: signupData.profileState,
+          role: userType,
+          referrerId: referrerId
+        });
         toast({
           title: 'Registro Exitoso',
           description: 'Tu cuenta ha sido creada. Por favor, revisa tu correo electrónico para verificar tu cuenta.'
@@ -151,6 +178,35 @@ export const AuthForm: React.FC<AuthFormProps> = ({ mode, userType = 'cyclist' }
   return (
     <div className="space-y-4">
       <form onSubmit={handleSubmit(onSubmit)} className="space-y-6">
+
+        {mode === 'signup' && (
+          <>
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+              <div className="space-y-2">
+                <Label htmlFor="firstName">Nombre(s)</Label>
+                <Input id="firstName" {...register('firstName')} className={errors.firstName ? 'border-destructive' : ''} disabled={isAnyLoading} />
+                {errors.firstName && <p className="text-sm text-destructive">{errors.firstName.message}</p>}
+              </div>
+              <div className="space-y-2">
+                <Label htmlFor="lastName">Apellido(s)</Label>
+                <Input id="lastName" {...register('lastName')} className={errors.lastName ? 'border-destructive' : ''} disabled={isAnyLoading} />
+                {errors.lastName && <p className="text-sm text-destructive">{errors.lastName.message}</p>}
+              </div>
+            </div>
+             <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                <div className="space-y-2">
+                    <Label htmlFor="country">País</Label>
+                    <Controller name="country" control={control} render={({ field }) => ( <Select onValueChange={(value) => { field.onChange(value); setValue('profileState', ''); }} value={field.value || ''} disabled={isAnyLoading}> <SelectTrigger className={errors.country ? 'border-destructive' : ''}><SelectValue placeholder="Selecciona un país" /></SelectTrigger> <SelectContent> {LAT_AM_LOCATIONS.map(c => <SelectItem key={c.country} value={c.country}>{c.country}</SelectItem>)} </SelectContent> </Select> )} />
+                    {errors.country && <p className="text-sm text-destructive">{errors.country.message}</p>}
+                </div>
+                <div className="space-y-2">
+                    <Label htmlFor="profileState">Estado/Provincia</Label>
+                    <Controller name="profileState" control={control} render={({ field }) => ( <Select onValueChange={field.onChange} value={field.value || ''} disabled={isAnyLoading || !watchedCountry}> <SelectTrigger className={errors.profileState ? 'border-destructive' : ''}><SelectValue placeholder={!watchedCountry ? "País primero" : "Selecciona estado"} /></SelectTrigger> <SelectContent> {LAT_AM_LOCATIONS.find(c => c.country === watchedCountry)?.states.map(s => <SelectItem key={s} value={s}>{s}</SelectItem>)} </SelectContent> </Select> )} />
+                    {errors.profileState && <p className="text-sm text-destructive">{errors.profileState.message}</p>}
+                </div>
+             </div>
+          </>
+        )}
         <div className="space-y-2">
           <Label htmlFor="email">Correo Electrónico</Label>
           <Input

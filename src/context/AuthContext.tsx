@@ -23,13 +23,24 @@ import {
 import { getUserDoc, updateUserDoc, incrementReferralCount } from '@/lib/db';
 import { useToast } from '@/hooks/use-toast';
 import { FirebaseError } from 'firebase/app';
-import { initializeClientSideFirebase } from '@/lib/firebase-client'; // Import the client-side initializer
+import { initializeClientSideFirebase } from '@/lib/firebase-client';
+
+interface SignUpData {
+    email: string;
+    pass: string;
+    firstName: string;
+    lastName: string;
+    country: string;
+    profileState: string;
+    role?: UserRole;
+    referrerId?: string | null;
+}
 
 interface AuthContextType {
   user: UserProfile | null;
   loading: boolean;
   signIn: (email: string, pass: string) => Promise<void>;
-  signUp: (email: string, pass: string, role?: UserRole, referrerId?: string | null) => Promise<void>;
+  signUp: (data: SignUpData) => Promise<void>;
   signOut: () => Promise<void>;
   signInAnonymously: () => Promise<UserProfile | null>;
   sendPasswordReset: (email: string) => Promise<void>;
@@ -46,7 +57,6 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
   const { toast } = useToast();
   const router = useRouter(); 
 
-  // Call the client-side Firebase initializer here, once.
   useEffect(() => {
     initializeClientSideFirebase();
   }, []);
@@ -140,7 +150,8 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
     }
   };
 
-  const signUp = async (email: string, pass: string, role: UserRole = 'cyclist', referrerId?: string | null): Promise<void> => {
+  const signUp = async (data: SignUpData): Promise<void> => {
+    const { email, pass, firstName, lastName, country, profileState, role = 'cyclist', referrerId } = data;
     setLoading(true);
     try {
       const userCredential = await createUserWithEmailAndPassword(auth, email, pass);
@@ -154,6 +165,10 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
 
       const initialProfileData: UserProfileData = {
         email: firebaseUser.email?.toLowerCase(),
+        firstName,
+        lastName,
+        country,
+        profileState,
         role: roleToSet,
         isAdmin: false,
         referralCount: 0,
@@ -316,5 +331,3 @@ export const useAuth = (): AuthContextType => {
   }
   return context;
 };
-
-    
