@@ -1,3 +1,4 @@
+
 // functions/src/index.ts
 import { onCall, HttpsError } from "firebase-functions/v2/https";
 import * as admin from "firebase-admin";
@@ -142,7 +143,7 @@ export const createBike = onCall(callOptions, async (req) => {
       statusHistory: [
         {
           status: "En Regla",
-          timestamp: admin.firestore.Timestamp.now(), // Corrected line
+          timestamp: admin.firestore.Timestamp.now(),
           notes: "Registro inicial por ciclista",
         },
       ],
@@ -372,12 +373,12 @@ export const reportBikeStolen = onCall(callOptions, async (req) => {
       theftLocationCountry: theftData.theftLocationCountry,
       theftPerpetratorDetails: theftData.theftPerpetratorDetails || null,
       theftIncidentDetails: theftData.theftIncidentDetails,
-      reportedAt: admin.firestore.FieldValue.serverTimestamp(),
+      reportedAt: admin.firestore.Timestamp.now(), // Corrected
     };
 
     const newStatusEntry = {
       status: "Robada",
-      timestamp: admin.firestore.FieldValue.serverTimestamp(),
+      timestamp: admin.firestore.Timestamp.now(), // Corrected
       notes:
         theftData.generalNotes ||
         `Reportada como robada en ${theftData.theftLocationState}, ` +
@@ -436,7 +437,7 @@ export const markBikeRecovered = onCall(callOptions, async (req) => {
 
     const newStatusEntry = {
       status: "En Regla",
-      timestamp: admin.firestore.FieldValue.serverTimestamp(),
+      timestamp: admin.firestore.Timestamp.now(), // Corrected
       notes: "Bicicleta marcada como recuperada por el propietario.",
     };
 
@@ -518,7 +519,7 @@ export const initiateTransferRequest = onCall(callOptions, async (req) => {
       fromOwnerEmail,
       toUserEmail: recipientEmail.toLowerCase(),
       status: "pending",
-      requestDate: admin.firestore.FieldValue.serverTimestamp(),
+      requestDate: admin.firestore.Timestamp.now(), // Corrected
       transferDocumentUrl: transferDocumentUrl || null,
       transferDocumentName: transferDocumentName || null,
     };
@@ -607,7 +608,7 @@ export const respondToTransferRequest = onCall(callOptions, async (req) => {
       // Perform action
       transaction.update(requestRef, {
         status: action,
-        resolutionDate: admin.firestore.FieldValue.serverTimestamp(),
+        resolutionDate: admin.firestore.Timestamp.now(), // Corrected
       });
 
       if (action === "accepted") {
@@ -644,7 +645,7 @@ export const respondToTransferRequest = onCall(callOptions, async (req) => {
           `${requestData.fromOwnerEmail} a ${requestData.toUserEmail}.`;
         const historyEntry = {
           status: "Transferida",
-          timestamp: admin.firestore.FieldValue.serverTimestamp(),
+          timestamp: admin.firestore.Timestamp.now(), // Corrected
           notes: transferNote,
           transferDocumentUrl: requestData.transferDocumentUrl || null,
           transferDocumentName: requestData.transferDocumentName || null,
@@ -818,7 +819,7 @@ export const updateHomepageContent = onCall(callOptions, async (req) => {
       .collection("homepage_content")
       .doc("config");
     await contentRef.set(
-      { ...content, lastUpdated: admin.firestore.FieldValue.serverTimestamp() },
+      { ...content, lastUpdated: admin.firestore.Timestamp.now() }, // Corrected
       { merge: true },
     );
     return { message: "Homepage content updated successfully." };
@@ -1071,7 +1072,7 @@ export const createOrUpdateRide = onCall(callOptions, async (req) => {
         organizerProfile?.ngoName ||
         "Organizador",
       organizerLogoUrl: "", // Add logic for logo if needed
-      updatedAt: admin.firestore.FieldValue.serverTimestamp(),
+      updatedAt: admin.firestore.Timestamp.now(), // Corrected
     };
 
     if (rideId) {
@@ -1090,7 +1091,7 @@ export const createOrUpdateRide = onCall(callOptions, async (req) => {
       // Create new ride
       const newRideData = {
         ...dataToSave,
-        createdAt: admin.firestore.FieldValue.serverTimestamp(),
+        createdAt: admin.firestore.Timestamp.now(), // Corrected
       };
       const newRideRef = await admin
         .firestore()
