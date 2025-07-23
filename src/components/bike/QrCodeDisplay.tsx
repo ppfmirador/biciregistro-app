@@ -9,6 +9,7 @@ import { FileText, Image as ImageIcon, Code, ShieldCheck } from 'lucide-react';
 import { SITE_URL, APP_NAME } from '@/constants';
 import type { Bike } from '@/lib/types';
 import { useToast } from '@/hooks/use-toast';
+import logoSrc from '../../../public/logo_biciregistro_completo_color.png'; // Import the logo
 
 interface QrCodeDisplayProps {
   bike: Bike;
@@ -69,12 +70,12 @@ const QrCodeDisplay: React.FC<QrCodeDisplayProps> = ({ bike }) => {
     
     const qrDataUrl = canvas.toDataURL('image/png');
     const logoImg = new window.Image();
-    logoImg.src = '/logo_biciregistro_completo_color.png'; // Use the correct logo path
+    logoImg.src = logoSrc.src; 
     
     logoImg.onload = () => {
         const doc = new jsPDF({
             unit: 'mm',
-            format: [50, 100] // width, height (vertical layout)
+            format: [50, 100]
         });
 
         const primaryColor = '#3B82F6'; 
@@ -85,26 +86,22 @@ const QrCodeDisplay: React.FC<QrCodeDisplayProps> = ({ bike }) => {
         doc.setFillColor(backgroundColor);
         doc.rect(0, 0, 50, 100, 'F');
         
-        // --- Logo ---
         const logoAspectRatio = logoImg.width / logoImg.height;
         const logoWidth = 36;
         const logoHeight = logoWidth / logoAspectRatio;
         const logoX = (50 - logoWidth) / 2;
         doc.addImage(logoImg, 'PNG', logoX, 5, logoWidth, logoHeight);
 
-        // --- Legend ---
         doc.setTextColor(textColor);
         doc.setFontSize(9);
         doc.setFont('helvetica', 'bold');
         doc.text('BICICLETA REGISTRADA', 25, 23, { align: 'center' });
 
-        // --- QR Code ---
         const qrCodeSize = 44;
         const qrCodeX = (50 - qrCodeSize) / 2;
         const qrCodeY = 28;
         doc.addImage(qrDataUrl, 'PNG', qrCodeX, qrCodeY, qrCodeSize, qrCodeSize);
 
-        // --- Serial Number ---
         const footerY = qrCodeY + qrCodeSize + 5;
         doc.setTextColor(lightTextColor);
         doc.setFontSize(7);
@@ -115,7 +112,6 @@ const QrCodeDisplay: React.FC<QrCodeDisplayProps> = ({ bike }) => {
         doc.setTextColor(textColor);
         doc.text(bike.serialNumber, 25, footerY + 4, { align: 'center' });
 
-        // --- Website ---
         doc.setTextColor(lightTextColor);
         doc.setFontSize(6);
         doc.setFont('helvetica', 'normal');
@@ -148,7 +144,6 @@ const QrCodeDisplay: React.FC<QrCodeDisplayProps> = ({ bike }) => {
           }}
         />
       </div>
-      {/* Hidden SVG for SVG download logic */}
       <div style={{ display: 'none' }}>
         <QRCodeSVG value={qrUrl} size={QR_SIZE_PX} level={'H'} ref={svgRef} />
       </div>
