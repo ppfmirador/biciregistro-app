@@ -68,69 +68,65 @@ const QrCodeDisplay: React.FC<QrCodeDisplayProps> = ({ bike }) => {
     }
     
     const qrDataUrl = canvas.toDataURL('image/png');
+    const logoImg = new window.Image();
+    logoImg.src = '/logo_biciregistro_completo_color.png'; // Use the correct logo path
     
-    // Create a PDF with 50x100 mm dimensions (5cm x 10cm)
-    const doc = new jsPDF({
-        unit: 'mm',
-        format: [50, 100] // width, height
-    });
+    logoImg.onload = () => {
+        const doc = new jsPDF({
+            unit: 'mm',
+            format: [50, 100] // width, height (vertical layout)
+        });
 
-    const primaryColor = '#2563EB'; 
-    const textColor = '#0A2540';
-    const lightTextColor = '#57606a';
-    const backgroundColor = '#F0F8FF';
+        const primaryColor = '#3B82F6'; 
+        const textColor = '#1E293B'; 
+        const lightTextColor = '#64748B'; 
+        const backgroundColor = '#FFFFFF';
+        
+        doc.setFillColor(backgroundColor);
+        doc.rect(0, 0, 50, 100, 'F');
+        
+        // --- Logo ---
+        const logoAspectRatio = logoImg.width / logoImg.height;
+        const logoWidth = 36;
+        const logoHeight = logoWidth / logoAspectRatio;
+        const logoX = (50 - logoWidth) / 2;
+        doc.addImage(logoImg, 'PNG', logoX, 5, logoWidth, logoHeight);
 
-    // --- PDF Design ---
+        // --- Legend ---
+        doc.setTextColor(textColor);
+        doc.setFontSize(9);
+        doc.setFont('helvetica', 'bold');
+        doc.text('BICICLETA REGISTRADA', 25, 23, { align: 'center' });
 
-    // 1. Background
-    doc.setFillColor(backgroundColor);
-    doc.rect(0, 0, 50, 100, 'F');
+        // --- QR Code ---
+        const qrCodeSize = 44;
+        const qrCodeX = (50 - qrCodeSize) / 2;
+        const qrCodeY = 28;
+        doc.addImage(qrDataUrl, 'PNG', qrCodeX, qrCodeY, qrCodeSize, qrCodeSize);
 
-    // 2. Header Section
-    doc.setFillColor(primaryColor);
-    doc.rect(0, 0, 50, 22, 'F'); // Header rectangle
+        // --- Serial Number ---
+        const footerY = qrCodeY + qrCodeSize + 5;
+        doc.setTextColor(lightTextColor);
+        doc.setFontSize(7);
+        doc.setFont('helvetica', 'normal');
+        doc.text('N/S:', 25, footerY, { align: 'center' });
+        doc.setFontSize(9);
+        doc.setFont('courier', 'bold');
+        doc.setTextColor(textColor);
+        doc.text(bike.serialNumber, 25, footerY + 4, { align: 'center' });
 
-    // 3. Logo (if available, otherwise use Shield)
-    // To add a real logo, you'd need it as a base64 string or image asset.
-    // For now, let's draw a placeholder.
-    doc.setTextColor('#FFFFFF');
-    doc.setFontSize(8);
-    doc.setFont('helvetica', 'bold');
-    doc.text(APP_NAME.toUpperCase(), 25, 8, { align: 'center' });
+        // --- Website ---
+        doc.setTextColor(lightTextColor);
+        doc.setFontSize(6);
+        doc.setFont('helvetica', 'normal');
+        doc.text(`Verifica en: ${SITE_URL.replace('https://', '')}`, 25, 96, { align: 'center' });
 
+        doc.save(`etiqueta-qr-${bike.serialNumber}.pdf`);
+    };
 
-    // 4. "Bicicleta Registrada" Legend
-    doc.setTextColor('#FFFFFF');
-    doc.setFontSize(10);
-    doc.setFont('helvetica', 'bold');
-    doc.text('BICICLETA REGISTRADA', 25, 17, { align: 'center' });
-
-    // 5. QR Code Section
-    // Center the QR code, which will be square. Width of PDF is 50, so 44x44 gives 3mm margins.
-    const qrCodeSize = 44;
-    const qrCodeX = (50 - qrCodeSize) / 2; // = 3
-    const qrCodeY = 25; // Position it below the header
-    doc.addImage(qrDataUrl, 'PNG', qrCodeX, qrCodeY, qrCodeSize, qrCodeSize);
-
-    // 6. Footer Section
-    const footerY = qrCodeY + qrCodeSize + 8;
-    
-    // Serial Number
-    doc.setTextColor(textColor);
-    doc.setFontSize(7);
-    doc.setFont('helvetica', 'bold');
-    doc.text('NÚMERO DE SERIE:', 25, footerY, { align: 'center' });
-    doc.setFontSize(9);
-    doc.setFont('courier', 'bold'); // Monospaced for better readability
-    doc.text(bike.serialNumber, 25, footerY + 4, { align: 'center' });
-    
-    // Website
-    doc.setTextColor(lightTextColor);
-    doc.setFontSize(6);
-    doc.setFont('helvetica', 'normal');
-    doc.text(`Verifica en: ${SITE_URL}`, 25, 96, { align: 'center' });
-
-    doc.save(`etiqueta-qr-${bike.serialNumber}.pdf`);
+    logoImg.onerror = () => {
+        toast({ title: "Error de Logo", description: "No se pudo cargar el logo para el PDF.", variant: "destructive" });
+    };
   };
 
   return (
@@ -161,13 +157,15 @@ const QrCodeDisplay: React.FC<QrCodeDisplayProps> = ({ bike }) => {
          Escanear para verificar en {APP_NAME}
       </p>
 
-      <div className="mt-auto flex w-full flex-col gap-2 pt-4 sm:flex-row">
-        <Button onClick={handleDownloadPng} variant="outline" className="w-full">
-          <ImageIcon className="mr-2 h-4 w-4" /> PNG
-        </Button>
-        <Button onClick={handleDownloadSvg} variant="outline" className="w-full">
-          <Code className="mr-2 h-4 w-4" /> SVG
-        </Button>
+      <div className="mt-auto flex w-full flex-col gap-2 pt-4">
+        <div className="flex w-full gap-2">
+            <Button onClick={handleDownloadPng} variant="outline" className="flex-1">
+              <ImageIcon className="mr-2 h-4 w-4" /> PNG
+            </Button>
+            <Button onClick={handleDownloadSvg} variant="outline" className="flex-1">
+              <Code className="mr-2 h-4 w-4" /> SVG
+            </Button>
+        </div>
         <Button onClick={handleDownloadPdf} className="w-full">
           <FileText className="mr-2 h-4 w-4" /> PDF para Etiqueta
         </Button>
