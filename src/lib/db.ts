@@ -1,5 +1,3 @@
-
-
 import { db, app } from './firebase';
 import {
   collection,
@@ -27,9 +25,9 @@ import {
   type DocumentData,
   type DocumentSnapshot,
 } from 'firebase/firestore';
-import { getFunctions, httpsCallable, type HttpsCallableResult } from 'firebase/functions';
+import { getFunctions, httpsCallable } from 'firebase/functions';
 import type {
-  Bike, BikeStatus, BikeType, TransferRequest, ReportTheftDialogData,
+  Bike, BikeStatus, BikeType, TransferRequest,
   NewCustomerDataForShop, ShopAnalyticsData, NgoAnalyticsData, BikeRide
 } from './types';
 import type { UserProfileData, UserProfile, UserRole } from '@/lib/types';
@@ -171,33 +169,6 @@ const userProfileFromDoc = (docSnap: DocumentSnapshot): UserProfile => {
     } as UserProfile;
 };
 
-
-const transferRequestFromDoc = (docSnap: DocumentSnapshot): TransferRequest => {
-  if (!docSnap.exists()) {
-      throw new Error(`No data found for document ${docSnap.id}`);
-  }
-  const data = docSnap.data();
-  if (!data) {
-      throw new Error(`No data found for document ${docSnap.id}`);
-  }
-  return {
-    id: docSnap.id,
-    bikeId: data.bikeId,
-    serialNumber: data.serialNumber,
-    bikeBrand: data.bikeBrand || undefined,
-    bikeModel: data.bikeModel || undefined,
-    fromOwnerId: data.fromOwnerId,
-    toUserEmail: data.toUserEmail,
-    status: data.status,
-    requestDate: safeToISOString(data.requestDate, 'transferRequest.requestDate'),
-    resolutionDate: data.resolutionDate ? safeToISOString(data.resolutionDate, 'transferRequest.resolutionDate') : undefined,
-    fromOwnerEmail: data.fromOwnerEmail || undefined,
-    transferDocumentUrl: data.transferDocumentUrl || null,
-    transferDocumentName: data.transferDocumentName || null,
-  } as TransferRequest;
-};
-
-
 export const getBikeBySerialNumber = async (serialNumber: string): Promise<Bike | null> => {
   const functions = getFunctions(app, "us-central1");
   const getPublicBikeBySerialCallable = httpsCallable<
@@ -324,7 +295,7 @@ export const addBikeToFirestore = async (
 export const updateBike = async (bikeId: string, updates: Partial<Omit<Bike, 'id' | 'registrationDate' | 'statusHistory' | 'ownerFirstName' | 'ownerLastName' | 'ownerEmail' | 'ownerWhatsappPhone'>> & { status?: BikeStatus, newStatusNote?: string, bikeType?: BikeType }): Promise<Bike | null> => {
   const bikeRef = doc(db, 'bikes', bikeId);
   
-  const updateData: { [key: string]: any } = {};
+  const updateData: { [key: string]: unknown } = {};
 
   if (updates.serialNumber) {
     const bikesRef = collection(db, 'bikes');
@@ -608,6 +579,7 @@ export const createBikeShopAccountByAdmin = async (shopData: BikeShopAdminFormVa
       phone: shopData.phone,
       website: shopData.website || '',
       mapsLink: shopData.mapsLink || '',
+      whatsappGroupLink: shopData.whatsappGroupLink || null,
       contactName: shopData.contactName,
       contactEmail: shopData.contactEmail,
       contactWhatsApp: shopData.contactWhatsApp,
@@ -665,6 +637,7 @@ export const createNgoAccountByAdmin = async (ngoData: NgoAdminFormValues, admin
       postalCode: ngoData.postalCode,
       publicWhatsapp: ngoData.publicWhatsapp,
       website: ngoData.website || '',
+      whatsappGroupLink: ngoData.whatsappGroupLink || null,
       meetingDays: ngoData.meetingDays || [],
       meetingTime: ngoData.meetingTime || '',
       meetingPointMapsLink: ngoData.meetingPointMapsLink || '',
@@ -1076,7 +1049,7 @@ export const createOrUpdateRide = async (
     organizerProfile: UserProfile,
     rideId?: string,
 ): Promise<string> => {
-    const dataToSave: { [key: string]: any } = {
+    const dataToSave: { [key: string]: unknown } = {
         ...rideData,
         rideDate: Timestamp.fromDate(rideData.rideDate),
         updatedAt: serverTimestamp(),

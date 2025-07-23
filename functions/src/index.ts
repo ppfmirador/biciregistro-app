@@ -8,13 +8,21 @@ import type {
   NgoAdminFormValues,
   UserRole,
 } from "./types";
-import corsConfig from "./cors.json";
 
 // Initialize Firebase Admin SDK
 admin.initializeApp();
 
-// Centralized CORS configuration from cors.json
-const allowedOrigins = corsConfig.map((c) => c.origin).flat();
+/**  Lista de orígenes que permitirás durante el desarrollo y en prod  */
+const allowedOrigins = [
+  "https://biciregistro.mx",
+  "https://www.biciregistro.mx",
+  "https://bike-guardian-hbbg6.firebaseapp.com",
+  "https://bike-guardian-staging.web.app",
+  // cloud workstation → usa un comodín para cualquier sub-dominio
+  /^https:\/\/.*\.cloudworkstations\.dev$/,
+  "http://localhost:3000",
+];
+
 
 // Set global options for all functions in this file.
 // CORS is handled per-function via callOptions.
@@ -23,6 +31,7 @@ setGlobalOptions({
   // Bypassing App Check for development. Change to true for production.
   enforceAppCheck: false,
 });
+
 
 // This object now contains the CORS configuration to be applied to each function.
 const callOptions = {
@@ -138,7 +147,7 @@ export const createBike = onCall(callOptions, async (req) => {
       ownerEmail: ownerData?.email || req.auth.token.email,
       ownerWhatsappPhone: ownerData?.whatsappPhone ?? "",
       status: "En Regla",
-      registrationDate: admin.firestore.FieldValue.serverTimestamp(),
+      registrationDate: admin.firestore.Timestamp.now(),
       statusHistory: [
         {
           status: "En Regla",

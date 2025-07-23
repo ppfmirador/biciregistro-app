@@ -13,7 +13,6 @@ import type { Bike, BikeType } from '@/lib/types';
 import { useToast } from '@/hooks/use-toast';
 import { ArrowLeft, Edit, Loader2 } from 'lucide-react';
 import { BIKE_BRANDS, OTHER_BRAND_VALUE } from '@/constants';
-import { FirebaseError } from 'firebase/app';
 
 function EditBikePageContent() {
   const params = useParams();

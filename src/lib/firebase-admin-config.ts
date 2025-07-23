@@ -11,6 +11,7 @@ export async function getAdminDb(): Promise<admin.firestore.Firestore | null> {
     return adminDb;
   }
 
+  // If there's already a default app, use it.
   if (admin.apps.length > 0) {
     adminDb = admin.firestore();
     return adminDb;
@@ -18,13 +19,14 @@ export async function getAdminDb(): Promise<admin.firestore.Firestore | null> {
 
   const serviceAccountKey = process.env.FIREBASE_SERVICE_ACCOUNT_KEY;
   if (!serviceAccountKey) {
-    console.warn('Firebase service account key not found in environment variables. Server-side data fetching will be disabled. Set FIREBASE_SERVICE_ACCOUNT_KEY.');
+    console.warn('Firebase service account key not found. Server-side data fetching will be disabled. Set FIREBASE_SERVICE_ACCOUNT_KEY in your App Hosting backend settings.');
     return null;
   }
 
   try {
-    const serviceAccountJson = serviceAccountKey.replace(/\\n/g, '\n');
-    const serviceAccount = JSON.parse(serviceAccountJson);
+    // Firebase Admin SDK expects a plain JSON object, not a stringified version.
+    // The environment variable should be the JSON object itself.
+    const serviceAccount = JSON.parse(serviceAccountKey);
     
     admin.initializeApp({
       credential: admin.credential.cert(serviceAccount),
@@ -34,7 +36,7 @@ export async function getAdminDb(): Promise<admin.firestore.Firestore | null> {
     return adminDb;
 
   } catch (error) {
-    console.error("Error initializing Firebase Admin SDK. Make sure FIREBASE_SERVICE_ACCOUNT_KEY is a valid JSON.", error);
+    console.error("Error initializing Firebase Admin SDK. Make sure FIREBASE_SERVICE_ACCOUNT_KEY is a valid JSON object.", error);
     return null;
   }
 }

@@ -32,7 +32,6 @@ import { Dialog, DialogContent as DialogContentCustom, DialogDescription as Dial
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { getHomepageContent } from '@/lib/homepageContent';
-import { FirebaseError } from 'firebase/app';
 
 
 type TransferAction = 'accepted' | 'rejected' | 'cancelled';
@@ -138,7 +137,7 @@ export default function DashboardPage() {
         await reportBikeStolenCallable({ bikeId, theftData });
         toast({ title: 'Bicicleta Reportada como Robada', description: 'El estado de la bicicleta ha sido actualizado con los nuevos detalles.' });
         fetchData();
-    } catch (error) {
+    } catch (error: unknown) {
         const err = error as FunctionsError;
         toast({ title: 'Error al Reportar Robo', description: err.message || 'No se pudo reportar la bicicleta como robada.', variant: 'destructive' });
     }
@@ -169,7 +168,7 @@ export default function DashboardPage() {
 
       toast({ title: 'Transferencia Iniciada', description: `Solicitud enviada a ${recipientEmail}.` });
       fetchData();
-    } catch (error) {
+    } catch (error: unknown) {
       const err = error as FunctionsError;
       toast({ title: 'Error al Iniciar Transferencia', description: err.message || 'No se pudo iniciar la transferencia.', variant: 'destructive' });
     }
@@ -186,7 +185,7 @@ export default function DashboardPage() {
         await respondToTransferCallable({ requestId, action });
         toast({title: 'Transferencia Respondida', description: `La solicitud ha sido ${translateActionForDisplay(action)}.`});
         fetchData();
-    } catch (error)
+    } catch (error: unknown)
     {
         const err = error as FunctionsError;
         toast({title: 'Error al Responder a Transferencia', description: err.message || 'No se pudo responder a la transferencia.', variant: 'destructive'});

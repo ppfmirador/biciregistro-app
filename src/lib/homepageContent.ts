@@ -1,7 +1,7 @@
 
 'use client';
 
-import { getFunctions, httpsCallable, type HttpsCallableResult } from 'firebase/functions';
+import { getFunctions, httpsCallable } from 'firebase/functions';
 import { app } from './firebase';
 import type { HomepageContent } from './types';
 
@@ -13,7 +13,7 @@ export const getHomepageContent = async (): Promise<HomepageContent | null> => {
     try {
         const functions = getFunctions(app, 'us-central1');
         const getHomepageContentCallable = httpsCallable<void, HomepageContent>(functions, 'getHomepageContent');
-        const result: HttpsCallableResult<HomepageContent> = await getHomepageContentCallable();
+        const result = await getHomepageContentCallable();
         return result.data;
     } catch (error) {
         // Errors from the callable function will be caught here.

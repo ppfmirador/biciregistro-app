@@ -71,7 +71,7 @@ function EditBikeShopProfilePageContent() {
             whatsappGroupLink: existingProfile.whatsappGroupLink || '',
           } as BikeShopProfileFormValues);
         }
-      } catch (error: unknown) { // FIX: lint issue
+      } catch (error: unknown) {
         toast({ title: "Error", description: "No se pudo cargar tu perfil.", variant: "destructive" });
       } finally {
         setIsLoadingData(false);
@@ -88,7 +88,7 @@ function EditBikeShopProfilePageContent() {
       await updateUserDoc(user.uid, data);
       toast({ title: "¡Perfil Actualizado!", description: "La información de tu tienda ha sido guardada." });
       router.push('/bikeshop/dashboard');
-    } catch (error: unknown) { // FIX: lint issue
+    } catch (error: unknown) {
       const errorMessage = error instanceof Error ? error.message : "No se pudo guardar el perfil.";
       toast({ title: "Error al Guardar Perfil", description: errorMessage, variant: "destructive" });
     } finally {
@@ -112,7 +112,7 @@ function EditBikeShopProfilePageContent() {
       toast({ title: "¡Contraseña Actualizada!", description: "Tu contraseña ha sido cambiada exitosamente." });
       setNewPassword('');
       setConfirmPassword('');
-    } catch (error: unknown) { // FIX: lint issue
+    } catch (error: unknown) {
       const errorMessage = error instanceof Error ? error.message : "No se pudo cambiar la contraseña.";
       setPasswordChangeError(errorMessage);
       toast({ title: "Error al Cambiar Contraseña", description: errorMessage, variant: "destructive" });
@@ -169,12 +169,37 @@ function EditBikeShopProfilePageContent() {
                 <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
                   <div className="space-y-1">
                     <Label htmlFor="country">País</Label>
-                    <Controller name="country" control={control} render={({ field }) => ( <Select onValueChange={(value) => { field.onChange(value); setValue('profileState', ''); }} value={field.value || ''}> <SelectTrigger className={errors.country ? 'border-destructive' : ''}><SelectValue placeholder="Selecciona un país" /></SelectTrigger> <SelectContent> {LAT_AM_LOCATIONS.map(c => <SelectItem key={c.country} value={c.country}>{c.country}</SelectItem>)} </SelectContent> </Select> )} />
+                    <Controller
+                      name="country"
+                      control={control}
+                      render={({ field }) => (
+                        <Select onValueChange={(value) => { 
+                            field.onChange(value); 
+                            setValue('profileState', ''); // Reset state when country changes
+                        }} value={field.value || ''}>
+                          <SelectTrigger className={errors.country ? 'border-destructive' : ''}><SelectValue placeholder="Selecciona un país" /></SelectTrigger>
+                          <SelectContent>
+                            {LAT_AM_LOCATIONS.map(c => <SelectItem key={c.country} value={c.country}>{c.country}</SelectItem>)}
+                          </SelectContent>
+                        </Select>
+                      )}
+                    />
                     {errors.country && <p className="text-xs text-destructive">{errors.country.message}</p>}
                   </div>
                   <div className="space-y-1">
                     <Label htmlFor="profileState">Estado/Provincia</Label>
-                    <Controller name="profileState" control={control} render={({ field }) => ( <Select onValueChange={field.onChange} value={field.value || ''} disabled={!watchedCountry}> <SelectTrigger className={errors.profileState ? 'border-destructive' : ''}><SelectValue placeholder={!watchedCountry ? "Selecciona país" : "Selecciona estado"} /></SelectTrigger> <SelectContent> {LAT_AM_LOCATIONS.find(c => c.country === watchedCountry)?.states.map(s => <SelectItem key={s} value={s}>{s}</SelectItem>)} </SelectContent> </Select> )} />
+                    <Controller
+                      name="profileState"
+                      control={control}
+                      render={({ field }) => (
+                        <Select onValueChange={field.onChange} value={field.value || ''} disabled={!watchedCountry}>
+                          <SelectTrigger className={errors.profileState ? 'border-destructive' : ''}><SelectValue placeholder={!watchedCountry ? "Selecciona país" : "Selecciona estado"} /></SelectTrigger>
+                          <SelectContent>
+                            {LAT_AM_LOCATIONS.find(c => c.country === watchedCountry)?.states.map(s => <SelectItem key={s} value={s}>{s}</SelectItem>)}
+                          </SelectContent>
+                        </Select>
+                      )}
+                    />
                     {errors.profileState && <p className="text-xs text-destructive">{errors.profileState.message}</p>}
                   </div>
                   <div className="space-y-1">

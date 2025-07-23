@@ -30,7 +30,7 @@ export function initializeClientSideFirebase() {
     if (isDev) {
       // This is the variable that the App Check SDK reads.
       // It's set on the window object to be globally available.
-      (self as any).FIREBASE_APPCHECK_DEBUG_TOKEN = process.env.NEXT_PUBLIC_FIREBASE_APPCHECK_DEBUG_TOKEN;
+      (self as unknown as { FIREBASE_APPCHECK_DEBUG_TOKEN?: string }).FIREBASE_APPCHECK_DEBUG_TOKEN = process.env.NEXT_PUBLIC_FIREBASE_APPCHECK_DEBUG_TOKEN;
     }
     
     // 3. Initialize App Check
@@ -43,7 +43,7 @@ export function initializeClientSideFirebase() {
           isTokenAutoRefreshEnabled: true,
         });
         console.log("Firebase App Check initialized.");
-      } catch (e) {
+      } catch (e: unknown) {
         console.warn("App Check initialization failed. The app will continue without it.", e);
       }
     } else {

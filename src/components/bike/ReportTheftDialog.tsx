@@ -19,7 +19,6 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { AlertTriangle, Loader2 } from 'lucide-react';
 import type { Bike, ReportTheftDialogData } from '@/lib/types';
 import { LAT_AM_LOCATIONS } from '@/constants';
-import { FirebaseError } from 'firebase/app';
 
 interface ReportTheftDialogProps {
   bike: Bike;

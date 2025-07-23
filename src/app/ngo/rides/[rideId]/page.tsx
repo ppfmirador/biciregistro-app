@@ -87,7 +87,7 @@ function ManageRidePageContent() {
                         cost: ride.cost || undefined,
                         level: ride.level || undefined,
                     });
-                } catch (error: unknown) {
+                } catch (error: unknown) { 
                     const errorMessage = error instanceof Error ? error.message : "No se pudo cargar el evento.";
                     toast({ title: "Error", description: errorMessage, variant: "destructive" });
                 } finally {
@@ -109,7 +109,7 @@ function ManageRidePageContent() {
                 description: `El evento "${data.title}" ha sido guardado.`,
             });
             router.push('/ngo/dashboard');
-        } catch (error: unknown) {
+        } catch (error: unknown) { 
             const errorMessage = error instanceof FirebaseError ? error.message : "Error desconocido al guardar.";
             toast({ title: "Error al Guardar", description: errorMessage, variant: "destructive" });
         } finally {

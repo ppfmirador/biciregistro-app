@@ -63,6 +63,7 @@ export default function NgoDashboardPage() {
   const [rideToDelete, setRideToDelete] = useState<BikeRide | null>(null);
   const [isDeleting, setIsDeleting] = useState(false);
 
+
   const fetchDashboardData = useCallback(async () => {
     if (!user || user.role !== 'ngo') return;
 

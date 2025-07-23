@@ -410,7 +410,7 @@ export default function RegisterSoldBikePage() {
                 <div className="space-y-1">
                   <Label htmlFor="serialNumber">Número de Serie <span className="text-destructive">*</span></Label>
                   <Input id="serialNumber" {...register('serialNumber')} className={errors.serialNumber ? 'border-destructive' : ''} disabled={isSubmitting}/>
-                  {errors.serialNumber && <p className="text-xs text-destructive">{errors.serialNumber.message}</p>}
+                  {errors.serialNumber && <p className="text-sm text-destructive">{errors.serialNumber.message}</p>}
                 </div>
                  <div className="space-y-1">
                   <Label htmlFor="brand">Marca <span className="text-destructive">*</span></Label>
@@ -502,7 +502,7 @@ export default function RegisterSoldBikePage() {
 
               <h4 className="text-md font-medium pt-3 border-t">Documento de Propiedad (Opcional)</h4>
               <div className="space-y-1">
-                <Label htmlFor="ownershipDocument" className="flex items-center"><Paperclip className="h-4 w-4 mr-2" />Adjuntar Documento</Label>
+                <Label htmlFor="ownershipDocument" className="flex items-center"><Paperclip className="h-4 w-4 mr-2 text-muted-foreground" />Adjuntar Documento</Label>
                 <Input id="ownershipDocument" type="file" accept=".pdf,.jpg,.jpeg,.png,.doc,.docx" {...register('ownershipDocument')} className={errors.ownershipDocument ? 'border-destructive' : ''} disabled={isSubmitting} ref={ownershipDocumentRef} />
                 {errors.ownershipDocument && <p className="text-xs text-destructive">{typeof errors.ownershipDocument.message === 'string' ? errors.ownershipDocument.message : 'Error de archivo'}</p>}
               </div>
