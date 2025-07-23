@@ -157,10 +157,6 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
       const userCredential = await createUserWithEmailAndPassword(auth, email, password);
       const firebaseUser = userCredential.user;
 
-      if (!firebaseUser.isAnonymous) {
-        await sendEmailVerification(firebaseUser);
-      }
-
       const roleToSet = role === 'admin' ? 'cyclist' : role;
 
       const initialProfileData: UserProfileData = {
@@ -178,6 +174,10 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
       
       if (referrerId) {
         await incrementReferralCount(referrerId);
+      }
+
+      if (!firebaseUser.isAnonymous) {
+        await sendEmailVerification(firebaseUser);
       }
 
       await fetchAndUpdateUserProfile(firebaseUser);
