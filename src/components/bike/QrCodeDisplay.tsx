@@ -69,7 +69,6 @@ const QrCodeDisplay: React.FC<QrCodeDisplayProps> = ({ bike }) => {
     
     const qrDataUrl = canvas.toDataURL('image/png');
     
-    // Create PDF without waiting for image loading
     const doc = new jsPDF({
         unit: 'mm',
         format: [50, 100] // 5cm width, 10cm height
@@ -113,6 +112,12 @@ const QrCodeDisplay: React.FC<QrCodeDisplayProps> = ({ bike }) => {
     doc.setFontSize(6);
     doc.setFont('helvetica', 'normal');
     doc.text(`Verifica en: ${SITE_URL.replace('https://', '')}`, 25, 96, { align: 'center' });
+    
+    // Add a dotted border for cutting
+    doc.setLineDashPattern([1, 1], 0); // 1mm dash, 1mm gap
+    doc.setDrawColor(lightTextColor); // Use a light gray for the border
+    doc.setLineWidth(0.2);
+    doc.rect(2, 2, 46, 96, 'S'); // Draw rectangle with a 2mm margin
 
     doc.save(`etiqueta-qr-${bike.serialNumber}.pdf`);
   };
