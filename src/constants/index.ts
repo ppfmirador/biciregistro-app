@@ -4,7 +4,7 @@ import type { BikeStatus, BikeType, RideLevel } from '@/lib/types';
 
 export const BIKE_STATUSES: BikeStatus[] = ['En Regla', 'Robada', 'Transferida'];
 
-export const APP_NAME = "Biciregistro";
+export const APP_NAME = "Bike Guardian";
 export const SITE_URL = 'https://biciregistro.mx';
 
 export const MEXICAN_STATES: string[] = [

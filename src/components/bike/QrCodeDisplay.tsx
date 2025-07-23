@@ -6,7 +6,7 @@ import { QRCodeCanvas, QRCodeSVG } from 'qrcode.react';
 import { jsPDF } from 'jspdf';
 import { Button } from '@/components/ui/button';
 import { FileText, Image as ImageIcon, Code } from 'lucide-react';
-import { SITE_URL } from '@/constants';
+import { SITE_URL, APP_NAME } from '@/constants';
 import type { Bike } from '@/lib/types';
 import { useToast } from '@/hooks/use-toast';
 
@@ -36,7 +36,7 @@ const QrCodeDisplay: React.FC<QrCodeDisplayProps> = ({ bike }) => {
     const pngUrl = canvas.toDataURL('image/png');
     const downloadLink = document.createElement('a');
     downloadLink.href = pngUrl;
-    downloadLink.download = `biciregistro-qr-${bike.serialNumber}.png`;
+    downloadLink.download = `${APP_NAME.toLowerCase()}-qr-${bike.serialNumber}.png`;
     document.body.appendChild(downloadLink);
     downloadLink.click();
     document.body.removeChild(downloadLink);
@@ -53,7 +53,7 @@ const QrCodeDisplay: React.FC<QrCodeDisplayProps> = ({ bike }) => {
     
     const downloadLink = document.createElement('a');
     downloadLink.href = svgUrl;
-    downloadLink.download = `biciregistro-qr-${bike.serialNumber}.svg`;
+    downloadLink.download = `${APP_NAME.toLowerCase()}-qr-${bike.serialNumber}.svg`;
     document.body.appendChild(downloadLink);
     downloadLink.click();
     document.body.removeChild(downloadLink);
@@ -68,60 +68,53 @@ const QrCodeDisplay: React.FC<QrCodeDisplayProps> = ({ bike }) => {
     }
     
     const qrDataUrl = canvas.toDataURL('image/png');
-    const logoImg = new window.Image();
-    logoImg.src = '/logo_biciregistro_completo_color.png'; 
     
-    logoImg.onload = () => {
-        const doc = new jsPDF({
-            unit: 'mm',
-            format: [50, 100] // 5cm width, 10cm height
-        });
+    // Create PDF without waiting for image loading
+    const doc = new jsPDF({
+        unit: 'mm',
+        format: [50, 100] // 5cm width, 10cm height
+    });
 
-        const primaryColor = '#3B82F6'; 
-        const textColor = '#1E293B'; 
-        const lightTextColor = '#64748B'; 
-        const backgroundColor = '#FFFFFF';
-        
-        doc.setFillColor(backgroundColor);
-        doc.rect(0, 0, 50, 100, 'F');
-        
-        const logoAspectRatio = logoImg.width / logoImg.height;
-        const logoWidth = 36;
-        const logoHeight = logoWidth / logoAspectRatio;
-        const logoX = (50 - logoWidth) / 2;
-        doc.addImage(logoImg, 'PNG', logoX, 5, logoWidth, logoHeight);
+    const primaryColor = '#3B82F6'; 
+    const textColor = '#1E293B'; 
+    const lightTextColor = '#64748B'; 
+    const backgroundColor = '#FFFFFF';
+    
+    doc.setFillColor(backgroundColor);
+    doc.rect(0, 0, 50, 100, 'F');
+    
+    // Add App Name as text instead of logo
+    doc.setTextColor(primaryColor);
+    doc.setFontSize(16);
+    doc.setFont('helvetica', 'bold');
+    doc.text(APP_NAME, 25, 15, { align: 'center' });
 
-        doc.setTextColor(textColor);
-        doc.setFontSize(9);
-        doc.setFont('helvetica', 'bold');
-        doc.text('BICICLETA REGISTRADA', 25, 23, { align: 'center' });
+    doc.setTextColor(textColor);
+    doc.setFontSize(9);
+    doc.setFont('helvetica', 'bold');
+    doc.text('BICICLETA REGISTRADA', 25, 23, { align: 'center' });
 
-        const qrCodeSize = 44;
-        const qrCodeX = (50 - qrCodeSize) / 2;
-        const qrCodeY = 28;
-        doc.addImage(qrDataUrl, 'PNG', qrCodeX, qrCodeY, qrCodeSize, qrCodeSize);
+    const qrCodeSize = 44;
+    const qrCodeX = (50 - qrCodeSize) / 2;
+    const qrCodeY = 28;
+    doc.addImage(qrDataUrl, 'PNG', qrCodeX, qrCodeY, qrCodeSize, qrCodeSize);
 
-        const footerY = qrCodeY + qrCodeSize + 5;
-        doc.setTextColor(lightTextColor);
-        doc.setFontSize(7);
-        doc.setFont('helvetica', 'normal');
-        doc.text('N/S:', 25, footerY, { align: 'center' });
-        doc.setFontSize(9);
-        doc.setFont('courier', 'bold');
-        doc.setTextColor(textColor);
-        doc.text(bike.serialNumber, 25, footerY + 4, { align: 'center' });
+    const footerY = qrCodeY + qrCodeSize + 5;
+    doc.setTextColor(lightTextColor);
+    doc.setFontSize(7);
+    doc.setFont('helvetica', 'normal');
+    doc.text('N/S:', 25, footerY, { align: 'center' });
+    doc.setFontSize(9);
+    doc.setFont('courier', 'bold');
+    doc.setTextColor(textColor);
+    doc.text(bike.serialNumber, 25, footerY + 4, { align: 'center' });
 
-        doc.setTextColor(lightTextColor);
-        doc.setFontSize(6);
-        doc.setFont('helvetica', 'normal');
-        doc.text(`Verifica en: ${SITE_URL.replace('https://', '')}`, 25, 96, { align: 'center' });
+    doc.setTextColor(lightTextColor);
+    doc.setFontSize(6);
+    doc.setFont('helvetica', 'normal');
+    doc.text(`Verifica en: ${SITE_URL.replace('https://', '')}`, 25, 96, { align: 'center' });
 
-        doc.save(`etiqueta-qr-${bike.serialNumber}.pdf`);
-    };
-
-    logoImg.onerror = () => {
-        toast({ title: "Error de Logo", description: "No se pudo cargar el logo para el PDF.", variant: "destructive" });
-    };
+    doc.save(`etiqueta-qr-${bike.serialNumber}.pdf`);
   };
 
   return (
@@ -148,7 +141,7 @@ const QrCodeDisplay: React.FC<QrCodeDisplayProps> = ({ bike }) => {
       </div>
 
       <p className="max-w-xs text-center text-xs text-muted-foreground">
-         Escanear para verificar en Biciregistro
+         Escanear para verificar en {APP_NAME}
       </p>
 
       <div className="mt-auto flex w-full flex-col gap-2 pt-4">
