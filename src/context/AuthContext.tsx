@@ -27,7 +27,7 @@ import { initializeClientSideFirebase } from '@/lib/firebase-client';
 
 interface SignUpData {
     email: string;
-    pass: string;
+    password: string;
     firstName: string;
     lastName: string;
     country: string;
@@ -151,10 +151,10 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
   };
 
   const signUp = async (data: SignUpData): Promise<void> => {
-    const { email, pass, firstName, lastName, country, profileState, role = 'cyclist', referrerId } = data;
+    const { email, password, firstName, lastName, country, profileState, role = 'cyclist', referrerId } = data;
     setLoading(true);
     try {
-      const userCredential = await createUserWithEmailAndPassword(auth, email, pass);
+      const userCredential = await createUserWithEmailAndPassword(auth, email, password);
       const firebaseUser = userCredential.user;
 
       if (!firebaseUser.isAnonymous) {
