@@ -14,7 +14,6 @@ import { ArrowLeft, PlusCircle } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { uploadFileToStorage } from '@/lib/storage'; 
 import { OTHER_BRAND_VALUE } from '@/constants';
-import { FirebaseError } from 'firebase/app';
 
 export default function RegisterBikePage() {
   const [isLoading, setIsLoading] = useState(false);
@@ -110,7 +109,7 @@ export default function RegisterBikePage() {
       router.push(`/bike/${encodeURIComponent(data.serialNumber)}/qr`);
 
     } catch (error: unknown) {
-      const err = error as FunctionsError | FirebaseError;
+      const err = error as FunctionsError;
       const errorMessage = 'message' in err ? err.message : "No se pudo registrar la bicicleta. Revisa los datos e inténtalo de nuevo.";
       toast({ 
         title: 'Registro Fallido', 

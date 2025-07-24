@@ -27,9 +27,8 @@ const nextConfig: NextConfig = {
   },
   webpack(config, { isServer }) {
     if (isServer) {
-      // Avoid bundling the Firebase Admin SDK to prevent
-      // issues with optional dependencies like WebAssembly modules.
       config.externals = config.externals || [];
+      // Ensure 'firebase-admin' is treated as an external module on the server.
       config.externals.push('firebase-admin');
     }
     return config;

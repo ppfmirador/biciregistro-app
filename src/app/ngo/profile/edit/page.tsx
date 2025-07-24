@@ -19,7 +19,7 @@ import { Separator } from '@/components/ui/separator';
 import { ngoProfileSchema, type NgoProfileFormValues } from '@/lib/schemas';
 import { LAT_AM_LOCATIONS, DAYS_OF_WEEK } from '@/constants';
 import { Checkbox } from '@/components/ui/checkbox';
-import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '../ui/tooltip';
 
 function EditNgoProfilePageContent() {
   const router = useRouter();
@@ -198,17 +198,15 @@ function EditNgoProfilePageContent() {
                     {errors.postalCode && <p className="text-xs text-destructive">{errors.postalCode.message}</p>}
                   </div>
                 </div>
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                    <div className="space-y-1">
-                        <Label htmlFor="website">Sitio Web (Opcional)</Label>
-                        <Input id="website" type="url" {...register('website')} placeholder="https://..." className={errors.website ? 'border-destructive' : ''} />
-                        {errors.website && <p className="text-xs text-destructive">{errors.website.message}</p>}
-                    </div>
-                    <div className="space-y-1">
-                        <Label htmlFor="whatsappGroupLink">Enlace del Grupo de WhatsApp (para invitaciones)</Label>
-                        <Input id="whatsappGroupLink" type="url" {...register('whatsappGroupLink')} placeholder="https://chat.whatsapp.com/..." className={errors.whatsappGroupLink ? 'border-destructive' : ''} />
-                        {errors.whatsappGroupLink && <p className="text-xs text-destructive">{errors.whatsappGroupLink.message}</p>}
-                    </div>
+                <div className="space-y-1">
+                    <Label htmlFor="website">Sitio Web (Opcional)</Label>
+                    <Input id="website" type="url" {...register('website')} placeholder="https://..." className={errors.website ? 'border-destructive' : ''} />
+                    {errors.website && <p className="text-xs text-destructive">{errors.website.message}</p>}
+                </div>
+                 <div className="space-y-1">
+                    <Label htmlFor="whatsappGroupLink">Enlace del Grupo de WhatsApp (para invitaciones)</Label>
+                    <Input id="whatsappGroupLink" type="url" {...register('whatsappGroupLink')} placeholder="https://chat.whatsapp.com/..." className={errors.whatsappGroupLink ? 'border-destructive' : ''} />
+                    {errors.whatsappGroupLink && <p className="text-xs text-destructive">{errors.whatsappGroupLink.message}</p>}
                 </div>
             </section>
 
