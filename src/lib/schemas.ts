@@ -190,3 +190,19 @@ export const bikeRideSchema = z.object({
 });
 
 export type BikeRideFormValues = z.infer<typeof bikeRideSchema>;
+
+export const formSchema = z.object({
+  firstName: z.string().min(1, 'El nombre es obligatorio.'),
+  lastName: z.string().min(1, 'El apellido es obligatorio.'),
+  email: z.string().email({ message: 'Dirección de correo inválida.' }),
+  password: z.string().min(6, { message: 'La contraseña debe tener al menos 6 caracteres.' }),
+  country: z.string().min(1, 'El país es obligatorio.'),
+  profileState: z.string().min(1, 'El estado/provincia es obligatorio.'),
+});
+
+export const loginSchema = formSchema.omit({ firstName: true, lastName: true, country: true, profileState: true });
+
+export type FormValues = z.infer<typeof formSchema>;
+export type LoginValues = z.infer<typeof loginSchema>;
+
+    

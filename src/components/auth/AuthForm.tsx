@@ -16,25 +16,7 @@ import type { UserRole } from '@/lib/types';
 import { FirebaseError } from 'firebase/app';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { LAT_AM_LOCATIONS } from '@/constants';
-
-const formSchema = z.object({
-  firstName: z.string().min(1, 'El nombre es obligatorio.'),
-  lastName: z.string().min(1, 'El apellido es obligatorio.'),
-  email: z.string().email({ message: 'Dirección de correo inválida.' }),
-  password: z.string().min(6, { message: 'La contraseña debe tener al menos 6 caracteres.' }),
-  country: z.string().min(1, 'El país es obligatorio.'),
-  profileState: z.string().min(1, 'El estado/provincia es obligatorio.'),
-});
-
-const loginSchema = formSchema.omit({ firstName: true, lastName: true, country: true, profileState: true });
-
-type FormValues = z.infer<typeof formSchema>;
-type LoginValues = z.infer<typeof loginSchema>;
-
-interface AuthFormProps {
-  mode: 'login' | 'signup';
-  userType?: UserRole;
-}
+import { formSchema, loginSchema, type FormValues, type LoginValues } from '@/lib/schemas';
 
 const GoogleIcon = (props: React.SVGProps<SVGSVGElement>) => (
     <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 48 48" {...props}>
@@ -57,7 +39,7 @@ const AuthFormContent: React.FC<AuthFormProps & { useFormProps: UseFormProps<For
     const searchParams = useSearchParams();
     const { toast } = useToast();
 
-    const { register, handleSubmit, formState: { errors }, getValues, control, watch, setValue } = useForm<any>(useFormProps);
+    const { register, handleSubmit, formState: { errors }, getValues, control, watch, setValue } = useForm<FormValues | LoginValues>(useFormProps);
 
     const watchedCountry = watch("country");
 
@@ -85,7 +67,7 @@ const AuthFormContent: React.FC<AuthFormProps & { useFormProps: UseFormProps<For
         }
     }, [user, authLoading, router, mode, isSubmitting, isGoogleSubmitting]);
 
-    const onSubmit: SubmitHandler<any> = async (data) => {
+    const onSubmit: SubmitHandler<FormValues | LoginValues> = async (data) => {
         setIsSubmitting(true);
         try {
             if (mode === 'login') {
@@ -243,6 +225,19 @@ const AuthFormContent: React.FC<AuthFormProps & { useFormProps: UseFormProps<For
 export const AuthForm: React.FC<AuthFormProps> = ({ mode, userType = 'cyclist' }) => {
   const formProps = {
     resolver: zodResolver(mode === 'signup' ? formSchema : loginSchema),
+    defaultValues: mode === 'signup' ? {
+        firstName: '',
+        lastName: '',
+        email: '',
+        password: '',
+        country: '',
+        profileState: ''
+    } : {
+        email: '',
+        password: ''
+    }
   };
   return <AuthFormContent mode={mode} userType={userType} useFormProps={formProps} />;
 };
+
+    
