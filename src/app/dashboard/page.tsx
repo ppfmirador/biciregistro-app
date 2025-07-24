@@ -246,8 +246,7 @@ export default function DashboardPage() {
     const referralLink = `${window.location.origin}/auth?mode=signup&ref=${user.uid}`;
     navigator.clipboard.writeText(referralLink).then(() => {
       toast({ title: "¡Enlace copiado!", description: "Tu enlace de referido ha sido copiado al portapapeles." });
-    }).catch(err => {
-      console.error('Error al copiar el enlace:', err);
+    }).catch(() => {
       toast({ title: "Error", description: "No se pudo copiar el enlace.", variant: "destructive" });
     });
   };
