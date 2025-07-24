@@ -47,26 +47,10 @@ const ReportTheftDialog: React.FC<ReportTheftDialogProps> = ({ bike, onReportThe
       setErrors({});
     }
   }, [isOpen]);
-
-  useEffect(() => {
-    if (theftLocationState) {
-        setErrors(prev => {
-            const newErrors = {...prev};
-            delete newErrors.theftLocationState;
-            return newErrors;
-        })
-    }
-  }, [theftLocationState]);
-
+  
+  // Clear state error when country changes
   useEffect(() => {
       setTheftLocationState('');
-      if (theftLocationCountry) {
-        setErrors(prev => {
-            const newErrors = {...prev};
-            delete newErrors.theftLocationCountry;
-            return newErrors;
-        })
-      }
   }, [theftLocationCountry]);
 
 
@@ -144,12 +128,7 @@ const ReportTheftDialog: React.FC<ReportTheftDialogProps> = ({ bike, onReportThe
             <Textarea
               id="theftIncidentDetails"
               value={theftIncidentDetails}
-              onChange={(e) => {
-                setTheftIncidentDetails(e.target.value);
-                if (e.target.value.trim()) {
-                  setErrors(prev => ({ ...prev, theftIncidentDetails: undefined }));
-                }
-              }}
+              onChange={(e) => setTheftIncidentDetails(e.target.value)}
               className={`min-h-[80px] ${errors.theftIncidentDetails ? 'border-destructive' : ''}`}
               placeholder="Describe cómo, cuándo y dónde ocurrió el robo, características específicas de la bici al momento del robo, etc."
             />

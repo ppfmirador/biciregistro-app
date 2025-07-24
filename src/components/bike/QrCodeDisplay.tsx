@@ -2,10 +2,10 @@
 "use client";
 
 import React, { useRef } from 'react';
-import { QRCodeCanvas, QRCodeSVG } from 'qrcode.react';
+import { QRCodeCanvas } from 'qrcode.react';
 import { jsPDF } from 'jspdf';
 import { Button } from '@/components/ui/button';
-import { FileText, Image as ImageIcon, Code } from 'lucide-react';
+import { FileText, Image as ImageIcon } from 'lucide-react';
 import { SITE_URL } from '@/constants';
 import type { Bike } from '@/lib/types';
 import { useToast } from '@/hooks/use-toast';
@@ -18,7 +18,6 @@ const QR_SIZE_PX = 512; // High resolution for quality downloads
 
 const QrCodeDisplay: React.FC<QrCodeDisplayProps> = ({ bike }) => {
   const qrUrl = `${SITE_URL}/bike/${encodeURIComponent(bike.serialNumber)}`;
-  const svgRef = useRef<SVGSVGElement | null>(null);
   const canvasContainerRef = useRef<HTMLDivElement | null>(null);
   const { toast } = useToast();
 
@@ -40,24 +39,6 @@ const QrCodeDisplay: React.FC<QrCodeDisplayProps> = ({ bike }) => {
     document.body.appendChild(downloadLink);
     downloadLink.click();
     document.body.removeChild(downloadLink);
-  };
-
-  const handleDownloadSvg = () => {
-    if (!svgRef.current) {
-        toast({ title: "Error", description: "No se pudo generar el código QR para SVG.", variant: "destructive" });
-        return;
-    }
-    const svgData = new XMLSerializer().serializeToString(svgRef.current);
-    const svgBlob = new Blob([svgData], { type: 'image/svg+xml;charset=utf-8' });
-    const svgUrl = URL.createObjectURL(svgBlob);
-    
-    const downloadLink = document.createElement('a');
-    downloadLink.href = svgUrl;
-    downloadLink.download = `BiciRegistro-qr-${bike.serialNumber}.svg`;
-    document.body.appendChild(downloadLink);
-    downloadLink.click();
-    document.body.removeChild(downloadLink);
-    URL.revokeObjectURL(svgUrl);
   };
   
   const handleDownloadPdf = () => {
@@ -140,10 +121,7 @@ const QrCodeDisplay: React.FC<QrCodeDisplayProps> = ({ bike }) => {
           }}
         />
       </div>
-      <div style={{ display: 'none' }}>
-        <QRCodeSVG value={qrUrl} size={QR_SIZE_PX} level={'H'} ref={svgRef} />
-      </div>
-
+      
       <p className="max-w-xs text-center text-xs text-muted-foreground">
          Escanear para verificar en BiciRegistro
       </p>
@@ -153,9 +131,7 @@ const QrCodeDisplay: React.FC<QrCodeDisplayProps> = ({ bike }) => {
             <Button onClick={handleDownloadPng} variant="outline" className="flex-1">
               <ImageIcon className="mr-2 h-4 w-4" /> PNG
             </Button>
-            <Button onClick={handleDownloadSvg} variant="outline" className="flex-1">
-              <Code className="mr-2 h-4 w-4" /> SVG
-            </Button>
+            {/* SVG download removed for now as it's not commonly needed and simplifies the component */}
         </div>
         <Button onClick={handleDownloadPdf} className="w-full">
           <FileText className="mr-2 h-4 w-4" /> PDF para Etiqueta

@@ -34,6 +34,7 @@ export const BikeShopForm: React.FC<BikeShopFormProps> = ({ onSubmit, initialDat
       phone: '',
       website: '',
       mapsLink: '',
+      whatsappGroupLink: '',
       contactName: '',
       contactEmail: '',
       contactWhatsApp: ''
@@ -54,6 +55,7 @@ export const BikeShopForm: React.FC<BikeShopFormProps> = ({ onSubmit, initialDat
             phone: initialData.phone || '',
             website: initialData.website || '',
             mapsLink: initialData.mapsLink || '',
+            whatsappGroupLink: initialData.whatsappGroupLink || null, // Ensure null for empty
             contactName: initialData.contactName || '',
             contactEmail: initialData.contactEmail || '',
             contactWhatsApp: initialData.contactWhatsApp || '',
@@ -142,6 +144,11 @@ export const BikeShopForm: React.FC<BikeShopFormProps> = ({ onSubmit, initialDat
                 <Input id="mapsLink" type="url" {...register('mapsLink')} placeholder="https://maps.app.goo.gl/..." className={errors.mapsLink ? 'border-destructive' : ''} />
                 {errors.mapsLink && <p className="text-xs text-destructive">{errors.mapsLink.message}</p>}
             </div>
+        </div>
+         <div className="space-y-1">
+            <Label htmlFor="whatsappGroupLink">Enlace del Grupo de WhatsApp (para compartir rodadas)</Label>
+            <Input id="whatsappGroupLink" type="url" {...register('whatsappGroupLink')} placeholder="https://chat.whatsapp.com/..." className={errors.whatsappGroupLink ? 'border-destructive' : ''} />
+            {errors.whatsappGroupLink && <p className="text-xs text-destructive">{errors.whatsappGroupLink.message}</p>}
         </div>
       </div>
 

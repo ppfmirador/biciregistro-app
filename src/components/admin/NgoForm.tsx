@@ -36,6 +36,7 @@ export const NgoForm: React.FC<NgoFormProps> = ({ onSubmit, initialData, isLoadi
       postalCode: '',
       publicWhatsapp: '',
       website: '',
+      whatsappGroupLink: null,
       meetingDays: [],
       meetingTime: '',
       meetingPointMapsLink: '',
@@ -71,6 +72,7 @@ export const NgoForm: React.FC<NgoFormProps> = ({ onSubmit, initialData, isLoadi
             postalCode: initialData.postalCode || '',
             publicWhatsapp: initialData.publicWhatsapp || '',
             website: initialData.website || '',
+            whatsappGroupLink: initialData.whatsappGroupLink || null,
             meetingDays: initialData.meetingDays || [],
             meetingTime: initialData.meetingTime || '',
             meetingPointMapsLink: initialData.meetingPointMapsLink || '',
@@ -155,12 +157,18 @@ export const NgoForm: React.FC<NgoFormProps> = ({ onSubmit, initialData, isLoadi
             <Input id="website" type="url" {...register('website')} placeholder="https://..." className={errors.website ? 'border-destructive' : ''} />
             {errors.website && <p className="text-xs text-destructive">{errors.website.message}</p>}
         </div>
+         <div className="space-y-1">
+            <Label htmlFor="whatsappGroupLink">Enlace del Grupo de WhatsApp (para invitaciones)</Label>
+            <Input id="whatsappGroupLink" type="url" {...register('whatsappGroupLink')} placeholder="https://chat.whatsapp.com/..." className={errors.whatsappGroupLink ? 'border-destructive' : ''} />
+            {errors.whatsappGroupLink && <p className="text-xs text-destructive">{errors.whatsappGroupLink.message}</p>}
+        </div>
       </div>
 
       <Separator />
-
+      
+      {/* Ride Details Section */}
       <div className="space-y-4">
-        <h3 className="text-lg font-medium flex items-center"><MapPin className="mr-2 h-5 w-5 text-primary" /> Detalles de Rodadas</h3>
+        <h3 className="text-lg font-medium flex items-center border-b pb-2"><MapPin className="mr-2 h-5 w-5 text-primary" /> Detalles de Rodadas</h3>
         <div className="space-y-2">
             <Label>Días de Rodada</Label>
             <div className="flex flex-wrap items-center gap-x-4 gap-y-2">
