@@ -12,3 +12,5 @@ runConfig:
 rewrites:
   - source: /__/auth/**
     run: {}
+  - source: /**
+    run: {}
