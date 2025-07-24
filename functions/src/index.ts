@@ -1,3 +1,4 @@
+
 // functions/src/index.ts
 import { onCall, HttpsError } from "firebase-functions/v2/https";
 import * as admin from "firebase-admin";
@@ -8,21 +9,13 @@ import type {
   NgoAdminFormValues,
   UserRole,
 } from "./types";
+import * as corsConfig from "./cors.json";
 
 // Initialize Firebase Admin SDK
 admin.initializeApp();
 
-/**  Lista de orígenes que permitirás durante el desarrollo y en prod  */
-const allowedOrigins = [
-  "https://biciregistro.mx",
-  "https://www.biciregistro.mx",
-  "https://bike-guardian-hbbg6.firebaseapp.com",
-  "https://bike-guardian-staging.web.app",
-  // cloud workstation → usa un comodín para cualquier sub-dominio
-  /^https:\/\/.*\.cloudworkstations\.dev$/,
-  "http://localhost:3000",
-];
-
+// Centralized CORS configuration from cors.json
+const allowedOrigins = corsConfig.map((c) => c.origin).flat();
 
 // Set global options for all functions in this file.
 // CORS is handled per-function via callOptions.
@@ -1087,7 +1080,7 @@ export const createOrUpdateRide = onCall(callOptions, async (req) => {
       // Update existing ride
       const rideRef = admin.firestore().collection("bikeRides").doc(rideId);
       const rideSnap = await rideRef.get();
-      if (!rideSnap.exists || rideSnap.data()?.organizerId !== organizerId) {
+      if (!rideSnap.exists() || rideSnap.data()?.organizerId !== organizerId) {
         throw new HttpsError(
           "permission-denied",
           "You do not have permission to edit this ride.",
