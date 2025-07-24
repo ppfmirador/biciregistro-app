@@ -5,8 +5,6 @@
   "private": true,
   "scripts": {
     "dev": "next dev",
-    "genkit:dev": "genkit start -- tsx src/ai/dev.ts",
-    "genkit:watch": "genkit start -- tsx --watch src/ai/dev.ts",
     "build": "next build",
     "start": "next start",
     "lint": "next lint",
@@ -16,9 +14,7 @@
     "validate": "npm run format:check && npm run lint && npm run typecheck",
     "e2e": "playwright test",
     "deploy:staging": "firebase deploy -P staging --only functions,firestore,storage,hosting",
-    "deploy:prod": "firebase deploy -P default --only functions,firestore,storage,hosting",
-    "emulate:staging": "firebase emulators:start --project staging",
-    "emulate:prod": "firebase emulators:start --project default"
+    "deploy:prod": "firebase deploy -P default --only functions,firestore,storage,hosting"
   },
   "dependencies": {
     "@genkit-ai/googleai": "^1.8.0",
@@ -47,14 +43,12 @@
     "class-variance-authority": "^0.7.1",
     "clsx": "^2.1.1",
     "date-fns": "^3.6.0",
-    "dotenv": "^16.5.0",
     "firebase": "^11.9.0",
     "firebase-admin": "^12.3.0",
     "genkit": "^1.8.0",
     "jspdf": "^2.5.1",
     "lucide-react": "^0.475.0",
     "next": "15.2.3",
-    "patch-package": "^8.0.0",
     "qrcode.react": "^3.1.0",
     "react": "^18.3.1",
     "react-day-picker": "^8.10.1",
