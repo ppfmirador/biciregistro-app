@@ -1,7 +1,7 @@
 
 "use client";
 
-import { useState, useEffect, Suspense } from 'react';
+import { useState, useEffect } from 'react';
 import { useForm, Controller, type SubmitHandler, type UseFormProps } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import * as z from 'zod';
@@ -26,6 +26,11 @@ const GoogleIcon = (props: React.SVGProps<SVGSVGElement>) => (
         <path fill="#1976D2" d="M43.611,20.083H42V20H24v8h11.303c-0.792,2.237-2.231,4.166-4.087,5.571l6.19,5.238C43.021,36.251,44,30.686,44,24C44,22.659,43.862,21.35,43.611,20.083z" />
     </svg>
 );
+
+interface AuthFormProps {
+  mode: 'login' | 'signup';
+  userType?: UserRole;
+}
 
 // We create a generic inner component that receives the correctly typed useForm hook.
 // This avoids the type error at compile time.
@@ -223,7 +228,7 @@ const AuthFormContent: React.FC<AuthFormProps & { useFormProps: UseFormProps<For
 
 
 export const AuthForm: React.FC<AuthFormProps> = ({ mode, userType = 'cyclist' }) => {
-  const formProps = {
+  const formProps: UseFormProps<FormValues | LoginValues> = {
     resolver: zodResolver(mode === 'signup' ? formSchema : loginSchema),
     defaultValues: mode === 'signup' ? {
         firstName: '',
@@ -239,5 +244,3 @@ export const AuthForm: React.FC<AuthFormProps> = ({ mode, userType = 'cyclist' }
   };
   return <AuthFormContent mode={mode} userType={userType} useFormProps={formProps} />;
 };
-
-    
