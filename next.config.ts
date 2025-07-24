@@ -25,13 +25,6 @@ const nextConfig: NextConfig = {
       },
     ];
   },
-  webpack(config) {
-    config.externals.push({
-      'firebase-admin': 'firebase-admin',
-    });
-
-    return config;
-  },
 };
 
 export default nextConfig;
