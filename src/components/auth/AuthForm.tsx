@@ -4,6 +4,7 @@
 import { useState, useEffect } from 'react';
 import { useForm, Controller, type SubmitHandler } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
+import * as z from 'zod';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
@@ -32,7 +33,7 @@ interface AuthFormProps {
 }
 
 const SignupForm: React.FC<{ userType: UserRole }> = ({ userType }) => {
-    const { signUp, authLoading } = useAuth();
+    const { signUp, loading } = useAuth();
     const router = useRouter();
     const searchParams = useSearchParams();
     const { toast } = useToast();
@@ -68,7 +69,7 @@ const SignupForm: React.FC<{ userType: UserRole }> = ({ userType }) => {
         }
     };
 
-    const isAnyLoading = isSubmitting || authLoading;
+    const isAnyLoading = isSubmitting || loading;
 
     return (
         <form onSubmit={handleSubmit(onSubmit)} className="space-y-6">
@@ -120,7 +121,7 @@ const SignupForm: React.FC<{ userType: UserRole }> = ({ userType }) => {
 };
 
 const LoginForm: React.FC<{ userType: UserRole }> = ({ userType }) => {
-    const { signIn, authLoading, sendPasswordReset } = useAuth();
+    const { signIn, loading, sendPasswordReset } = useAuth();
     const { toast } = useToast();
     const [isSubmitting, setIsSubmitting] = useState(false);
     const [isSendingResetEmail, setIsSendingResetEmail] = useState(false);
@@ -161,7 +162,7 @@ const LoginForm: React.FC<{ userType: UserRole }> = ({ userType }) => {
         }
     };
 
-    const isAnyLoading = isSubmitting || authLoading || isSendingResetEmail;
+    const isAnyLoading = isSubmitting || loading || isSendingResetEmail;
 
     return (
         <form onSubmit={handleSubmit(onSubmit)} className="space-y-6">
@@ -187,7 +188,7 @@ const LoginForm: React.FC<{ userType: UserRole }> = ({ userType }) => {
                 </Button>
             </div>
             <Button type="submit" className="w-full" disabled={isAnyLoading}>
-                {(isSubmitting || authLoading) && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+                {(isSubmitting || loading) && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
                 Iniciar Sesión
             </Button>
         </form>
@@ -196,20 +197,20 @@ const LoginForm: React.FC<{ userType: UserRole }> = ({ userType }) => {
 
 
 export const AuthForm: React.FC<AuthFormProps> = ({ mode, userType = 'cyclist' }) => {
-    const { user, authLoading, signInWithGoogle } = useAuth();
+    const { user, loading, signInWithGoogle } = useAuth();
     const [isGoogleSubmitting, setIsGoogleSubmitting] = useState(false);
     const searchParams = useSearchParams();
     const router = useRouter();
 
     useEffect(() => {
-        if (!authLoading && user) {
+        if (!loading && user) {
             if (user.role === 'bikeshop') router.push('/bikeshop/dashboard');
             else if (user.role === 'ngo') router.push('/ngo/dashboard');
             else if (user.isAdmin) router.push('/admin');
             else if (!user.firstName || !user.lastName) router.push('/profile/edit');
             else router.push('/dashboard');
         }
-    }, [user, authLoading, router]);
+    }, [user, loading, router]);
 
     const handleGoogleSignIn = async () => {
         setIsGoogleSubmitting(true);
@@ -221,7 +222,7 @@ export const AuthForm: React.FC<AuthFormProps> = ({ mode, userType = 'cyclist' }
         }
     };
     
-    const isAnyLoading = authLoading || isGoogleSubmitting;
+    const isAnyLoading = loading || isGoogleSubmitting;
 
     return (
         <div className="space-y-4">
@@ -237,5 +238,3 @@ export const AuthForm: React.FC<AuthFormProps> = ({ mode, userType = 'cyclist' }
         </div>
     );
 }
-
-    
