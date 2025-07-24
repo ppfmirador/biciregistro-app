@@ -13,6 +13,7 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import { useState, useEffect } from 'react';
+import { Skeleton } from '../ui/skeleton';
 
 const Header = () => {
   const { user, signOut, loading } = useAuth();
@@ -38,10 +39,11 @@ const Header = () => {
   };
 
   const renderAuthContent = () => {
-    // On the server, or on the initial client render before the effect runs,
-    // isClient will be false. We render a consistent placeholder to avoid mismatch.
+    // To prevent hydration mismatch, we ensure the server and initial client render are the same (the skeleton).
+    // The actual content is rendered only after the component has mounted on the client (`isClient` is true)
+    // and the auth state is no longer loading.
     if (!isClient || loading) {
-      return <div className="h-9 w-52 bg-muted rounded-md animate-pulse"></div>;
+      return <Skeleton className="h-9 w-52 rounded-md" />;
     }
 
     if (user && !user.isAnonymous) {
@@ -64,7 +66,8 @@ const Header = () => {
         </>
       );
     }
-
+    
+    // If it's the client, not loading, and there's no user, show login/signup buttons.
     return (
       <>
         <Link href="/auth?mode=signup" passHref>
