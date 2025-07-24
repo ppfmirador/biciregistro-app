@@ -28,14 +28,9 @@ export const getHomepageContentServer = async (): Promise<HomepageContent | null
     }
     // If the document doesn't exist, it's not an error, we just return null.
     return null;
-  } catch (error) {
+  } catch (error: unknown) {
     console.error('Error fetching homepage content with Admin SDK:', error);
     // Return null in case of other errors (e.g., permissions) so the page can still render with defaults.
     return null; 
   }
 };
-
-/**
- * Alias for getHomepageContentServer to be used in client components that call server actions.
- */
-export const getHomepageContent = getHomepageContentServer;

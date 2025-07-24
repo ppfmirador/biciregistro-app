@@ -25,12 +25,11 @@ const nextConfig: NextConfig = {
       },
     ];
   },
-  webpack(config, { isServer }) {
-    if (isServer) {
-      config.externals = config.externals || [];
-      // Ensure 'firebase-admin' is treated as an external module on the server.
-      config.externals.push('firebase-admin');
-    }
+  webpack(config) {
+    config.externals.push({
+      'firebase-admin': 'firebase-admin',
+    });
+
     return config;
   },
 };
