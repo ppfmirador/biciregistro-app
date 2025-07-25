@@ -5,10 +5,10 @@ import { setGlobalOptions } from "firebase-functions/v2";
 import type {
   BikeRideFormValues,
   BikeShopAdminFormValues,
-  NgoAdminFormValues,
-  UserRole,
   NewCustomerDataForShop,
+  NgoAdminFormValues,
   UserProfileData,
+  UserRole,
 } from "./types";
 
 // Initialize Firebase Admin SDK
@@ -28,8 +28,9 @@ const allowedOrigins = [
 // CORS is handled per-function via callOptions.
 setGlobalOptions({
   region: "us-central1",
-  // Bypassing App Check for development. Change to true for production.
-  enforceAppCheck: false,
+  // App Check is now enforced for all functions.
+  // For local development, ensure a debug token is set in .env.local
+  enforceAppCheck: true,
 });
 
 // This object now contains the CORS configuration to be applied to each function.
