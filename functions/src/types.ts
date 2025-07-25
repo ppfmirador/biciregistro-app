@@ -11,21 +11,21 @@ import type {
 } from "./schemas";
 
 // Basic types
-export type BikeStatus = 'En Regla' | 'Robada' | 'Transferida';
-export type UserRole = 'cyclist' | 'bikeshop' | 'admin' | 'ngo';
+export type BikeStatus = "En Regla" | "Robada" | "Transferida";
+export type UserRole = "cyclist" | "bikeshop" | "admin" | "ngo";
 
 export type BikeType =
-  | 'Ruta'
-  | 'Pista'
-  | 'Enduro'
-  | 'XC'
-  | 'Downhill'
-  | 'BMX'
-  | 'Trial'
-  | 'Gravel'
-  | 'Urbana'
-  | 'E-Bike'
-  | '';
+  | "Ruta"
+  | "Pista"
+  | "Enduro"
+  | "XC"
+  | "Downhill"
+  | "BMX"
+  | "Trial"
+  | "Gravel"
+  | "Urbana"
+  | "E-Bike"
+  | "";
 
 export type RideLevel = "Principiante" | "Intermedio" | "Experto" | "";
 
@@ -66,7 +66,6 @@ export type BikeRideFormValues = z.infer<typeof bikeRideSchema>;
 export type BikeShopAdminFormValues = z.infer<typeof bikeShopAdminSchema>;
 export type NgoAdminFormValues = z.infer<typeof ngoAdminSchema>;
 
-
 export interface UserProfileData {
   firstName: string;
   lastName: string;
@@ -75,7 +74,7 @@ export interface UserProfileData {
   whatsappPhone?: string;
   postalCode?: string;
   age?: number | null;
-  gender?: 'masculino' | 'femenino' | 'otro' | 'prefiero_no_decir' | '';
+  gender?: "masculino" | "femenino" | "otro" | "prefiero_no_decir" | "";
   email?: string | null;
   role?: UserRole;
   isAdmin?: boolean;
@@ -103,6 +102,7 @@ export interface UserProfileData {
   createdBy?: string;
 }
 
-export interface NewCustomerDataForShop extends Omit<UserProfileData, 'role' | 'isAdmin'> {
-    // any specific fields for this use case, if any
+export interface NewCustomerDataForShop
+  extends Omit<UserProfileData, "role" | "isAdmin"> {
+  // any specific fields for this use case, if any
 }

@@ -31,7 +31,6 @@ setGlobalOptions({
   enforceAppCheck: false,
 });
 
-
 // This object now contains the CORS configuration to be applied to each function.
 const callOptions = {
   cors: allowedOrigins,
@@ -50,7 +49,7 @@ export const createBike = onCall(callOptions, async (req) => {
   if (!req.auth) {
     throw new HttpsError(
       "unauthenticated",
-      "You must be logged in to create a bike."
+      "You must be logged in to create a bike.",
     );
   }
   const { bikeData } = req.data;
@@ -81,19 +80,19 @@ export const createBike = onCall(callOptions, async (req) => {
   ) {
     throw new HttpsError(
       "invalid-argument",
-      "Bike data must include a valid 'serialNumber'."
+      "Bike data must include a valid 'serialNumber'.",
     );
   }
   if (!brand || typeof brand !== "string" || brand.trim() === "") {
     throw new HttpsError(
       "invalid-argument",
-      "Bike data must include a valid 'brand'."
+      "Bike data must include a valid 'brand'.",
     );
   }
   if (!model || typeof model !== "string" || model.trim() === "") {
     throw new HttpsError(
       "invalid-argument",
-      "Bike data must include a valid 'model'."
+      "Bike data must include a valid 'model'.",
     );
   }
   // --- End of Robust Validation ---
@@ -102,7 +101,7 @@ export const createBike = onCall(callOptions, async (req) => {
   const serialNumberCheckQuery = bikesRef.where(
     "serialNumber",
     "==",
-    serialNumber.trim()
+    serialNumber.trim(),
   );
 
   try {
@@ -110,7 +109,7 @@ export const createBike = onCall(callOptions, async (req) => {
     if (!serialNumberSnapshot.empty) {
       throw new HttpsError(
         "already-exists",
-        `Ya existe una bicicleta registrada con el número de serie: ${serialNumber}`
+        `Ya existe una bicicleta registrada con el número de serie: ${serialNumber}`,
       );
     }
 
@@ -126,11 +125,11 @@ export const createBike = onCall(callOptions, async (req) => {
     // Defensive check for auth token email.
     if (!req.auth.token.email) {
       console.error(
-        `User token for UID: ${ownerId} is missing an email address.`
+        `User token for UID: ${ownerId} is missing an email address.`,
       );
       throw new HttpsError(
         "unauthenticated",
-        "Your user token is missing a valid email address."
+        "Your user token is missing a valid email address.",
       );
     }
 
@@ -203,7 +202,7 @@ export const getMyBikes = onCall(callOptions, async (req) => {
   if (!req.auth) {
     throw new HttpsError(
       "unauthenticated",
-      "You must be logged in to view your bikes."
+      "You must be logged in to view your bikes.",
     );
   }
   const ownerId = req.auth.uid;
@@ -220,7 +219,7 @@ export const getMyBikes = onCall(callOptions, async (req) => {
         (entry: { timestamp: admin.firestore.Timestamp }) => ({
           ...entry,
           timestamp: entry.timestamp?.toDate().toISOString(),
-        })
+        }),
       );
 
       return {
@@ -253,7 +252,7 @@ export const getPublicBikeBySerial = onCall(callOptions, async (req) => {
   if (!serialNumber || typeof serialNumber !== "string") {
     throw new HttpsError(
       "invalid-argument",
-      "Serial number must be a non-empty string."
+      "Serial number must be a non-empty string.",
     );
   }
 
@@ -279,7 +278,7 @@ export const getPublicBikeBySerial = onCall(callOptions, async (req) => {
       (entry: { timestamp: admin.firestore.Timestamp }) => ({
         ...entry,
         timestamp: toISO(entry.timestamp),
-      })
+      }),
     );
 
     const theftDetails = bikeData.theftDetails
@@ -346,7 +345,7 @@ export const reportBikeStolen = onCall(callOptions, async (req) => {
   if (!req.auth) {
     throw new HttpsError(
       "unauthenticated",
-      "You must be logged in to report a theft."
+      "You must be logged in to report a theft.",
     );
   }
   const { bikeId, theftData } = req.data;
@@ -360,7 +359,7 @@ export const reportBikeStolen = onCall(callOptions, async (req) => {
   ) {
     throw new HttpsError(
       "invalid-argument",
-      "Valid bikeId and theftData are required."
+      "Valid bikeId and theftData are required.",
     );
   }
 
@@ -371,7 +370,7 @@ export const reportBikeStolen = onCall(callOptions, async (req) => {
     if (!bikeDoc.exists || bikeDoc.data()?.ownerId !== uid) {
       throw new HttpsError(
         "permission-denied",
-        "You do not own this bike or it does not exist."
+        "You do not own this bike or it does not exist.",
       );
     }
 
@@ -438,7 +437,7 @@ export const markBikeRecovered = onCall(callOptions, async (req) => {
     if (bikeDoc.data()?.status !== "Robada") {
       throw new HttpsError(
         "failed-precondition",
-        "This bike is not currently reported as stolen."
+        "This bike is not currently reported as stolen.",
       );
     }
 
@@ -477,7 +476,7 @@ export const initiateTransferRequest = onCall(callOptions, async (req) => {
   if (!req.auth || !req.auth.token.email) {
     throw new HttpsError(
       "unauthenticated",
-      "You must be logged in with a verified email."
+      "You must be logged in with a verified email.",
     );
   }
   const { bikeId, recipientEmail, transferDocumentUrl, transferDocumentName } =
@@ -488,7 +487,7 @@ export const initiateTransferRequest = onCall(callOptions, async (req) => {
   if (!bikeId || !recipientEmail) {
     throw new HttpsError(
       "invalid-argument",
-      "Bike ID and recipient email are required."
+      "Bike ID and recipient email are required.",
     );
   }
 
@@ -501,7 +500,7 @@ export const initiateTransferRequest = onCall(callOptions, async (req) => {
     if (bikeDoc.data()?.status !== "En Regla") {
       throw new HttpsError(
         "failed-precondition",
-        "Only bikes 'En Regla' can be transferred."
+        "Only bikes 'En Regla' can be transferred.",
       );
     }
 
@@ -513,7 +512,7 @@ export const initiateTransferRequest = onCall(callOptions, async (req) => {
     if (!existingRequests.empty) {
       throw new HttpsError(
         "already-exists",
-        "A transfer request for this bike is already pending."
+        "A transfer request for this bike is already pending.",
       );
     }
 
@@ -536,7 +535,7 @@ export const initiateTransferRequest = onCall(callOptions, async (req) => {
   } catch (error) {
     console.error(
       `Error in initiateTransferRequest for bike ${bikeId}:`,
-      error
+      error,
     );
     if (error instanceof HttpsError) {
       throw error;
@@ -567,7 +566,7 @@ export const respondToTransferRequest = onCall(callOptions, async (req) => {
   ) {
     throw new HttpsError(
       "invalid-argument",
-      "Request ID and a valid action are required."
+      "Request ID and a valid action are required.",
     );
   }
 
@@ -587,7 +586,7 @@ export const respondToTransferRequest = onCall(callOptions, async (req) => {
       if (requestData?.status !== "pending") {
         throw new HttpsError(
           "failed-precondition",
-          "This request has already been resolved."
+          "This request has already been resolved.",
         );
       }
 
@@ -596,7 +595,7 @@ export const respondToTransferRequest = onCall(callOptions, async (req) => {
         if (requestData.fromOwnerId !== uid) {
           throw new HttpsError(
             "permission-denied",
-            "Only the sender can cancel the request."
+            "Only the sender can cancel the request.",
           );
         }
       } else {
@@ -607,7 +606,7 @@ export const respondToTransferRequest = onCall(callOptions, async (req) => {
         ) {
           throw new HttpsError(
             "permission-denied",
-            "Only the recipient can respond to the request."
+            "Only the recipient can respond to the request.",
           );
         }
       }
@@ -630,7 +629,7 @@ export const respondToTransferRequest = onCall(callOptions, async (req) => {
         ) {
           throw new HttpsError(
             "failed-precondition",
-            "Bike ownership has changed or bike does not exist."
+            "Bike ownership has changed or bike does not exist.",
           );
         }
 
@@ -642,7 +641,7 @@ export const respondToTransferRequest = onCall(callOptions, async (req) => {
         if (!newOwnerDoc.exists) {
           throw new HttpsError(
             "not-found",
-            "The recipient user profile does not exist."
+            "The recipient user profile does not exist.",
           );
         }
         const newOwnerProfile = newOwnerDoc.data();
@@ -677,7 +676,7 @@ export const respondToTransferRequest = onCall(callOptions, async (req) => {
   } catch (error) {
     console.error(
       `Error in respondToTransferRequest for request ${requestId}:`,
-      error
+      error,
     );
     if (error instanceof HttpsError) {
       throw error;
@@ -690,22 +689,22 @@ export const respondToTransferRequest = onCall(callOptions, async (req) => {
 
 export const getUserTransferRequests = onCall(callOptions, async (req) => {
   if (!req.auth || !req.auth.token.email) {
-    throw new HttpsError('unauthenticated', 'You must be logged in.');
+    throw new HttpsError("unauthenticated", "You must be logged in.");
   }
 
   const uid = req.auth.uid;
   const email = req.auth.token.email.toLowerCase();
-  const requestsRef = admin.firestore().collection('transferRequests');
+  const requestsRef = admin.firestore().collection("transferRequests");
 
   const [sentSnap, receivedSnap] = await Promise.all([
-    requestsRef.where('fromOwnerId', '==', uid).get(),
-    requestsRef.where('toUserEmail', '==', email).get(),
+    requestsRef.where("fromOwnerId", "==", uid).get(),
+    requestsRef.where("toUserEmail", "==", email).get(),
   ]);
 
   const docs = [...sentSnap.docs, ...receivedSnap.docs];
-  const unique = new Map(docs.map(d => [d.id, d]));
+  const unique = new Map(docs.map((d) => [d.id, d]));
 
-  const requests = Array.from(unique.values()).map(d => ({
+  const requests = Array.from(unique.values()).map((d) => ({
     id: d.id,
     ...d.data(),
     requestDate: d.data().requestDate?.toDate().toISOString(),
@@ -714,7 +713,6 @@ export const getUserTransferRequests = onCall(callOptions, async (req) => {
 
   return { requests };
 });
-
 
 // Admin-specific functions
 // -----------------------------------------------------------------------------
@@ -728,7 +726,7 @@ export const updateUserRole = onCall(callOptions, async (req) => {
   if (req.auth?.token.admin !== true) {
     throw new HttpsError(
       "permission-denied",
-      "Only admins can modify user roles."
+      "Only admins can modify user roles.",
     );
   }
 
@@ -736,7 +734,7 @@ export const updateUserRole = onCall(callOptions, async (req) => {
   if (!uid || !role) {
     throw new HttpsError(
       "invalid-argument",
-      "The function must be called with a 'uid' and 'role'."
+      "The function must be called with a 'uid' and 'role'.",
     );
   }
 
@@ -766,7 +764,7 @@ export const deleteUserAccount = onCall(callOptions, async (req) => {
   if (req.auth?.token.admin !== true) {
     throw new HttpsError(
       "permission-denied",
-      "Only admins can delete user accounts."
+      "Only admins can delete user accounts.",
     );
   }
 
@@ -774,7 +772,7 @@ export const deleteUserAccount = onCall(callOptions, async (req) => {
   if (!uid) {
     throw new HttpsError(
       "invalid-argument",
-      "The function must be called with a 'uid'."
+      "The function must be called with a 'uid'.",
     );
   }
 
@@ -812,7 +810,7 @@ export const updateHomepageContent = onCall(callOptions, async (req) => {
   if (req.auth?.token.admin !== true) {
     throw new HttpsError(
       "permission-denied",
-      "Only admins can update homepage content."
+      "Only admins can update homepage content.",
     );
   }
 
@@ -828,7 +826,7 @@ export const updateHomepageContent = onCall(callOptions, async (req) => {
       .doc("config");
     await contentRef.set(
       { ...content, lastUpdated: admin.firestore.Timestamp.now() },
-      { merge: true }
+      { merge: true },
     );
     return { message: "Homepage content updated successfully." };
   } catch (error) {
@@ -839,7 +837,10 @@ export const updateHomepageContent = onCall(callOptions, async (req) => {
 
 export const getHomepageContent = onCall(callOptions, async () => {
   try {
-    const contentRef = admin.firestore().collection('homepage_content').doc('config');
+    const contentRef = admin
+      .firestore()
+      .collection("homepage_content")
+      .doc("config");
     const docSnap = await contentRef.get();
     if (docSnap.exists) {
       const data = docSnap.data();
@@ -864,25 +865,31 @@ export const createAccount = onCall(callOptions, async (req) => {
   if (req.auth?.token.admin !== true) {
     throw new HttpsError(
       "permission-denied",
-      "Only admins can create new accounts."
+      "Only admins can create new accounts.",
     );
   }
 
   const { accountData, role, creatorId } = req.data as {
-    accountData: BikeShopAdminFormValues | NgoAdminFormValues | NewCustomerDataForShop;
-    role: 'bikeshop' | 'ngo' | 'cyclist';
+    accountData:
+      | BikeShopAdminFormValues
+      | NgoAdminFormValues
+      | NewCustomerDataForShop;
+    role: "bikeshop" | "ngo" | "cyclist";
     creatorId: string;
   };
 
   if (!accountData || !role || !accountData.email) {
     throw new HttpsError(
       "invalid-argument",
-      "Account data, role, and email are required."
+      "Account data, role, and email are required.",
     );
   }
 
   let userProfileData: UserProfileData;
-  const displayName = (accountData as BikeShopAdminFormValues).shopName || (accountData as NgoAdminFormValues).ngoName || `${accountData.contactName} (Cliente)`;
+  const displayName =
+    (accountData as BikeShopAdminFormValues).shopName ||
+    (accountData as NgoAdminFormValues).ngoName ||
+    `${accountData.contactName} (Cliente)`;
 
   try {
     const userRecord = await admin.auth().createUser({
@@ -893,34 +900,43 @@ export const createAccount = onCall(callOptions, async (req) => {
 
     await admin.auth().setCustomUserClaims(userRecord.uid, { role });
 
-    if (role === 'bikeshop' || role === 'ngo') {
-        const commonData = accountData as BikeShopAdminFormValues | NgoAdminFormValues;
-        userProfileData = {
-            ...commonData,
-            email: commonData.email.toLowerCase(),
-            role,
-            isAdmin: false,
-            createdBy: creatorId,
-            firstName: commonData.contactName.split(' ')[0],
-            lastName: commonData.contactName.split(' ').slice(1).join(' '),
-        };
-    } else { // 'cyclist'
-        const customerData = accountData as NewCustomerDataForShop;
-        userProfileData = {
-          ...customerData,
-          email: customerData.email?.toLowerCase(),
-          role: 'cyclist',
-          isAdmin: false,
-          registeredByShopId: creatorId,
-        };
+    if (role === "bikeshop" || role === "ngo") {
+      const commonData = accountData as
+        | BikeShopAdminFormValues
+        | NgoAdminFormValues;
+      userProfileData = {
+        ...commonData,
+        email: commonData.email.toLowerCase(),
+        role,
+        isAdmin: false,
+        createdBy: creatorId,
+        firstName: commonData.contactName.split(" ")[0],
+        lastName: commonData.contactName.split(" ").slice(1).join(" "),
+      };
+    } else {
+      // 'cyclist'
+      const customerData = accountData as NewCustomerDataForShop;
+      userProfileData = {
+        ...customerData,
+        email: customerData.email?.toLowerCase(),
+        role: "cyclist",
+        isAdmin: false,
+        registeredByShopId: creatorId,
+      };
     }
-    
-    await admin.firestore().collection("users").doc(userRecord.uid).set(userProfileData);
-    
-    const passwordResetLink = await admin.auth().generatePasswordResetLink(accountData.email);
+
+    await admin
+      .firestore()
+      .collection("users")
+      .doc(userRecord.uid)
+      .set(userProfileData);
+
+    const passwordResetLink = await admin
+      .auth()
+      .generatePasswordResetLink(accountData.email);
 
     console.log(
-      `Account for ${displayName} <${accountData.email}> created by admin ${creatorId}.`
+      `Account for ${displayName} <${accountData.email}> created by admin ${creatorId}.`,
     );
     console.log(`Password reset link: ${passwordResetLink}`);
 
@@ -940,19 +956,18 @@ export const createAccount = onCall(callOptions, async (req) => {
     ) {
       throw new HttpsError(
         "already-exists",
-        "This email is already registered."
+        "This email is already registered.",
       );
     }
     throw new HttpsError("internal", `Could not create ${role} account.`);
   }
 });
 
-
 export const createOrUpdateRide = onCall(callOptions, async (req) => {
   if (!req.auth || !req.auth.uid) {
     throw new HttpsError(
       "unauthenticated",
-      "You must be logged in to manage rides."
+      "You must be logged in to manage rides.",
     );
   }
 
@@ -1007,7 +1022,7 @@ export const createOrUpdateRide = onCall(callOptions, async (req) => {
       if (!rideSnap.exists || rideSnap.data()?.organizerId !== organizerId) {
         throw new HttpsError(
           "permission-denied",
-          "You do not have permission to edit this ride."
+          "You do not have permission to edit this ride.",
         );
       }
       await rideRef.update(dataToSave);
