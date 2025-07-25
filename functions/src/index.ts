@@ -19,6 +19,7 @@ const allowedOrigins = [
   "https://biciregistro.mx",
   "https://www.biciregistro.mx",
   "https://bike-guardian-hbbg6.firebaseapp.com",
+  "https://bike-guardian-staging.web.app",
   // cloud workstation → usa un comodín para cualquier sub-dominio
   /^https:\/\/.*\.cloudworkstations\.dev$/,
   "http://localhost:3000",
