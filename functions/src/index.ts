@@ -1,4 +1,3 @@
-
 // functions/src/index.ts
 import { onCall, HttpsError } from "firebase-functions/v2/https";
 import * as admin from "firebase-admin";
@@ -24,7 +23,6 @@ setGlobalOptions({
   // Bypassing App Check for development. Change to true for production.
   enforceAppCheck: false,
 });
-
 
 // This object now contains the CORS configuration to be applied to each function.
 const callOptions = {
