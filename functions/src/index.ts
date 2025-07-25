@@ -8,6 +8,7 @@ import type {
   NgoAdminFormValues,
   UserRole,
   NewCustomerDataForShop,
+  UserProfileData,
 } from "./types";
 
 // Initialize Firebase Admin SDK
@@ -889,7 +890,7 @@ export const createAccount = onCall(callOptions, async (req) => {
   const displayName =
     (accountData as BikeShopAdminFormValues).shopName ||
     (accountData as NgoAdminFormValues).ngoName ||
-    `${accountData.contactName} (Cliente)`;
+    `${(accountData as NewCustomerDataForShop).firstName} ${(accountData as NewCustomerDataForShop).lastName} (Cliente)`;
 
   try {
     const userRecord = await admin.auth().createUser({
