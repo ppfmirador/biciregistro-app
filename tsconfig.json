@@ -10,7 +10,7 @@
     "noEmit": true,
 
     /* #######  módulos  ####### */
-    "module": "esnext",
+    "module": "ESNext",
     "moduleResolution": "bundler",
     "esModuleInterop": true,
     "resolveJsonModule": true,
@@ -39,8 +39,6 @@
 
   "exclude": [
     "node_modules",
-    ".next",
-    "functions/**/*",
-    "src/functions/**/*"
+    ".next"
   ]
 }

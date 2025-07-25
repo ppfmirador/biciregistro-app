@@ -19,7 +19,7 @@ import { Separator } from '@/components/ui/separator';
 import { ngoProfileSchema, type NgoProfileFormValues } from '@/lib/schemas';
 import { LAT_AM_LOCATIONS, DAYS_OF_WEEK } from '@/constants';
 import { Checkbox } from '@/components/ui/checkbox';
-import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '../ui/tooltip';
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
 
 function EditNgoProfilePageContent() {
   const router = useRouter();
@@ -40,7 +40,7 @@ function EditNgoProfilePageContent() {
     resolver: zodResolver(ngoProfileSchema),
     defaultValues: {
       ngoName: '', mission: '', country: '', profileState: '', address: '', postalCode: '', publicWhatsapp: '', website: '',
-      whatsappGroupLink: '',
+      whatsappGroupLink: null,
       meetingDays: [], meetingTime: '', meetingPointMapsLink: '',
       contactName: '', contactWhatsApp: ''
     }
