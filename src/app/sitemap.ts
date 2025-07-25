@@ -1,20 +1,20 @@
+import { MetadataRoute } from "next";
 
-import { MetadataRoute } from 'next';
-
-const siteUrl = 'https://biciregistro.mx'; // Replace with your actual production domain
+const siteUrl = "https://biciregistro.mx"; // Replace with your actual production domain
 
 export default function sitemap(): MetadataRoute.Sitemap {
   // Add static routes
   const staticRoutes = [
-    '', // Homepage
-    '/auth',
-    '/bikeshop/auth',
+    "", // Homepage
+    "/auth",
+    "/bikeshop/auth",
     // Add other static public pages here, e.g., '/about', '/contact'
   ].map((route) => ({
-    url: `${siteUrl}${route === '' ? '/' : route}`,
+    url: `${siteUrl}${route === "" ? "/" : route}`,
     lastModified: new Date().toISOString(),
-    changeFrequency: route === '' ? 'daily' : 'monthly' as 'daily' | 'monthly', // Homepage might change more often
-    priority: route === '' ? 1.0 : 0.8,
+    changeFrequency:
+      route === "" ? "daily" : ("monthly" as "daily" | "monthly"), // Homepage might change more often
+    priority: route === "" ? 1.0 : 0.8,
   }));
 
   // For dynamic routes (e.g., individual bike pages), you would fetch them here.

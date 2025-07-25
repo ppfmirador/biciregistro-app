@@ -11,21 +11,21 @@ import type {
 } from "./schemas";
 
 // Basic types
-export type BikeStatus = 'En Regla' | 'Robada' | 'Transferida';
-export type UserRole = 'cyclist' | 'bikeshop' | 'admin' | 'ngo';
+export type BikeStatus = "En Regla" | "Robada" | "Transferida";
+export type UserRole = "cyclist" | "bikeshop" | "admin" | "ngo";
 
 export type BikeType =
-  | 'Ruta'
-  | 'Pista'
-  | 'Enduro'
-  | 'XC'
-  | 'Downhill'
-  | 'BMX'
-  | 'Trial'
-  | 'Gravel'
-  | 'Urbana'
-  | 'E-Bike'
-  | '';
+  | "Ruta"
+  | "Pista"
+  | "Enduro"
+  | "XC"
+  | "Downhill"
+  | "BMX"
+  | "Trial"
+  | "Gravel"
+  | "Urbana"
+  | "E-Bike"
+  | "";
 
 export type RideLevel = "Principiante" | "Intermedio" | "Experto" | "";
 
