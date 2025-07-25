@@ -11,27 +11,27 @@ import type {
 } from "./schemas";
 
 // Basic types
-export type BikeStatus = "En Regla" | "Robada" | "Transferida";
-export type UserRole = "cyclist" | "bikeshop" | "admin" | "ngo";
+export type BikeStatus = 'En Regla' | 'Robada' | 'Transferida';
+export type UserRole = 'cyclist' | 'bikeshop' | 'admin' | 'ngo';
 
 export type BikeType =
-  | "Ruta"
-  | "Pista"
-  | "Enduro"
-  | "XC"
-  | "Downhill"
-  | "BMX"
-  | "Trial"
-  | "Gravel"
-  | "Urbana"
-  | "E-Bike"
-  | "";
+  | 'Ruta'
+  | 'Pista'
+  | 'Enduro'
+  | 'XC'
+  | 'Downhill'
+  | 'BMX'
+  | 'Trial'
+  | 'Gravel'
+  | 'Urbana'
+  | 'E-Bike'
+  | '';
 
 export type RideLevel = "Principiante" | "Intermedio" | "Experto" | "";
 
 export interface TheftReportData {
   theftLocationState: string;
-  theftLocationCountry: string;
+  theftLocationCountry?: string;
   theftPerpetratorDetails?: string;
   theftIncidentDetails: string;
   generalNotes?: string;
@@ -66,10 +66,43 @@ export type BikeRideFormValues = z.infer<typeof bikeRideSchema>;
 export type BikeShopAdminFormValues = z.infer<typeof bikeShopAdminSchema>;
 export type NgoAdminFormValues = z.infer<typeof ngoAdminSchema>;
 
-// Type for the structure of an item in cors.json
-export interface CorsConfigItem {
-  origin: string[];
-  method: string[];
-  responseHeader: string[];
-  maxAgeSeconds: number;
+
+export interface UserProfileData {
+  firstName: string;
+  lastName: string;
+  country: string;
+  profileState: string;
+  whatsappPhone?: string;
+  postalCode?: string;
+  age?: number | null;
+  gender?: 'masculino' | 'femenino' | 'otro' | 'prefiero_no_decir' | '';
+  email?: string | null;
+  role?: UserRole;
+  isAdmin?: boolean;
+  registeredByShopId?: string;
+  referralCount?: number;
+  referrerId?: string;
+  // Bike Shop Specific Fields
+  shopName?: string;
+  address?: string;
+  website?: string | null;
+  mapsLink?: string | null;
+  phone?: string;
+  contactName?: string;
+  contactEmail?: string;
+  contactWhatsApp?: string;
+  // Shared field for Shops & NGOs
+  whatsappGroupLink?: string | null;
+  // NGO Specific Fields
+  ngoName?: string;
+  mission?: string;
+  publicWhatsapp?: string;
+  meetingDays?: string[];
+  meetingTime?: string;
+  meetingPointMapsLink?: string | null;
+  createdBy?: string;
+}
+
+export interface NewCustomerDataForShop extends Omit<UserProfileData, 'role' | 'isAdmin'> {
+    // any specific fields for this use case, if any
 }
