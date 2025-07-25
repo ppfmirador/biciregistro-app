@@ -247,10 +247,10 @@ export default function RegisterSoldBikePage() {
       // Optionally delay navigation or let user click away
       // router.push('/bikeshop/dashboard');
 
-    } catch (error: unknown) {
-      const err = error as FunctionsError;
+    } catch (_error: unknown) {
+      const err = _error as FunctionsError;
       const errorMessage = err.message || "No se pudo registrar la bicicleta. Revisa los datos e inténtalo de nuevo.";
-      console.error("Error registering bike by shop:", error);
+      console.error("Error registering bike by shop:", _error);
       if (errorMessage.includes('Ya existe una bicicleta registrada con el número de serie:')) {
         setError('serialNumber', { type: 'manual', message: errorMessage });
         toast({ title: "Error: Número de Serie Duplicado", description: errorMessage, variant: "destructive", duration: 7000 });

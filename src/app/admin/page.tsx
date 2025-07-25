@@ -387,10 +387,10 @@ export default function AdminPage() {
         if (user?.uid === uid) {
             await refreshUserProfile();
         }
-    } catch (error: unknown) {
-        const err = error as FunctionsError;
+    } catch (_error: unknown) {
+        const err = _error as FunctionsError;
         const errorMessage = err.message || "Error desconocido al actualizar rol.";
-        console.error("Error updating role:", error);
+        console.error("Error updating role:", _error);
         toast({ title: "Error al Actualizar Rol", description: errorMessage, variant: "destructive" });
     } finally {
         setIsLoading(false);

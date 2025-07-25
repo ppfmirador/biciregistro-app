@@ -120,7 +120,7 @@ const SignupForm: React.FC<{ userType: UserRole }> = ({ userType }) => {
     );
 };
 
-const LoginForm: React.FC<{}> = () => {
+const LoginForm: React.FC = () => {
     const { signIn, loading, sendPasswordReset } = useAuth();
     const { toast } = useToast();
     const [isSubmitting, setIsSubmitting] = useState(false);

@@ -161,13 +161,7 @@ function EditBikeShopProfilePageContent() {
                     {errors.phone && <p className="text-xs text-destructive">{errors.phone.message}</p>}
                   </div>
                 </div>
-                <div className="space-y-1">
-                    <Label htmlFor="email">Correo de la Tienda (para inicio de sesión)</Label>
-                    <Input id="email" type="email" {...register('email')} className={errors.email ? 'border-destructive' : ''} disabled={isEditMode} />
-                    {errors.email && <p className="text-xs text-destructive">{errors.email.message}</p>}
-                    {isEditMode && <p className="text-xs text-muted-foreground">El correo de inicio de sesión no se puede cambiar.</p>}
-                </div>
-                <div className="space-y-1">
+                 <div className="space-y-1">
                     <Label htmlFor="address">Dirección</Label>
                     <Input id="address" {...register('address')} className={errors.address ? 'border-destructive' : ''} />
                     {errors.address && <p className="text-xs text-destructive">{errors.address.message}</p>}

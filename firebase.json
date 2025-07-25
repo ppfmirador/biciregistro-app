@@ -34,5 +34,15 @@
     "frameworksBackend": {
       "region": "us-central1"
     }
+  },
+  "apphosting": {
+    "source": ".",
+    "ignore": [
+      "firebase.json",
+      "**/.*",
+      "**/node_modules/**"
+    ],
+    "region": "us-central1"
   }
 }
+
