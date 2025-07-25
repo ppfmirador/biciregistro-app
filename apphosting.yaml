@@ -1,16 +1,5 @@
 # Settings to manage and configure a Firebase App Hosting backend.
-# https://firebase.google.com/docs/app-hosting/configure
-
+# https://firebase.google.com/docs/app-hosting/configure-backend
+framework: nextjs
 runConfig:
-  # Increase this value if you'd like to automatically spin up
-  # more instances in response to increased traffic.
-  maxInstances: 1
-
-# This rewrite is essential for Firebase Authentication with custom domains.
-# It ensures that requests to the /__/auth/** path are handled by the
-# Firebase-provided authentication handler instead of the Next.js app.
-rewrites:
-  - source: /__/auth/**
-    run: {}
-  - source: /**
-    run: {}
+  minInstances: 0
