@@ -529,261 +529,33 @@ export const updateUserRoleByAdmin = async (uid: string, role: UserRole): Promis
   await updateDoc(userRef, { role: role, isAdmin: isAdmin });
 };
 
-const generateTemporaryPassword = (length = 10): string => {
-  const characters = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789!@#$%^&*()';
-  let result = '';
-  for (let i = 0; i < length; i++) {
-    result += characters.charAt(Math.floor(Math.random() * characters.length));
-  }
-  return result;
-};
+type AccountData = BikeShopAdminFormValues | NgoAdminFormValues | NewCustomerDataForShop;
 
-const createAuditLog = async (adminId: string, action: string, details: Record<string, unknown>) => {
-    const logData = {
-        adminId,
-        action,
-        timestamp: serverTimestamp(),
-        details,
-    };
-    await addDoc(collection(db, 'audit_logs'), logData);
-};
-
-
-export const createBikeShopAccountByAdmin = async (shopData: BikeShopAdminFormValues, adminId: string): Promise<{ uid: string; }> => {
-  const tempPassword = generateTemporaryPassword();
-  const tempAppName = `temp-shop-creation-${Date.now()}`;
-  const tempApp = initializeApp(app.options, tempAppName);
-  const tempAuth = getAuth(tempApp);
-  const adminAuth = getAuth(app); 
+/**
+ * Client-side wrapper to call the centralized `createAccount` Cloud Function.
+ */
+export const createAccountByAdmin = async (
+  accountData: AccountData,
+  role: 'bikeshop' | 'ngo' | 'cyclist',
+  creatorId: string
+): Promise<{ uid: string }> => {
+  const functions = getFunctions(app, 'us-central1');
+  const createAccountCallable = httpsCallable<{
+    accountData: AccountData;
+    role: 'bikeshop' | 'ngo' | 'cyclist';
+    creatorId: string;
+  }, { uid: string }>(functions, 'createAccount');
 
   try {
-    const userCredential = await createUserWithEmailAndPassword(tempAuth, shopData.email, tempPassword);
-    const newUser = userCredential.user;
-
-    try {
-        await sendEmailVerification(newUser);
-        await sendPasswordResetEmail(tempAuth, newUser.email!);
-    } catch (verificationError) {
-        console.warn("Could not send email during shop account creation:", verificationError);
-    }
-
-    const userProfileData: UserProfileData = {
-      email: newUser.email?.toLowerCase(),
-      role: 'bikeshop',
-      isAdmin: false,
-      shopName: shopData.shopName,
-      country: shopData.country,
-      profileState: shopData.profileState,
-      address: shopData.address,
-      postalCode: shopData.postalCode,
-      phone: shopData.phone,
-      website: shopData.website || '',
-      mapsLink: shopData.mapsLink || '',
-      whatsappGroupLink: shopData.whatsappGroupLink || null,
-      contactName: shopData.contactName,
-      contactEmail: shopData.contactEmail,
-      contactWhatsApp: shopData.contactWhatsApp,
-      firstName: shopData.contactName.split(' ')[0],
-      lastName: shopData.contactName.split(' ').slice(1).join(' '),
-    };
-    await updateUserDoc(newUser.uid, userProfileData);
-
-    await createAuditLog(adminId, 'createBikeShop', { shopId: newUser.uid, shopName: shopData.shopName, adminEmail: adminAuth.currentUser?.email });
-    
-    // Clean up temporary Firebase app instance
-    await deleteApp(tempApp);
-    
-    return { uid: newUser.uid };
-  } catch (error: unknown) {
-    // Clean up temporary Firebase app instance in case of error
-    await deleteApp(tempApp);
-    
-    const authError = error as { code?: string, message?: string };
-    if (authError.code === 'auth/email-already-in-use' || authError.code === 'auth/email-already-exists') {
-      throw new Error('Este correo electrónico ya está registrado. Asigna el rol de "Tienda de Bicis" al usuario existente si es necesario, o verifica si ya es una tienda.');
-    }
-    console.error("Error creating bike shop account:", error);
-    throw new Error(`No se pudo crear la cuenta de tienda: ${authError.message || 'Error desconocido.'}`);
+    const result = await createAccountCallable({ accountData, role, creatorId });
+    return result.data;
+  } catch (error) {
+    console.error(`Error calling createAccount function for role ${role}:`, error);
+    // The callable function should throw an HttpsError with a specific message.
+    throw error;
   }
 };
 
-export const createNgoAccountByAdmin = async (ngoData: NgoAdminFormValues, adminId: string): Promise<{ uid: string; }> => {
-  const tempPassword = generateTemporaryPassword();
-  const tempAppName = `temp-ngo-creation-${Date.now()}`;
-  const tempApp = initializeApp(app.options, tempAppName);
-  const tempAuth = getAuth(tempApp);
-  const adminAuth = getAuth(app); 
-
-  try {
-    const userCredential = await createUserWithEmailAndPassword(tempAuth, ngoData.email, tempPassword);
-    const newUser = userCredential.user;
-    
-    try {
-        await sendEmailVerification(newUser);
-        await sendPasswordResetEmail(tempAuth, newUser.email!);
-    } catch (emailError) {
-        console.warn("Could not send email during NGO account creation:", emailError);
-    }
-
-    const userProfileData: UserProfileData = {
-      email: newUser.email?.toLowerCase(),
-      role: 'ngo',
-      isAdmin: false,
-      ngoName: ngoData.ngoName,
-      mission: ngoData.mission,
-      country: ngoData.country,
-      profileState: ngoData.profileState,
-      address: ngoData.address,
-      postalCode: ngoData.postalCode,
-      publicWhatsapp: ngoData.publicWhatsapp,
-      website: ngoData.website || '',
-      whatsappGroupLink: ngoData.whatsappGroupLink || null,
-      meetingDays: ngoData.meetingDays || [],
-      meetingTime: ngoData.meetingTime || '',
-      meetingPointMapsLink: ngoData.meetingPointMapsLink || '',
-      contactName: ngoData.contactName,
-      contactWhatsApp: ngoData.contactWhatsApp,
-      firstName: ngoData.contactName.split(' ')[0],
-      lastName: ngoData.contactName.split(' ').slice(1).join(' '),
-    };
-    await updateUserDoc(newUser.uid, userProfileData);
-
-    await createAuditLog(adminId, 'createNGO', { ngoId: newUser.uid, ngoName: ngoData.ngoName, adminEmail: adminAuth.currentUser?.email });
-    
-    await deleteApp(tempApp);
-
-    return { uid: newUser.uid };
-  } catch (error: unknown) {
-    await deleteApp(tempApp);
-    
-    const authError = error as { code?: string, message?: string };
-    if (authError.code === 'auth/email-already-in-use' || authError.code === 'auth/email-already-exists') {
-      throw new Error('Este correo electrónico ya está registrado. Asigna el rol de "ONG/Colectivo" al usuario existente si es necesario.');
-    }
-    console.error("Error creating NGO account:", error);
-    throw new Error(`No se pudo crear la cuenta de ONG: ${authError.message || 'Error desconocido.'}`);
-  }
-};
-
-
-export const createCustomerWithTemporaryPassword = async (
-  email: string,
-  customerData: NewCustomerDataForShop,
-  shopIdCreatingThisAccount: string
-): Promise<{ uid: string; temporaryPassword: string }> => {
-  const tempPassword = generateTemporaryPassword();
-  const tempAppName = `temp-customer-creation-${Date.now()}`;
-  const tempApp = initializeApp(app.options, tempAppName);
-  const tempAuth = getAuth(tempApp);
-
-  try {
-    const userCredential = await createUserWithEmailAndPassword(tempAuth, email, tempPassword);
-    const newUser = userCredential.user;
-
-    try {
-        await sendEmailVerification(newUser);
-        await sendPasswordResetEmail(tempAuth, newUser.email!); 
-    } catch (emailError) {
-        console.warn(`Error sending email (verification or password reset) to ${email}:`, emailError);
-    }
-
-    const userProfileData: UserProfileData = {
-      email: newUser.email?.toLowerCase(),
-      firstName: customerData.firstName,
-      lastName: customerData.lastName,
-      country: customerData.country,
-      profileState: customerData.profileState,
-      whatsappPhone: customerData.whatsappPhone || '',
-      postalCode: customerData.postalCode || '',
-      gender: customerData.gender as UserProfileData['gender'] || '',
-      role: 'cyclist',
-      isAdmin: false,
-      registeredByShopId: shopIdCreatingThisAccount,
-    };
-    await updateUserDoc(newUser.uid, userProfileData);
-
-    await deleteApp(tempApp);
-    return { uid: newUser.uid, temporaryPassword: tempPassword };
-  } catch (error: unknown) {
-    await deleteApp(tempApp);
-
-    const authError = error as { code?: string, message?: string };
-    if (authError.code === 'auth/email-already-in-use' || authError.code === 'auth/email-already-exists') {
-      throw new Error('Este correo electrónico ya está registrado para un cliente. Considera buscarlo por su correo y registrar la bici para el usuario existente.');
-    }
-    console.error("Error creating customer pre-account:", error);
-    throw new Error(`No se pudo crear la pre-cuenta del cliente: ${authError.message || 'Error desconocido.'}`);
-  }
-};
-
-export const getShopRegisteredBikes = async (shopId: string, searchTerm?: string, limitResults: number = 10): Promise<Bike[]> => {
-  const bikesRef = collection(db, 'bikes');
-  const bikeQueryConstraints: QueryConstraint[] = [
-    where('registeredByShopId', '==', shopId),
-    orderBy('registrationDate', 'desc')
-  ];
-
-  if (!searchTerm) {
-    bikeQueryConstraints.push(limit(limitResults));
-  }
-
-  const bikeQuery = query(bikesRef, ...bikeQueryConstraints);
-  const bikeQuerySnapshot = await getDocs(bikeQuery);
-  let shopBikes = bikeQuerySnapshot.docs.map(docSnap => {
-    if (!docSnap.exists()) return null;
-    try {
-      return bikeFromDoc(docSnap);
-    } catch (e) {
-      console.error(`Error processing bike ${docSnap.id} for shop inventory:`, e);
-      return null;
-    }
-  }).filter((bike): bike is Bike => bike !== null);
-
-  const ownerIds = [...new Set(shopBikes.map(bike => bike.ownerId).filter(id => id !== null && id !== undefined) as string[])];
-  const ownerProfiles: Record<string, UserProfileData> = {};
-
-  if (ownerIds.length > 0) {
-    const MAX_IDS_PER_QUERY = 30; 
-    for (let i = 0; i < ownerIds.length; i += MAX_IDS_PER_QUERY) {
-      const batchOwnerIds = ownerIds.slice(i, i + MAX_IDS_PER_QUERY);
-      if (batchOwnerIds.length > 0) {
-        const usersRef = collection(db, 'users');
-        const ownerDetailsQuery = query(usersRef, where(documentId(), 'in', batchOwnerIds));
-        try {
-          const ownerQuerySnapshot: QuerySnapshot<UserProfileData> = await getDocs(ownerDetailsQuery);
-          ownerQuerySnapshot.docs.forEach(docSnap => {
-            ownerProfiles[docSnap.id] = docSnap.data();
-          });
-        } catch (error: unknown){
-           console.warn(`Could not fetch batch owner details for shop inventory. This might be due to Firestore rules if user is not authenticated. Error: ${error}`);
-        }
-      }
-    }
-  }
-
-  shopBikes = shopBikes.map(bike => {
-    const ownerData = bike.ownerId ? ownerProfiles[bike.ownerId] : null;
-    return {
-      ...bike,
-      ownerFirstName: ownerData?.firstName || bike.ownerFirstName, 
-      ownerLastName: ownerData?.lastName || bike.ownerLastName,
-      ownerEmail: ownerData?.email || bike.ownerEmail, 
-      ownerWhatsappPhone: ownerData?.whatsappPhone || bike.ownerWhatsappPhone,
-    };
-  });
-
-  if (searchTerm) {
-    const lowerSearchTerm = searchTerm.toLowerCase().trim();
-    if (lowerSearchTerm) { 
-        shopBikes = shopBikes.filter(bike =>
-            bike.serialNumber.toLowerCase().includes(lowerSearchTerm) ||
-            `${bike.ownerFirstName || ''} ${bike.ownerLastName || ''}`.toLowerCase().includes(lowerSearchTerm) ||
-            (bike.ownerEmail && bike.ownerEmail.toLowerCase().includes(lowerSearchTerm))
-        );
-    }
-  }
-  return shopBikes;
-};
 
 export const getShopAnalytics = async (shopId: string, dateRange?: { from?: Date; to?: Date }): Promise<ShopAnalyticsData> => {
   const usersRef = collection(db, "users");

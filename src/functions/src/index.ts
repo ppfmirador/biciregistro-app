@@ -856,79 +856,82 @@ export const getHomepageContent = onCall(callOptions, async () => {
   }
 });
 
-export const createBikeShopAccount = onCall(callOptions, async (req) => {
+/**
+ * Creates an account for a Bike Shop or NGO.
+ * This is a centralized and secure function callable by admins.
+ */
+export const createAccount = onCall(callOptions, async (req) => {
   if (req.auth?.token.admin !== true) {
     throw new HttpsError(
       "permission-denied",
-      "Only admins can create shop accounts."
+      "Only admins can create new accounts."
     );
   }
 
-  const shopData = req.data as BikeShopAdminFormValues;
-  const adminId = req.auth.uid;
+  const { accountData, role, creatorId } = req.data as {
+    accountData: BikeShopAdminFormValues | NgoAdminFormValues;
+    role: 'bikeshop' | 'ngo' | 'cyclist';
+    creatorId: string;
+  };
 
-  if (!shopData || !shopData.email || !shopData.shopName) {
+  if (!accountData || !role || !accountData.email) {
     throw new HttpsError(
       "invalid-argument",
-      "Shop name and email are required."
+      "Account data, role, and email are required."
     );
   }
+
+  let userProfileData: UserProfileData;
+  const displayName = (accountData as BikeShopAdminFormValues).shopName || (accountData as NgoAdminFormValues).ngoName || `${accountData.contactName} (Cliente)`;
 
   try {
     const userRecord = await admin.auth().createUser({
-      email: shopData.email,
+      email: accountData.email,
       emailVerified: false,
-      displayName: shopData.shopName,
+      displayName,
     });
 
-    await admin
-      .auth()
-      .setCustomUserClaims(userRecord.uid, { role: "bikeshop" });
+    await admin.auth().setCustomUserClaims(userRecord.uid, { role });
 
-    const userProfileData = {
-      email: shopData.email.toLowerCase(),
-      role: "bikeshop",
-      isAdmin: false,
-      shopName: shopData.shopName,
-      country: shopData.country,
-      profileState: shopData.profileState,
-      address: shopData.address,
-      postalCode: shopData.postalCode,
-      phone: shopData.phone,
-      website: shopData.website || "",
-      mapsLink: shopData.mapsLink || "",
-      contactName: shopData.contactName,
-      contactEmail: shopData.contactEmail,
-      contactWhatsApp: shopData.contactWhatsApp,
-      createdBy: adminId,
-    };
+    if (role === 'bikeshop' || role === 'ngo') {
+        const commonData = accountData as BikeShopAdminFormValues | NgoAdminFormValues;
+        userProfileData = {
+            ...commonData,
+            email: commonData.email.toLowerCase(),
+            role,
+            isAdmin: false,
+            createdBy: creatorId,
+            firstName: commonData.contactName.split(' ')[0],
+            lastName: commonData.contactName.split(' ').slice(1).join(' '),
+        };
+    } else { // 'cyclist'
+        const customerData = accountData as NewCustomerDataForShop;
+        userProfileData = {
+          ...customerData,
+          email: customerData.email?.toLowerCase(),
+          role: 'cyclist',
+          isAdmin: false,
+          registeredByShopId: creatorId,
+        };
+    }
+    
+    await admin.firestore().collection("users").doc(userRecord.uid).set(userProfileData);
+    
+    const passwordResetLink = await admin.auth().generatePasswordResetLink(accountData.email);
 
-    await admin
-      .firestore()
-      .collection("users")
-      .doc(userRecord.uid)
-      .set(userProfileData);
-
-    const passwordResetLink = await admin
-      .auth()
-      .generatePasswordResetLink(shopData.email);
-
-    // Here you would typically use a transactional email service
-    // (e.g., SendGrid, Mailgun) to send a welcome email with the reset link.
-    // For this example, we'll log it.
     console.log(
-      `Shop account created for ${shopData.email}. ` +
-        `Password reset link: ${passwordResetLink}`
+      `Account for ${displayName} <${accountData.email}> created by admin ${creatorId}.`
     );
+    console.log(`Password reset link: ${passwordResetLink}`);
 
     return {
       uid: userRecord.uid,
       message:
-        `Shop account for ${shopData.shopName} created. ` +
+        `Account for ${displayName} created. ` +
         "An email has been sent to set the password.",
     };
   } catch (error: unknown) {
-    console.error("Error creating bike shop account:", error);
+    console.error(`Error creating ${role} account:`, error);
     if (
       typeof error === "object" &&
       error !== null &&
@@ -940,93 +943,10 @@ export const createBikeShopAccount = onCall(callOptions, async (req) => {
         "This email is already registered."
       );
     }
-    throw new HttpsError("internal", "Could not create shop account.");
+    throw new HttpsError("internal", `Could not create ${role} account.`);
   }
 });
 
-export const createNgoAccount = onCall(callOptions, async (req) => {
-  if (req.auth?.token.admin !== true) {
-    throw new HttpsError(
-      "permission-denied",
-      "Only admins can create NGO accounts."
-    );
-  }
-
-  const ngoData = req.data as NgoAdminFormValues;
-  const adminId = req.auth.uid;
-
-  if (!ngoData || !ngoData.email || !ngoData.ngoName) {
-    throw new HttpsError(
-      "invalid-argument",
-      "NGO name and email are required."
-    );
-  }
-
-  try {
-    const userRecord = await admin.auth().createUser({
-      email: ngoData.email,
-      emailVerified: false,
-      displayName: ngoData.ngoName,
-    });
-
-    await admin.auth().setCustomUserClaims(userRecord.uid, { role: "ngo" });
-
-    const userProfileData = {
-      email: ngoData.email.toLowerCase(),
-      role: "ngo",
-      isAdmin: false,
-      ngoName: ngoData.ngoName,
-      mission: ngoData.mission,
-      country: ngoData.country,
-      profileState: ngoData.profileState,
-      address: ngoData.address,
-      postalCode: ngoData.postalCode,
-      publicWhatsapp: ngoData.publicWhatsapp,
-      website: ngoData.website || "",
-      meetingDays: ngoData.meetingDays || [],
-      meetingTime: ngoData.meetingTime || "",
-      meetingPointMapsLink: ngoData.meetingPointMapsLink || "",
-      contactName: ngoData.contactName,
-      contactWhatsApp: ngoData.contactWhatsApp,
-      createdBy: adminId,
-    };
-
-    await admin
-      .firestore()
-      .collection("users")
-      .doc(userRecord.uid)
-      .set(userProfileData);
-
-    const passwordResetLink = await admin
-      .auth()
-      .generatePasswordResetLink(ngoData.email);
-    console.log(
-      `NGO account created for ${ngoData.email}. ` +
-        `Password reset link: ${passwordResetLink}`
-    );
-
-    return {
-      uid: userRecord.uid,
-      message:
-        `NGO account for ${ngoData.ngoName} created. ` +
-        "An email has been sent to set the password.",
-    };
-  } catch (error: unknown) {
-    console.error("Error creating NGO account:", error);
-    if (
-      typeof error === "object" &&
-      error !== null &&
-      "code" in error &&
-      error.code === "auth/email-already-exists"
-    ) {
-      throw new HttpsError(
-        "already-exists",
-        "This email is already registered."
-      );
-    }
-    throw new HttpsError("internal", "Could not create NGO account.");
-  }
-});
 
 export const createOrUpdateRide = onCall(callOptions, async (req) => {
   if (!req.auth || !req.auth.uid) {
@@ -1084,7 +1004,7 @@ export const createOrUpdateRide = onCall(callOptions, async (req) => {
       // Update existing ride
       const rideRef = admin.firestore().collection("bikeRides").doc(rideId);
       const rideSnap = await rideRef.get();
-      if (!rideSnap.exists || rideSnap.data()?.organizerId !== organizerId) {
+      if (!rideSnap.exists() || rideSnap.data()?.organizerId !== organizerId) {
         throw new HttpsError(
           "permission-denied",
           "You do not have permission to edit this ride."

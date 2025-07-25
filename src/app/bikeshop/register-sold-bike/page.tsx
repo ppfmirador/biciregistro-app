@@ -16,11 +16,11 @@ import { useToast } from '@/hooks/use-toast';
 import { ArrowLeft, Loader2, UserSearch, Bike as BikeIcon, Paperclip, PlusCircle, UserPlus, MailCheck } from 'lucide-react';
 import { MEXICAN_STATES, BIKE_TYPES, GENDERS, PLACEHOLDER_NONE_VALUE, BIKE_STATUSES, LAT_AM_LOCATIONS, BIKE_BRANDS, OTHER_BRAND_VALUE } from '@/constants';
 import type { UserProfile, BikeType } from '@/lib/types';
-import { getUserProfileByEmail, createCustomerWithTemporaryPassword, addBikeToFirestore } from '@/lib/db';
+import { getUserProfileByEmail, addBikeToFirestore, createAccountByAdmin } from '@/lib/db';
 import { uploadFileToStorage } from '@/lib/storage';
 import { v4 as uuidv4 } from 'uuid';
 import { bikeShopRegisterSchema, type BikeShopRegisterFormValues } from '@/lib/schemas';
-import { FirebaseError } from 'firebase/app';
+import { FunctionsError } from 'firebase/functions';
 
 export default function RegisterSoldBikePage() {
   const { user, loading: authLoading } = useAuth();
@@ -143,6 +143,7 @@ export default function RegisterSoldBikePage() {
           return;
         }
         const newCustomerDetails = {
+          email: data.customerEmail,
           firstName: data.customerFirstName,
           lastName: data.customerLastName,
           whatsappPhone: data.customerWhatsappPhone,
@@ -150,9 +151,9 @@ export default function RegisterSoldBikePage() {
           profileState: data.customerProfileState,
           postalCode: data.customerPostalCode,
           gender: data.customerGender as BikeShopRegisterFormValues['customerGender'],
+          registeredByShopId: user.uid,
         };
-        // createCustomerWithTemporaryPassword now also sends password reset email
-        const { uid } = await createCustomerWithTemporaryPassword(data.customerEmail, newCustomerDetails, user.uid);
+        const { uid } = await createAccountByAdmin(newCustomerDetails, 'cyclist', user.uid);
         customerUidToAssign = uid;
       } else {
         toast({ title: "Error", description: "Verifica o ingresa los datos del cliente.", variant: "destructive" });
@@ -247,7 +248,8 @@ export default function RegisterSoldBikePage() {
       // router.push('/bikeshop/dashboard');
 
     } catch (error: unknown) {
-      const errorMessage = error instanceof FirebaseError ? error.message : "No se pudo registrar la bicicleta.";
+      const err = error as FunctionsError;
+      const errorMessage = err.message || "No se pudo registrar la bicicleta. Revisa los datos e inténtalo de nuevo.";
       console.error("Error registering bike by shop:", error);
       if (errorMessage.includes('Ya existe una bicicleta registrada con el número de serie:')) {
         setError('serialNumber', { type: 'manual', message: errorMessage });

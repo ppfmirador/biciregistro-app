@@ -26,7 +26,7 @@ import { Calendar } from "@/components/ui/calendar";
 import { format } from "date-fns";
 import { es } from "date-fns/locale";
 import { cn } from "@/lib/utils";
-import { getAllUsersForAdmin, createBikeShopAccountByAdmin, getAllBikeShops, updateUserDoc, createNgoAccountByAdmin, getAllNgos } from '@/lib/db';
+import { getAllUsersForAdmin, updateUserDoc, getAllNgos, getAllBikeShops, createAccountByAdmin } from '@/lib/db';
 import { useAuth } from '@/context/AuthContext';
 import { useRouter } from 'next/navigation';
 import { getFunctions, httpsCallable, type FunctionsError, type HttpsCallable } from 'firebase/functions';
@@ -442,8 +442,8 @@ export default function AdminPage() {
           description: `Los datos de ${data.shopName} han sido actualizados.`,
         });
       } else {
-        // Create new shop
-        await createBikeShopAccountByAdmin(data, user.uid);
+        // Create new shop using the centralized function
+        await createAccountByAdmin(data, 'bikeshop', user.uid);
         toast({
           title: "¡Cuenta de Tienda Creada!",
           description: `Se ha enviado un correo a ${data.email} con instrucciones para establecer la contraseña.`,
@@ -454,7 +454,8 @@ export default function AdminPage() {
       setEditingShop(null);
       await fetchAdminPageData(); // Refresh the list of shops
     } catch (error: unknown) {
-      const errorMessage = error instanceof Error ? error.message : "Error desconocido al guardar tienda.";
+      const err = error as FunctionsError;
+      const errorMessage = err.message || "Error desconocido al guardar tienda.";
       toast({ title: "Error al Guardar Tienda", description: errorMessage, variant: "destructive" });
     } finally {
       setIsLoading(false);
@@ -472,7 +473,8 @@ export default function AdminPage() {
           description: `Los datos de ${data.ngoName} han sido actualizados.`,
         });
       } else {
-        await createNgoAccountByAdmin(data, user.uid);
+        // Create new NGO using the centralized function
+        await createAccountByAdmin(data, 'ngo', user.uid);
         toast({
           title: "¡Cuenta de ONG Creada y Correo Enviado!",
           description: `Se ha enviado un correo a ${data.email} con instrucciones para establecer la contraseña.`,
@@ -483,7 +485,8 @@ export default function AdminPage() {
       setEditingNgo(null);
       await fetchAdminPageData(); // Refresh the list of NGOs
     } catch (error: unknown) {
-      const errorMessage = error instanceof Error ? error.message : "Error desconocido al guardar ONG.";
+      const err = error as FunctionsError;
+      const errorMessage = err.message || "Error desconocido al guardar ONG.";
       toast({ title: "Error al Guardar ONG", description: errorMessage, variant: "destructive" });
     } finally {
       setIsLoading(false);
