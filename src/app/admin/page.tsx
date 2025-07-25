@@ -202,7 +202,7 @@ export default function AdminPage() {
       setBikeShops(shopsFromDb);
       setNgos(ngosFromDb);
 
-    } catch (error: unknown) {
+    } catch (_error: unknown) {
       toast({ title: "Error", description: "No se pudo cargar el contenido/usuarios del administrador.", variant: "destructive" });
     } finally {
       setIsFetchingAdminContent(false);
@@ -408,10 +408,10 @@ export default function AdminPage() {
 
       toast({ title: "Usuario Eliminado", description: result.data.message });
       await fetchAdminPageData();
-    } catch (error: unknown) {
-      const err = error as FunctionsError;
+    } catch (_error: unknown) {
+      const err = _error as FunctionsError;
       const errorMessage = err.message || "No se pudo eliminar el usuario.";
-      console.error("Error object from deleteUserAccount callable:", error);
+      console.error("Error object from deleteUserAccount callable:", _error);
       toast({ title: "Error al Eliminar Usuario", description: errorMessage, variant: "destructive" });
     } finally {
       setIsLoading(false);

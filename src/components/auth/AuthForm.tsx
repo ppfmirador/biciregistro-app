@@ -120,7 +120,7 @@ const SignupForm: React.FC<{ userType: UserRole }> = ({ userType }) => {
     );
 };
 
-const LoginForm: React.FC<{ userType: UserRole }> = ({ userType }) => {
+const LoginForm: React.FC<{}> = () => {
     const { signIn, loading, sendPasswordReset } = useAuth();
     const { toast } = useToast();
     const [isSubmitting, setIsSubmitting] = useState(false);
@@ -137,8 +137,8 @@ const LoginForm: React.FC<{ userType: UserRole }> = ({ userType }) => {
         try {
             await signIn(data.email, data.password);
             // Redirection is handled by the useEffect in the main component
-        } catch (error: unknown) {
-            const errorMessage = error instanceof Error ? error.message : 'Ocurrió un error inesperado.';
+        } catch (_error: unknown) {
+            const errorMessage = _error instanceof Error ? _error.message : 'Ocurrió un error inesperado.';
             toast({ title: 'Autenticación Fallida', description: errorMessage, variant: 'destructive' });
         } finally {
             setIsSubmitting(false);
@@ -155,7 +155,7 @@ const LoginForm: React.FC<{ userType: UserRole }> = ({ userType }) => {
         try {
             await sendPasswordReset(email);
             toast({ title: 'Correo de Restablecimiento Enviado', description: `Si existe una cuenta para ${email}, se ha enviado un enlace.`, duration: 7000 });
-        } catch (error: unknown) {
+        } catch (_error: unknown) {
             toast({ title: 'Error', description: 'No se pudo enviar el correo de restablecimiento.', variant: 'destructive' });
         } finally {
             setIsSendingResetEmail(false);
@@ -226,7 +226,7 @@ export const AuthForm: React.FC<AuthFormProps> = ({ mode, userType = 'cyclist' }
 
     return (
         <div className="space-y-4">
-            {mode === 'login' ? <LoginForm userType={userType} /> : <SignupForm userType={userType} />}
+            {mode === 'login' ? <LoginForm /> : <SignupForm userType={userType} />}
             <div className="relative">
                 <div className="absolute inset-0 flex items-center"><span className="w-full border-t" /></div>
                 <div className="relative flex justify-center text-xs uppercase"><span className="bg-background px-2 text-muted-foreground">O continúa con</span></div>

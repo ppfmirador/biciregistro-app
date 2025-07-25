@@ -71,7 +71,7 @@ function EditBikeShopProfilePageContent() {
             whatsappGroupLink: existingProfile.whatsappGroupLink || '',
           } as BikeShopProfileFormValues);
         }
-      } catch (error: unknown) {
+      } catch (_error: unknown) {
         toast({ title: "Error", description: "No se pudo cargar tu perfil.", variant: "destructive" });
       } finally {
         setIsLoadingData(false);
@@ -162,6 +162,12 @@ function EditBikeShopProfilePageContent() {
                   </div>
                 </div>
                 <div className="space-y-1">
+                    <Label htmlFor="email">Correo de la Tienda (para inicio de sesión)</Label>
+                    <Input id="email" type="email" {...register('email')} className={errors.email ? 'border-destructive' : ''} disabled={isEditMode} />
+                    {errors.email && <p className="text-xs text-destructive">{errors.email.message}</p>}
+                    {isEditMode && <p className="text-xs text-muted-foreground">El correo de inicio de sesión no se puede cambiar.</p>}
+                </div>
+                <div className="space-y-1">
                     <Label htmlFor="address">Dirección</Label>
                     <Input id="address" {...register('address')} className={errors.address ? 'border-destructive' : ''} />
                     {errors.address && <p className="text-xs text-destructive">{errors.address.message}</p>}
@@ -237,16 +243,16 @@ function EditBikeShopProfilePageContent() {
                   {errors.contactName && <p className="text-xs text-destructive">{errors.contactName.message}</p>}
               </div>
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                  <div className="space-y-1">
-                      <Label htmlFor="contactEmail">Correo del Contacto</Label>
-                      <Input id="contactEmail" type="email" {...register('contactEmail')} className={errors.contactEmail ? 'border-destructive' : ''} />
-                      {errors.contactEmail && <p className="text-xs text-destructive">{errors.contactEmail.message}</p>}
-                  </div>
-                  <div className="space-y-1">
-                      <Label htmlFor="contactWhatsApp">WhatsApp del Contacto</Label>
-                      <Input id="contactWhatsApp" {...register('contactWhatsApp')} className={errors.contactWhatsApp ? 'border-destructive' : ''} />
-                      {errors.contactWhatsApp && <p className="text-xs text-destructive">{errors.contactWhatsApp.message}</p>}
-                  </div>
+                 <div className="space-y-1">
+                    <Label htmlFor="contactEmail">Correo del Contacto</Label>
+                    <Input id="contactEmail" type="email" {...register('contactEmail')} className={errors.contactEmail ? 'border-destructive' : ''} />
+                    {errors.contactEmail && <p className="text-xs text-destructive">{errors.contactEmail.message}</p>}
+                </div>
+                <div className="space-y-1">
+                    <Label htmlFor="contactWhatsApp">WhatsApp del Contacto</Label>
+                    <Input id="contactWhatsApp" {...register('contactWhatsApp')} className={errors.contactWhatsApp ? 'border-destructive' : ''} />
+                    {errors.contactWhatsApp && <p className="text-xs text-destructive">{errors.contactWhatsApp.message}</p>}
+                </div>
               </div>
             </section>
             

@@ -19,7 +19,7 @@ import { Separator } from '@/components/ui/separator';
 import { ngoProfileSchema, type NgoProfileFormValues } from '@/lib/schemas';
 import { LAT_AM_LOCATIONS, DAYS_OF_WEEK } from '@/constants';
 import { Checkbox } from '@/components/ui/checkbox';
-import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '../ui/tooltip';
 
 function EditNgoProfilePageContent() {
   const router = useRouter();
@@ -80,7 +80,7 @@ function EditNgoProfilePageContent() {
             meetingDays: existingProfile.meetingDays || [] 
           } as NgoProfileFormValues);
         }
-      } catch (error: unknown) {
+      } catch (_error: unknown) {
         toast({ title: "Error", description: "No se pudo cargar tu perfil.", variant: "destructive" });
       } finally {
         setIsLoadingData(false);

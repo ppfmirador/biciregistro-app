@@ -1,8 +1,15 @@
 import type { Metadata } from 'next';
-import './globals.css'; // Importación de estilos globales corregida
+import { Inter } from 'next/font/google';
+import './globals.css';
 import { Toaster } from '@/components/ui/toaster';
 import { AuthProvider } from '@/context/AuthContext';
 import AppShell from '@/components/layout/AppShell';
+
+const inter = Inter({ 
+  subsets: ['latin'],
+  display: 'swap',
+  variable: '--font-inter',
+});
 
 const siteUrl = 'https://biciregistro.mx'; // Replace with your actual production domain
 
@@ -66,11 +73,8 @@ export default function RootLayout({
   children: React.ReactNode;
 }>) {
   return (
-    <html lang="es-MX">
+    <html lang="es-MX" className={`${inter.variable}`}>
       <head>
-        <link rel="preconnect" href="https://fonts.googleapis.com" />
-        <link rel="preconnect" href="https://fonts.gstatic.com" crossOrigin="anonymous" />
-        <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet" />
         <script
           type="application/ld+json"
           dangerouslySetInnerHTML={{ __html: JSON.stringify({

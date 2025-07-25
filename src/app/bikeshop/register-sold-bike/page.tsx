@@ -114,7 +114,7 @@ export default function RegisterSoldBikePage() {
         setCustomerNotFound(true);
         toast({ title: "Cliente No Encontrado", description: "Este cliente no tiene una cuenta. Ingresa sus datos manualmente para crear una pre-cuenta.", variant: "default" });
       }
-    } catch (error: unknown) {
+    } catch (_error: unknown) {
       toast({ title: "Error al Verificar", description: "No se pudo verificar el correo del cliente.", variant: "destructive" });
     } finally {
       setIsVerifyingCustomer(false);
@@ -506,7 +506,7 @@ export default function RegisterSoldBikePage() {
               <div className="space-y-1">
                 <Label htmlFor="ownershipDocument" className="flex items-center"><Paperclip className="h-4 w-4 mr-2 text-muted-foreground" />Adjuntar Documento</Label>
                 <Input id="ownershipDocument" type="file" accept=".pdf,.jpg,.jpeg,.png,.doc,.docx" {...register('ownershipDocument')} className={errors.ownershipDocument ? 'border-destructive' : ''} disabled={isSubmitting} ref={ownershipDocumentRef} />
-                {errors.ownershipDocument && <p className="text-xs text-destructive">{typeof errors.ownershipDocument.message === 'string' ? errors.ownershipDocument.message : 'Error de archivo'}</p>}
+                {errors.ownershipDocument && <p className="text-sm text-destructive">{typeof errors.ownershipDocument.message === 'string' ? errors.ownershipDocument.message : 'Error de archivo'}</p>}
               </div>
             </section>
 

@@ -15,8 +15,6 @@ import {
   arrayUnion,
   setDoc,
   orderBy,
-  limit,
-  documentId,
   runTransaction,
   increment,
   type QuerySnapshot,
@@ -33,9 +31,6 @@ import type {
 import type { UserProfileData, UserProfile, UserRole } from '@/lib/types';
 import type { BikeShopAdminFormValues, NgoAdminFormValues, BikeRideFormValues } from './schemas';
 import { BIKE_STATUSES, OTHER_BRAND_VALUE } from '@/constants';
-import { initializeApp, deleteApp } from 'firebase/app';
-import { getAuth, createUserWithEmailAndPassword, sendEmailVerification, sendPasswordResetEmail } from 'firebase/auth';
-
 
 const safeToISOString = (dateInput: unknown, fieldNameForLogging: string): string => {
   if (dateInput instanceof Timestamp) {
