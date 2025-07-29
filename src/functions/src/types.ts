@@ -102,7 +102,4 @@ export interface UserProfileData {
   createdBy?: string;
 }
 
-export interface NewCustomerDataForShop
-  extends Omit<UserProfileData, "role" | "isAdmin"> {
-  // any specific fields for this use case, if any
-}
+export type NewCustomerDataForShop = Omit<UserProfileData, "role" | "isAdmin">;

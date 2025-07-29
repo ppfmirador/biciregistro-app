@@ -99,7 +99,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
         const firstName = nameParts[0] || '';
         const lastName = nameParts.slice(1).join(' ') || '';
 
-        await updateUserDoc(firebaseUser.uid, { role: roleToSet, email: firebaseUser.email, isAdmin: isAdminClaim, referralCount: 0, firstName, lastName });
+        await updateUserDoc(firebaseUser.uid, { role: roleToSet, email: firebaseUser.email, isAdmin: isAdminClaim, referralCount: 0, firstName, lastName, country: '', profileState: '' });
         userProfileBase.role = roleToSet;
         userProfileBase.firstName = firstName;
         userProfileBase.lastName = lastName;
@@ -245,6 +245,8 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
           email: firebaseUser.email?.toLowerCase(),
           firstName,
           lastName,
+          country: '',
+          profileState: '',
           role: 'cyclist',
           isAdmin: false,
           referralCount: 0,
