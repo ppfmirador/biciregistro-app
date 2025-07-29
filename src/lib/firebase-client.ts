@@ -23,6 +23,7 @@ export function initializeClientSideFirebase() {
   // For local development or environments where a debug token is explicitly provided.
   if (debugToken) {
     console.log("Firebase App Check: Using debug token.");
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
     (self as any).FIREBASE_APPCHECK_DEBUG_TOKEN = debugToken;
   }
 
