@@ -5,7 +5,9 @@ import { setGlobalOptions } from "firebase-functions/v2";
 import type {
   BikeRideFormValues,
   BikeShopAdminFormValues,
+  NewCustomerDataForShop,
   NgoAdminFormValues,
+  UserProfileData,
   UserRole,
 } from "./types";
 
@@ -17,6 +19,7 @@ const allowedOrigins = [
   "https://biciregistro.mx",
   "https://www.biciregistro.mx",
   "https://bike-guardian-hbbg6.firebaseapp.com",
+  "https://bike-guardian-staging.web.app",
   // cloud workstation → usa un comodín para cualquier sub-dominio
   /^https:\/\/.*\.cloudworkstations\.dev$/,
   "http://localhost:3000",
@@ -26,8 +29,9 @@ const allowedOrigins = [
 // CORS is handled per-function via callOptions.
 setGlobalOptions({
   region: "us-central1",
-  // Bypassing App Check for development. Change to true for production.
-  enforceAppCheck: false,
+  // App Check is now enforced for all functions.
+  // For local development, ensure a debug token is set in .env.local
+  enforceAppCheck: true,
 });
 
 // This object now contains the CORS configuration to be applied to each function.
@@ -144,11 +148,11 @@ export const createBike = onCall(callOptions, async (req) => {
       ownerEmail: ownerData?.email || req.auth.token.email,
       ownerWhatsappPhone: ownerData?.whatsappPhone ?? "",
       status: "En Regla",
-      registrationDate: admin.firestore.FieldValue.serverTimestamp(),
+      registrationDate: admin.firestore.Timestamp.now(),
       statusHistory: [
         {
           status: "En Regla",
-          timestamp: admin.firestore.FieldValue.serverTimestamp(),
+          timestamp: admin.firestore.Timestamp.now(),
           notes: "Registro inicial por ciclista",
         },
       ],
@@ -378,12 +382,12 @@ export const reportBikeStolen = onCall(callOptions, async (req) => {
       theftLocationCountry: theftData.theftLocationCountry,
       theftPerpetratorDetails: theftData.theftPerpetratorDetails || null,
       theftIncidentDetails: theftData.theftIncidentDetails,
-      reportedAt: admin.firestore.FieldValue.serverTimestamp(),
+      reportedAt: admin.firestore.Timestamp.now(),
     };
 
     const newStatusEntry = {
       status: "Robada",
-      timestamp: admin.firestore.FieldValue.serverTimestamp(),
+      timestamp: admin.firestore.Timestamp.now(),
       notes:
         theftData.generalNotes ||
         `Reportada como robada en ${theftData.theftLocationState}, ` +
@@ -442,7 +446,7 @@ export const markBikeRecovered = onCall(callOptions, async (req) => {
 
     const newStatusEntry = {
       status: "En Regla",
-      timestamp: admin.firestore.FieldValue.serverTimestamp(),
+      timestamp: admin.firestore.Timestamp.now(),
       notes: "Bicicleta marcada como recuperada por el propietario.",
     };
 
@@ -524,7 +528,7 @@ export const initiateTransferRequest = onCall(callOptions, async (req) => {
       fromOwnerEmail,
       toUserEmail: recipientEmail.toLowerCase(),
       status: "pending",
-      requestDate: admin.firestore.FieldValue.serverTimestamp(),
+      requestDate: admin.firestore.Timestamp.now(),
       transferDocumentUrl: transferDocumentUrl || null,
       transferDocumentName: transferDocumentName || null,
     };
@@ -613,7 +617,7 @@ export const respondToTransferRequest = onCall(callOptions, async (req) => {
       // Perform action
       transaction.update(requestRef, {
         status: action,
-        resolutionDate: admin.firestore.FieldValue.serverTimestamp(),
+        resolutionDate: admin.firestore.Timestamp.now(),
       });
 
       if (action === "accepted") {
@@ -650,7 +654,7 @@ export const respondToTransferRequest = onCall(callOptions, async (req) => {
           `${requestData.fromOwnerEmail} a ${requestData.toUserEmail}.`;
         const historyEntry = {
           status: "Transferida",
-          timestamp: admin.firestore.FieldValue.serverTimestamp(),
+          timestamp: admin.firestore.Timestamp.now(),
           notes: transferNote,
           transferDocumentUrl: requestData.transferDocumentUrl || null,
           transferDocumentName: requestData.transferDocumentName || null,
@@ -669,7 +673,7 @@ export const respondToTransferRequest = onCall(callOptions, async (req) => {
 
       return {
         success: true,
-        message: "Request successfully " + action + ".",
+        message: `Request successfully ${action}.`,
       };
     });
   } catch (error) {
@@ -824,7 +828,7 @@ export const updateHomepageContent = onCall(callOptions, async (req) => {
       .collection("homepage_content")
       .doc("config");
     await contentRef.set(
-      { ...content, lastUpdated: admin.firestore.FieldValue.serverTimestamp() },
+      { ...content, lastUpdated: admin.firestore.Timestamp.now() },
       { merge: true },
     );
     return { message: "Homepage content updated successfully." };
@@ -869,7 +873,10 @@ export const createAccount = onCall(callOptions, async (req) => {
   }
 
   const { accountData, role, creatorId } = req.data as {
-    accountData: BikeShopAdminFormValues | NgoAdminFormValues;
+    accountData:
+      | BikeShopAdminFormValues
+      | NgoAdminFormValues
+      | NewCustomerDataForShop;
     role: "bikeshop" | "ngo" | "cyclist";
     creatorId: string;
   };
@@ -885,7 +892,7 @@ export const createAccount = onCall(callOptions, async (req) => {
   const displayName =
     (accountData as BikeShopAdminFormValues).shopName ||
     (accountData as NgoAdminFormValues).ngoName ||
-    `${accountData.contactName} (Cliente)`;
+    `${(accountData as NewCustomerDataForShop).firstName} ${(accountData as NewCustomerDataForShop).lastName} (Cliente)`;
 
   try {
     const userRecord = await admin.auth().createUser({
@@ -1008,7 +1015,7 @@ export const createOrUpdateRide = onCall(callOptions, async (req) => {
         organizerProfile?.ngoName ||
         "Organizador",
       organizerLogoUrl: "", // Add logic for logo if needed
-      updatedAt: admin.firestore.FieldValue.serverTimestamp(),
+      updatedAt: admin.firestore.Timestamp.now(),
     };
 
     if (rideId) {
@@ -1027,7 +1034,7 @@ export const createOrUpdateRide = onCall(callOptions, async (req) => {
       // Create new ride
       const newRideData = {
         ...dataToSave,
-        createdAt: admin.firestore.FieldValue.serverTimestamp(),
+        createdAt: admin.firestore.Timestamp.now(),
       };
       const newRideRef = await admin
         .firestore()

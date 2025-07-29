@@ -17,6 +17,7 @@ import {
   orderBy,
   runTransaction,
   increment,
+  limit,
   type QuerySnapshot,
   type QueryConstraint,
   type FirestoreError,
@@ -850,4 +851,43 @@ export const deleteRide = async (rideId: string, currentOrganizerId: string): Pr
         throw new Error("No tienes permiso para eliminar este evento.");
     }
     await deleteDoc(rideRef);
+};
+
+export const getShopRegisteredBikes = async (
+  shopId: string,
+  searchTerm?: string,
+  fetchLimit?: number
+): Promise<Bike[]> => {
+  if (!shopId) return [];
+
+  const bikesRef = collection(db, 'bikes');
+  const constraints: QueryConstraint[] = [
+    where('registeredByShopId', '==', shopId),
+    orderBy('registrationDate', 'desc'),
+  ];
+  if(fetchLimit) {
+    constraints.push(limit(fetchLimit));
+  }
+
+  // If there's a search term, we need to fetch all bikes by the shop and then filter client-side,
+  // as Firestore doesn't support 'OR' queries on different fields.
+  // For a large-scale app, a dedicated search service like Algolia would be better.
+  if (searchTerm) {
+    const querySnapshot = await getDocs(query(bikesRef, ...constraints));
+    const allShopBikes = querySnapshot.docs.map(bikeFromDoc);
+    
+    const lowercasedTerm = searchTerm.toLowerCase();
+    
+    return allShopBikes.filter(bike => 
+      bike.serialNumber.toLowerCase().includes(lowercasedTerm) ||
+      (bike.ownerFirstName && bike.ownerFirstName.toLowerCase().includes(lowercasedTerm)) ||
+      (bike.ownerLastName && bike.ownerLastName.toLowerCase().includes(lowercasedTerm)) ||
+      (bike.ownerEmail && bike.ownerEmail.toLowerCase().includes(lowercasedTerm))
+    );
+  }
+
+  // If no search term, just apply the base query with optional limit.
+  const q = query(bikesRef, ...constraints);
+  const querySnapshot = await getDocs(q);
+  return querySnapshot.docs.map(bikeFromDoc);
 };

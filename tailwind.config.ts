@@ -95,6 +95,6 @@ export default {
   },
   plugins: [
     require('tailwindcss-animate'),
-    require('tailwind-scrollbar'), // Added for scrollbar styling
+    require('tailwind-scrollbar'),
   ],
 } satisfies Config;
