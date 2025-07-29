@@ -5,45 +5,39 @@ import { app } from './firebase';
 import {
   initializeAppCheck,
   ReCaptchaV3Provider,
+  type AppCheck,
 } from 'firebase/app-check';
 
-let appCheckInitialized = false;
+let appCheckInstance: AppCheck | null = null;
 
 export function initializeClientSideFirebase() {
-  if (typeof window !== "undefined") {
-    if (appCheckInitialized) {
-      return;
-    }
-    
-    // --- App Check Initialization ---
+  if (typeof window === "undefined" || appCheckInstance) {
+    return;
+  }
 
-    // 1. Define Development Environment
-    const isDev =
-      process.env.NODE_ENV !== "production" ||
-      window.location.hostname.endsWith(".cloudworkstations.dev") ||
-      window.location.hostname === "localhost";
+  // --- App Check Initialization ---
 
-    // 2. Set Debug Token
-    if (isDev) {
-      // This is the variable that the App Check SDK reads.
-      (self as any).FIREBASE_APPCHECK_DEBUG_TOKEN = process.env.NEXT_PUBLIC_FIREBASE_APPCHECK_DEBUG_TOKEN;
+  const reCaptchaSiteKey = process.env.NEXT_PUBLIC_RECAPTCHA_SITE_KEY;
+  const debugToken = process.env.NEXT_PUBLIC_FIREBASE_APPCHECK_DEBUG_TOKEN;
+
+  // For local development or environments where a debug token is explicitly provided.
+  if (debugToken) {
+    console.log("Firebase App Check: Using debug token.");
+    (self as any).FIREBASE_APPCHECK_DEBUG_TOKEN = debugToken;
+  }
+
+  if (reCaptchaSiteKey) {
+    try {
+      appCheckInstance = initializeAppCheck(app, {
+        provider: new ReCaptchaV3Provider(reCaptchaSiteKey),
+        isTokenAutoRefreshEnabled: true,
+      });
+      console.log("Firebase App Check initialized successfully with reCAPTCHA.");
+    } catch (e: unknown) {
+      console.warn("App Check initialization with reCAPTCHA failed. The app will continue without it.", e);
+      appCheckInstance = null;
     }
-    
-    // 3. Initialize App Check
-    if (process.env.NEXT_PUBLIC_RECAPTCHA_SITE_KEY) {
-      appCheckInitialized = true; // Set to true before initializing to prevent re-runs
-      try {
-        initializeAppCheck(app, {
-          provider: new ReCaptchaV3Provider(process.env.NEXT_PUBLIC_RECAPTCHA_SITE_KEY),
-          isTokenAutoRefreshEnabled: true,
-        });
-        console.log("Firebase App Check initialized successfully.");
-      } catch (e: unknown) {
-        console.warn("App Check initialization failed. The app will continue without it.", e);
-        appCheckInitialized = false; // Reset if initialization fails
-      }
-    } else {
-        console.warn("App Check not initialized: NEXT_PUBLIC_RECAPTCHA_SITE_KEY is not set in environment variables.");
-    }
+  } else {
+      console.warn("App Check not initialized: NEXT_PUBLIC_RECAPTCHA_SITE_KEY is not set. This is expected in local development if you are using a debug token.");
   }
 }
