@@ -24,7 +24,7 @@ A modern platform for bicycle registration and community-based theft prevention.
 **Mission:** To build a safer cycling community by providing a centralized, trustworthy platform for bicycle registration, theft reporting, and public verification. We empower cyclists, bike shops, and community organizations to work together in protecting their assets and promoting transparency.
 
 **Tech Stack:**
-- **Framework:** [Next.js 15](https://nextjs.org/) (App Router)
+- **Framework:** [Next.js 14](https://nextjs.org/) (App Router)
 - **UI:** [React](https://react.dev/), [ShadCN UI](https://ui.shadcn.com/), [Tailwind CSS](https://tailwindcss.com/)
 - **Backend:** [Firebase Cloud Functions v2](https://firebase.google.com/docs/functions) (Callable Functions)
 - **Database:** [Cloud Firestore](https://firebase.google.com/docs/firestore) (NoSQL)
@@ -74,7 +74,8 @@ This diagram explains the high-level interaction between the system components.
 | 11| **QR Code Management**     | Cyclist (Owner)          | Generate and download a QR code that links to the bike's public verification page.                         | `src/app/bike/[serialNumber]/qr/page.tsx`, `src/components/bike/QrCodeDisplay.tsx`                                              |
 | 12| **File Uploads**           | All (where applicable)   | Securely upload images (JPG, PNG) and documents (PDF) to Firebase Storage.                                 | `src/lib/storage.ts`                                                                                                            |
 | 13| **Referral System**        | Cyclist, NGO             | Users can invite others via a unique referral link (`?ref=...`). NGO dashboards provide easy access to this. | `src/context/AuthContext.tsx` (signUp), `lib/db.ts` (incrementReferralCount)                                                    |
-| 14| **First Admin Creation**   | Manual (initial setup)   | A one-time callable function to elevate the first user to an admin role.                                     | `functions/src/index.ts` (createFirstAdmin)                                                                                 |
+| 14| **First Admin Creation**   | Manual (initial setup)   | A one-time callable function to elevate the first user to an admin role.                                     | `functions/src/index.ts` (updateUserRole)                                                                                 |
+| 15| **Org Account Creation**   | Admin                    | Admins can create Bike Shop or NGO accounts via a centralized function (`createAccount`).                    | `src/app/admin/page.tsx`, `functions/src/index.ts` (createAccount)                                                                |
 
 ## Permissions Matrix
 
@@ -120,8 +121,8 @@ cd <repository-directory>
 This project uses `npm` for its scripts.
 ```bash
 npm install
-cd functions && npm install && cd ..
 ```
+*Note: This command also installs dependencies for the `functions` directory.*
 
 **3. Configure Firebase**
 - **Link the CLI to your project:**
@@ -150,7 +151,7 @@ The application will be available at `http://localhost:3000`.
 
 ## Environment Configuration
 
-Create a `.env.local` file in the project root for local development. For production/staging, set these variables in your hosting provider's settings.
+Create a `.env.local` file in the project root for local development. For production/staging, you must configure these variables directly in your hosting provider's settings.
 
 | Variable                                  | Description                                                                                                                                                             | Example                               |
 |-------------------------------------------|-------------------------------------------------------------------------------------------------------------------------------------------------------------------------|---------------------------------------|
@@ -160,8 +161,8 @@ Create a `.env.local` file in the project root for local development. For produc
 | `NEXT_PUBLIC_FIREBASE_STORAGE_BUCKET`       | Firebase project storage bucket.                                                                                                                                        | `my-project.appspot.com`              |
 | `NEXT_PUBLIC_FIREBASE_MESSAGING_SENDER_ID`  | Firebase project messaging sender ID.                                                                                                                                   | `1234567890`                          |
 | `NEXT_PUBLIC_FIREBASE_APP_ID`               | Firebase project app ID.                                                                                                                                                | `1:12345...`                          |
+| `NEXT_PUBLIC_RECAPTCHA_SITE_KEY`          | **Required for Production/Staging.** The public site key from Google reCAPTCHA v3 for App Check. | `6L...`                               |
 | `NEXT_PUBLIC_FIREBASE_APPCHECK_DEBUG_TOKEN` | **Optional.** The debug token for [Firebase App Check](https://firebase.google.com/docs/app-check/web/debug-provider) to allow local testing. Found in the browser console. | `a-long-uuid-string...`               |
-| `FIREBASE_AUTH_HOSTING_URL`                 | **Required.** The full URL of your production Firebase Hosting environment. Used for auth redirects.                                                                        | `https://my-project.web.app`          |
 | `FIREBASE_SERVICE_ACCOUNT_KEY` | **Server-side only.** JSON string for the Firebase service account key. Required for server-side rendering with Admin SDK. | `{"type":"service_account",...}` |
 
 **For Cloud Functions:**
@@ -195,7 +196,7 @@ Test files are located in the `e2e/` directory.
   ```bash
   npm run build
   ```
-- **Deploy to Firebase:** The project is configured for Firebase App Hosting. Deploy all services with:
+- **Deploy to Firebase:** The project is configured for Firebase Hosting. Deploy all services with:
   ```bash
   firebase deploy
   ```
@@ -207,6 +208,8 @@ Test files are located in the `e2e/` directory.
   # Deploy to the PRODUCTION project
   npm run deploy:prod
   ```
+  **Note on Staging Deployment:** The `deploy:staging` script uses `dotenv-cli` to load variables from `.env.staging.local`. Ensure this file exists and is configured before deploying to staging.
+
 - **Deploy only specific services:**
   ```bash
   # Deploy only Hosting (the Next.js app)
@@ -223,12 +226,10 @@ Test files are located in the `e2e/` directory.
 ## Troubleshooting & FAQ
 
 - **CORS Errors:** If you experience CORS errors from Cloud Functions, ensure your local development URL (e.g., `http://localhost:3000` or your Gitpod/Cloud Workstation URL) is added to the `allowedOrigins` array in `functions/src/index.ts`.
-- **App Check Errors (403 Forbidden):** When running locally, App Check will block requests. Open the browser's developer console. You will see an App Check message with a debug token. Copy this token and add it to `.env.local` as `NEXT_PUBLIC_FIREBASE_APPCHECK_DEBUG_TOKEN`.
-- **Firebase Auth Redirects:** For authentication to work correctly on a custom domain, the `apphosting.yaml` file contains necessary rewrite rules. The `next.config.ts` file also uses `FIREBASE_AUTH_HOSTING_URL` for this purpose. Ensure this variable is set correctly.
-- **Cloud Functions Deploy Error `Cannot find module`**: This often happens if non-TypeScript files (like `.json`) are not correctly included in the build process. The standard solution in this project is:
-  1.  Place the resource file (e.g., `cors.json`) inside the `functions/src` directory.
-  2.  Ensure a `postbuild` script in `functions/package.json` copies the file from `src/` to the output `lib/` directory.
-  3.  Update the `import` path in your `.ts` file to be relative to its final location in the `lib/` directory (e.g., `import config from './config.json'`).
+- **App Check Errors (403 Forbidden):**
+    - **Local Development:** When running locally (`npm run dev`), App Check will block requests. Open the browser's developer console. You will see an App Check message with a debug token. Copy this token and add it to `.env.local` as `NEXT_PUBLIC_FIREBASE_APPCHECK_DEBUG_TOKEN`.
+    - **Staging/Production:** This usually means the domain your app is hosted on has not been added to your reCAPTCHA settings in the Google Cloud Console, or the `NEXT_PUBLIC_RECAPTCHA_SITE_KEY` is not correctly configured for the environment.
+- **Next.js Config Errors:** This project uses `next.config.mjs` for its configuration. If you see errors related to `next.config.ts`, ensure you are using the `.mjs` file.
 
 ## Contributing Guidelines
 
