@@ -13,7 +13,7 @@
     "format:check": "prettier --check .",
     "validate": "npm run format:check && npm run lint && npm run typecheck",
     "e2e": "playwright test",
-    "deploy:staging": "firebase deploy -P staging --only functions,firestore,storage,hosting",
+    "deploy:staging": "dotenv -e .env.staging.local -- next build && firebase deploy -P staging --only functions,firestore,storage,hosting",
     "deploy:prod": "firebase deploy -P default --only functions,firestore,storage,hosting"
   },
   "dependencies": {
