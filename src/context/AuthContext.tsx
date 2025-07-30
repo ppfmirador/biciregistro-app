@@ -179,15 +179,16 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
         role: roleToSet,
         isAdmin: false,
         referralCount: 0,
-        referrerId: referrerId || undefined,
       };
+      
+      // Conditionally add referrerId to avoid Firestore 'undefined' error
+      if (referrerId) {
+        initialProfileData.referrerId = referrerId;
+        await incrementReferralCount(referrerId);
+      }
       
       await createUserDoc(firebaseUser.uid, initialProfileData);
       
-      if (referrerId) {
-        await incrementReferralCount(referrerId);
-      }
-
       if (!firebaseUser.isAnonymous) {
         await sendEmailVerification(firebaseUser);
       }
@@ -205,7 +206,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
 
     } catch (error: unknown) { 
       const authError = error as FirebaseError; 
-      console.warn("Authentication error during signUp:", authError.code, authError.message);
+      console.warn("Authentication error during signUp:", authError.message, error);
       setUser(null);
       setLoading(false);
       if (authError.code === 'auth/email-already-in-use') {
@@ -213,7 +214,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
       } else if (authError.code === 'auth/weak-password') {
         throw new Error('La contraseña es demasiado débil. Debe tener al menos 6 caracteres.');
       } else {
-        throw new Error(`Ocurrió un error al registrar: ${authError.message}`);
+        throw new Error(`Ocurrió un error inesperado.`);
       }
     } finally {
       // Set loading to false here so the redirect can happen
