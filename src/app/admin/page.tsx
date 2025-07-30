@@ -213,18 +213,27 @@ export default function AdminPage() {
   }, [reset, toast]);
 
   useEffect(() => {
-    if (!authLoading) {
-      if (!user || !user.isAdmin) {
-        toast({
-          title: "Acceso Denegado",
-          description: "No tienes permisos para acceder a esta página.",
-          variant: "destructive",
-        });
-        router.push('/');
-        return;
-      }
-      fetchAdminPageData();
+    // This client-side check is temporarily disabled to allow the first admin to be created.
+    // It should be restored afterwards.
+    // if (!authLoading) {
+    //   if (!user || !user.isAdmin) {
+    //     toast({
+    //       title: "Acceso Denegado",
+    //       description: "No tienes permisos para acceder a esta página.",
+    //       variant: "destructive",
+    //     });
+    //     router.push('/');
+    //     return;
+    //   }
+    //   fetchAdminPageData();
+    // }
+    // --- Start of temporary code for bootstrap ---
+    if (!authLoading && user) {
+        fetchAdminPageData();
+    } else if (!authLoading && !user) {
+        router.push('/auth');
     }
+    // --- End of temporary code for bootstrap ---
   }, [user, authLoading, router, toast, fetchAdminPageData]);
 
 
