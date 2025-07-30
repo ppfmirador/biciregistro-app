@@ -428,18 +428,16 @@ export const getUserProfileByEmail = async (email: string): Promise<UserProfile 
   }
 };
 
+// Use this for new user creation
+export const createUserDoc = async (uid: string, data: Partial<UserProfileData>): Promise<void> => {
+  const userRef = doc(db, 'users', uid);
+  await setDoc(userRef, data);
+};
+
 
 export const updateUserDoc = async (uid: string, data: Partial<UserProfileData>): Promise<void> => {
   const userRef = doc(db, 'users', uid);
   const updateData: Partial<UserProfileData> = { ...data };
-
-  const currentUserDoc = await getUserDoc(uid);
-
-  if (updateData.email === undefined && currentUserDoc?.email) {
-    updateData.email = currentUserDoc.email;
-  } else if (updateData.email) {
-    updateData.email = (updateData.email as string).toLowerCase();
-  }
 
   // Remove empty string fields to avoid overwriting with empty values
   for (const key in updateData) {
@@ -447,14 +445,10 @@ export const updateUserDoc = async (uid: string, data: Partial<UserProfileData>)
       delete updateData[key as keyof typeof updateData];
     }
   }
-
-  if (updateData.role === undefined) {
-    updateData.role = currentUserDoc?.role || 'cyclist';
-  }
-  if (updateData.isAdmin === undefined) {
-    updateData.isAdmin = currentUserDoc?.isAdmin || false;
-  }
-
+  
+  // We don't need to preserve existing data like role or email as this function
+  // should receive all necessary fields to update from a form.
+  
   await setDoc(userRef, updateData, { merge: true });
 
   if (data.firstName !== undefined || data.lastName !== undefined) {

@@ -20,7 +20,7 @@ import {
   signInWithPopup,
   getAdditionalUserInfo
 } from 'firebase/auth';
-import { getUserDoc, updateUserDoc, incrementReferralCount } from '@/lib/db';
+import { getUserDoc, updateUserDoc, incrementReferralCount, createUserDoc } from '@/lib/db';
 import { useToast } from '@/hooks/use-toast';
 import { FirebaseError } from 'firebase/app';
 import { initializeClientSideFirebase } from '@/lib/firebase-client';
@@ -93,13 +93,24 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
             referralCount: userDocData.referralCount || 0,
         };
       } else if (!firebaseUser.isAnonymous) {
+        // This case is primarily for new Google Sign-In users.
         const roleToSet = isAdminClaim ? 'admin' : 'cyclist';
         const displayName = firebaseUser.displayName || '';
         const nameParts = displayName.split(' ');
         const firstName = nameParts[0] || '';
         const lastName = nameParts.slice(1).join(' ') || '';
 
-        await updateUserDoc(firebaseUser.uid, { role: roleToSet, email: firebaseUser.email, isAdmin: isAdminClaim, referralCount: 0, firstName, lastName, country: '', profileState: '' });
+        await createUserDoc(firebaseUser.uid, { 
+          role: roleToSet, 
+          email: firebaseUser.email, 
+          isAdmin: isAdminClaim, 
+          referralCount: 0, 
+          firstName, 
+          lastName, 
+          country: '', 
+          profileState: '' 
+        });
+        
         userProfileBase.role = roleToSet;
         userProfileBase.firstName = firstName;
         userProfileBase.lastName = lastName;
@@ -170,7 +181,8 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
         referralCount: 0,
         referrerId: referrerId || undefined,
       };
-      await updateUserDoc(firebaseUser.uid, initialProfileData);
+      
+      await createUserDoc(firebaseUser.uid, initialProfileData);
       
       if (referrerId) {
         await incrementReferralCount(referrerId);
@@ -179,11 +191,21 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
       if (!firebaseUser.isAnonymous) {
         await sendEmailVerification(firebaseUser);
       }
+      
+      // Manually update the user state with the data from the form
+      // to ensure the edit profile page is pre-filled correctly.
+      setUser({
+        uid: firebaseUser.uid,
+        email: firebaseUser.email,
+        displayName: firebaseUser.displayName,
+        isAnonymous: firebaseUser.isAnonymous,
+        emailVerified: firebaseUser.emailVerified,
+        ...initialProfileData,
+      });
 
-      await fetchAndUpdateUserProfile(firebaseUser);
     } catch (error: unknown) { 
       const authError = error as FirebaseError; 
-      console.warn("Authentication error during signUp:", authError.code);
+      console.warn("Authentication error during signUp:", authError.code, authError.message);
       setUser(null);
       setLoading(false);
       if (authError.code === 'auth/email-already-in-use') {
@@ -191,10 +213,14 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
       } else if (authError.code === 'auth/weak-password') {
         throw new Error('La contraseña es demasiado débil. Debe tener al menos 6 caracteres.');
       } else {
-        throw new Error('Ocurrió un error inesperado al registrar la cuenta.');
+        throw new Error(`Ocurrió un error al registrar: ${authError.message}`);
       }
+    } finally {
+      // Set loading to false here so the redirect can happen
+      setLoading(false);
     }
   };
+
 
   const signOut = async (): Promise<void> => {
     try {
@@ -257,7 +283,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
           await incrementReferralCount(referrerId);
         }
 
-        await updateUserDoc(firebaseUser.uid, initialProfileData);
+        await createUserDoc(firebaseUser.uid, initialProfileData);
       }
     } catch (error: unknown) { 
       const authError = error as FirebaseError;
