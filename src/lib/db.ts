@@ -239,7 +239,7 @@ export const addBikeToFirestore = async (
       initialStatusNotes
   };
 
-  const { bikeId } = await callApi('createBike', { data: { bikeData: bikePayload } });
+  const { bikeId } = await callApi('createBike', { bikeData: bikePayload });
   return bikeId;
 };
 
@@ -339,11 +339,6 @@ export const getAllNgos = async (): Promise<(UserProfileData & {id: string})[]> 
     return querySnapshot.docs.map(docSnap => ({ id: docSnap.id, ...docSnap.data() as UserProfileData }));
 };
 
-
-export const updateUserRoleByAdmin = async (uid: string, role: UserRole): Promise<void> => {
-    await callApi('updateUserRole', { data: { uid, role }});
-};
-
 type AccountData = BikeShopAdminFormValues | NgoAdminFormValues | NewCustomerDataForShop;
 
 export const createAccountByAdmin = async (
@@ -351,7 +346,7 @@ export const createAccountByAdmin = async (
   role: 'bikeshop' | 'ngo' | 'cyclist',
   creatorId: string
 ): Promise<{ uid: string }> => {
-    return callApi('createAccount', { data: { accountData, role, creatorId } });
+    return callApi('createAccount', { accountData, role, creatorId });
 };
 
 
@@ -424,7 +419,7 @@ export const getRideById = async (rideId: string): Promise<BikeRide | null> => {
 };
 
 export const createOrUpdateRide = async (rideData: BikeRideFormValues, organizerProfile: UserProfile, rideId?: string): Promise<string> => {
-    const { rideId: newRideId } = await callApi('createOrUpdateRide', { data: { rideData, rideId } });
+    const { rideId: newRideId } = await callApi('createOrUpdateRide', { rideData, rideId });
     return newRideId;
 };
 
@@ -461,7 +456,7 @@ export const getShopRegisteredBikes = async (shopId: string, searchTerm?: string
 };
 
 export const reportBikeTheft = async (bikeId: string, theftData: ReportTheftDialogData): Promise<void> => {
-    await callApi('reportBikeStolen', { data: { bikeId, theftData }});
+    await callApi('reportBikeStolen', { bikeId, theftData });
 };
 
 export const initiateTransfer = async (
@@ -470,5 +465,5 @@ export const initiateTransfer = async (
     transferDocumentUrl?: string | null,
     transferDocumentName?: string | null
 ): Promise<void> => {
-    await callApi('initiateTransferRequest', { data: { bikeId, recipientEmail, transferDocumentUrl, transferDocumentName }});
+    await callApi('initiateTransferRequest', { bikeId, recipientEmail, transferDocumentUrl, transferDocumentName });
 };
