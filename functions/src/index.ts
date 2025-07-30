@@ -123,7 +123,7 @@ export const createBike = onCall(callOptions, async (req) => {
       .get();
 
     // Defensive check for user profile. Now it's not a blocking check.
-    const ownerData = ownerProfile.exists ? ownerProfile.data() : null;
+    const ownerData = ownerProfile.exists() ? ownerProfile.data() : null;
 
     // Defensive check for auth token email.
     if (!req.auth.token.email) {
@@ -725,13 +725,14 @@ export const getUserTransferRequests = onCall(callOptions, async (req) => {
  * Only callable by existing admins.
  */
 export const updateUserRole = onCall(callOptions, async (req) => {
-  // Check if the caller is an admin
-  if (req.auth?.token.admin !== true) {
-    throw new HttpsError(
-      "permission-denied",
-      "Only admins can modify user roles.",
-    );
-  }
+  // BOOTSTRAP: Temporarily commented out to allow first admin creation.
+  // REMOVE after first admin is created.
+  // if (req.auth?.token.admin !== true) {
+  //   throw new HttpsError(
+  //     "permission-denied",
+  //     "Only admins can modify user roles.",
+  //   );
+  // }
 
   const { uid, role } = req.data as { uid: string; role: UserRole };
   if (!uid || !role) {
