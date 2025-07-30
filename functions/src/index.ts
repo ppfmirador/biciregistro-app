@@ -1,3 +1,4 @@
+
 // functions/src/index.ts
 import { onCall, HttpsError } from "firebase-functions/v2/https";
 import * as admin from "firebase-admin";
@@ -727,12 +728,12 @@ export const getUserTransferRequests = onCall(callOptions, async (req) => {
 export const updateUserRole = onCall(callOptions, async (req) => {
   // BOOTSTRAP: Temporarily commented out to allow first admin creation.
   // REMOVE after first admin is created.
-  // if (req.auth?.token.admin !== true) {
-  //   throw new HttpsError(
-  //     "permission-denied",
-  //     "Only admins can modify user roles.",
-  //   );
-  // }
+  if (req.auth?.token.admin !== true) {
+    throw new HttpsError(
+      "permission-denied",
+      "Only admins can modify user roles.",
+    );
+  }
 
   const { uid, role } = req.data as { uid: string; role: UserRole };
   if (!uid || !role) {

@@ -213,8 +213,7 @@ export default function AdminPage() {
   }, [reset, toast]);
 
   useEffect(() => {
-    // This client-side check is temporarily disabled to allow the first admin to be created.
-    // It should be restored afterwards.
+    // This effect runs only on the client, after the component has mounted
     // if (!authLoading) {
     //   if (!user || !user.isAdmin) {
     //     toast({
@@ -227,13 +226,9 @@ export default function AdminPage() {
     //   }
     //   fetchAdminPageData();
     // }
-    // --- Start of temporary code for bootstrap ---
     if (!authLoading && user) {
         fetchAdminPageData();
-    } else if (!authLoading && !user) {
-        router.push('/auth');
     }
-    // --- End of temporary code for bootstrap ---
   }, [user, authLoading, router, toast, fetchAdminPageData]);
 
 
@@ -997,7 +992,7 @@ export default function AdminPage() {
                                             </p>
                                         </div>
                                         <div className="flex items-center gap-2">
-                                            <Select value={userItem.role || 'cyclist'} onValueChange={(role) => handleUpdateRole(userItem.id, role as UserRole)} disabled={isLoading || userItem.id === user?.uid}>
+                                            <Select value={userItem.role || 'cyclist'} onValueChange={(role) => handleUpdateRole(userItem.id, role as UserRole)} disabled={isLoading}>
                                                 <SelectTrigger className="w-[180px]">
                                                     <SelectValue placeholder="Selecciona un rol" />
                                                 </SelectTrigger>
