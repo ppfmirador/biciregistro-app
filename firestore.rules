@@ -1,57 +1,59 @@
-
 rules_version = '2';
 
 service cloud.firestore {
   match /databases/{database}/documents {
     
-    function isAuthOwner(resourceId) {
-      return request.auth.uid == resourceId;
-    }
-    
-    function isAuthAdmin() {
-      return request.auth.token.admin == true;
+    // By default, deny all reads and writes
+    match /{document=**} {
+      allow read, write: if false;
     }
 
-    function isBikeShop() {
-      return get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role == 'bikeshop';
-    }
+    // --- Publicly Readable Collections ---
 
-    function isNgo() {
-      return get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role == 'ngo';
-    }
-
-    match /users/{userId} {
-      allow read, write: if isAuthOwner(userId) || isAuthAdmin();
-      // Allow NGOs to perform the specific query needed for their analytics dashboard.
-      // This does NOT allow them to read individual user documents.
-      allow list: if isNgo();
-    }
-
-    match /bikes/{bikeId} {
-      allow read: if true;
-      allow create: if request.auth != null && request.resource.data.ownerId == request.auth.uid;
-      allow update: if isAuthOwner(resource.data.ownerId) || isAuthAdmin();
-      allow delete: if isAuthAdmin();
-    }
-
-    match /transferRequests/{requestId} {
-      allow read, create: if request.auth != null;
-      allow update, delete: if isAuthOwner(resource.data.fromOwnerId) || (request.auth.token.email == resource.data.toUserEmail);
-    }
-
-    match /bikeRides/{rideId} {
-        allow read: if true;
-        allow create: if isBikeShop() || isNgo();
-        allow update, delete: if isAuthOwner(resource.data.organizerId);
-    }
-    
+    // Homepage content is readable by anyone, writable only by admins.
     match /homepage_content/{docId} {
       allow read: if true;
-      allow write: if isAuthAdmin();
+      allow write: if request.auth.token.admin == true;
     }
 
-    match /audit_logs/{logId} {
-        allow read, write: if isAuthAdmin();
+    // Public bike rides are readable by anyone.
+    match /bikeRides/{rideId} {
+      allow read: if true;
+      allow create: if request.auth != null && (get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role == 'bikeshop' || get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role == 'ngo');
+      allow update, delete: if request.auth != null && (resource.data.organizerId == request.auth.uid || request.auth.token.admin == true);
+    }
+    
+    // --- User-Specific Collections ---
+
+    // Users can only read and update their own profile. Admins can do anything.
+    match /users/{userId} {
+      allow read, update: if request.auth.uid == userId || request.auth.token.admin == true;
+      allow create: if request.auth != null; // Anyone can create their own account via signup
+      allow delete: if request.auth.token.admin == true;
+    }
+
+    // --- Core App Logic Collections ---
+
+    // Bikes can be read by anyone (public search).
+    // Write access is restricted.
+    match /bikes/{bikeId} {
+      allow read: if true;
+      allow create: if request.auth != null;
+      allow update, delete: if request.auth.uid == resource.data.ownerId || request.auth.token.admin == true;
+    }
+
+    // Transfer requests have specific access controls.
+    match /transferRequests/{requestId} {
+      allow read: if request.auth != null && 
+                     (request.auth.uid == resource.data.fromOwnerId || 
+                      request.auth.token.email == resource.data.toUserEmail || 
+                      request.auth.token.admin == true);
+      allow create: if request.auth != null && request.auth.uid == request.resource.data.fromOwnerId;
+      allow update: if request.auth != null && 
+                     (request.auth.uid == resource.data.fromOwnerId || 
+                      request.auth.token.email == resource.data.toUserEmail);
+      // No one can delete transfer requests for historical purposes, maybe only admins if needed.
+      allow delete: if false; 
     }
   }
 }

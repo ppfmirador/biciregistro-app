@@ -1,43 +1,56 @@
-
 rules_version = '2';
 
 service firebase.storage {
   match /b/{bucket}/o {
     
-    // Regla general de seguridad: por defecto, nadie puede leer o escribir.
+    // Default deny all access to prevent unauthorized access to any path.
     match /{allPaths=**} {
       allow read, write: if false;
     }
 
-    // --- REGLAS PARA IMÁGENES DE BICICLETAS ---
-    // Permite a cualquier usuario autenticado subir imágenes a su propia carpeta.
-    // El {userId} en la ruta debe coincidir con el ID del usuario que hace la solicitud.
-    // El {bikeId} y {fileName} son comodines para cualquier nombre de subcarpeta o archivo.
-    match /bike_images/{userId}/{bikeId}/{fileName} {
-      allow create, update: if request.auth != null && request.auth.uid == userId;
-      allow get: if true; // Permite la lectura pública de las imágenes una vez subidas.
-      allow delete: if request.auth != null && request.auth.uid == userId;
-    }
-
-    // --- REGLAS PARA DOCUMENTOS DE PROPIEDAD ---
-    // Similar a las imágenes, pero para la carpeta de documentos.
-    match /bike_documents/{userId}/{bikeId}/{fileName} {
-      allow create, update: if request.auth != null && request.auth.uid == userId;
-      allow get: if true; // Permite la lectura pública.
-      allow delete: if request.auth != null && request.auth.uid == userId;
-    }
-
-    // --- REGLAS PARA ARCHIVOS DE LA PÁGINA PRINCIPAL ---
-    // Permite al administrador (o a cualquier usuario autenticado, por simplicidad)
-    // subir archivos para el contenido de la página principal (ej. logo de comunidad, sponsors).
-    match /homepage_assets/{fileName} {
-      allow create, update, delete: if request.auth != null;
-      allow get: if true;
+    // --- Publicly Readable Assets ---
+    
+    // Anyone can read bike images and homepage assets.
+    match /bike_images/{allPaths=**} {
+      allow read: if true;
     }
     
-    match /sponsors/{fileName} {
-      allow create, update, delete: if request.auth != null;
-      allow get: if true;
+    match /homepage_assets/{allPaths=**} {
+        allow read: if true;
+    }
+    
+    match /sponsors/{allPaths=**} {
+        allow read: if true;
+    }
+
+    // --- User-Restricted Writable Paths ---
+    // A user can only write to their own designated folder.
+    
+    // Bike Images: Only the owner (authenticated user) can upload to their own folder.
+    match /bike_images/{userId}/{allPaths=**} {
+      allow write: if request.auth != null && request.auth.uid == userId;
+    }
+
+    // Bike Documents: Only the owner can upload.
+    match /bike_documents/{userId}/{allPaths=**} {
+      allow write: if request.auth != null && request.auth.uid == userId;
+    }
+    
+    // Transfer Documents: Only authenticated users can upload to a path matching the bikeId.
+    // The bikeId is not user-specific, but access is controlled by the upload logic.
+    match /transfer_documents/{bikeId}/{allPaths=**} {
+      allow write: if request.auth != null;
+    }
+
+    // --- Public Access for Documents (via URL) ---
+    // While writing is restricted, reading is allowed if you have the URL.
+    // This is secure because URLs are unguessable and only shared with intended recipients.
+    match /bike_documents/{userId}/{bikeId}/{fileName} {
+      allow read: if true;
+    }
+    
+    match /transfer_documents/{bikeId}/{fileName} {
+      allow read: if true;
     }
   }
 }
