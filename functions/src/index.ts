@@ -725,8 +725,7 @@ export const getUserTransferRequests = onCall(callOptions, async (req) => {
  * Only callable by existing admins.
  */
 export const updateUserRole = onCall(callOptions, async (req) => {
-  // BOOTSTRAP: Temporarily commented out to allow first admin creation.
-  // REMOVE after first admin is created.
+  // BOOTSTRAP: This check is restored. It was temporarily commented out.
   if (req.auth?.token.admin !== true) {
     throw new HttpsError(
       "permission-denied",
