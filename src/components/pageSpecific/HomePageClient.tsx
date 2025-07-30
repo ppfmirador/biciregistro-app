@@ -46,9 +46,9 @@ export default function HomePageClient({ initialContent }: HomePageClientProps) 
           <h1 className="text-3xl sm:text-4xl md:text-5xl font-headline font-bold text-primary-foreground mb-3 sm:mb-4">
             {isLoading ? <Skeleton className="h-12 w-3/4 mx-auto" /> : content.welcomeTitle.replace('{APP_NAME}', 'BiciRegistro')}
           </h1>
-          <p className="text-md sm:text-lg md:text-xl text-primary-foreground/90 mb-6 sm:mb-8 max-w-xl sm:max-w-2xl mx-auto">
-             {isLoading ? <Skeleton className="h-6 w-full mx-auto" /> : content.welcomeDescription}
-          </p>
+          <div className="text-md sm:text-lg md:text-xl text-primary-foreground/90 mb-6 sm:mb-8 max-w-xl sm:max-w-2xl mx-auto">
+             {isLoading ? <Skeleton className="h-6 w-full mx-auto" /> : <p>{content.welcomeDescription}</p>}
+          </div>
           <div className="max-w-md sm:max-w-lg mx-auto mb-8">
             <SearchBikeForm />
             <p className="mt-2 sm:mt-3 text-xs sm:text-sm text-primary-foreground/80">
@@ -75,10 +75,8 @@ export default function HomePageClient({ initialContent }: HomePageClientProps) 
                 </div>
                 <CardTitle className="font-headline text-lg sm:text-xl">{isLoading ? <Skeleton className="h-7 w-32 mx-auto" /> : content.feature1Title}</CardTitle>
               </CardHeader>
-              <CardContent>
-                <p className="text-muted-foreground text-sm sm:text-base text-center">
-                  {isLoading ? <><Skeleton className="h-4 w-full" /><Skeleton className="h-4 w-3/4 mt-2" /></> : content.feature1Description}
-                </p>
+              <CardContent className="text-muted-foreground text-sm sm:text-base text-center">
+                {isLoading ? <div className="space-y-2"><Skeleton className="h-4 w-full" /><Skeleton className="h-4 w-3/4 mx-auto" /></div> : <p>{content.feature1Description}</p>}
               </CardContent>
             </Card>
             <Card className="shadow-lg hover:shadow-xl transition-shadow duration-300">
@@ -88,10 +86,8 @@ export default function HomePageClient({ initialContent }: HomePageClientProps) 
                 </div>
                 <CardTitle className="font-headline text-lg sm:text-xl">{isLoading ? <Skeleton className="h-7 w-32 mx-auto" /> : content.feature2Title}</CardTitle>
               </CardHeader>
-              <CardContent>
-                <p className="text-muted-foreground text-sm sm:text-base text-center">
-                   {isLoading ? <><Skeleton className="h-4 w-full" /><Skeleton className="h-4 w-3/4 mt-2" /></> : content.feature2Description}
-                </p>
+              <CardContent className="text-muted-foreground text-sm sm:text-base text-center">
+                 {isLoading ? <div className="space-y-2"><Skeleton className="h-4 w-full" /><Skeleton className="h-4 w-3/4 mx-auto" /></div> : <p>{content.feature2Description}</p>}
               </CardContent>
             </Card>
             <Card className="shadow-lg hover:shadow-xl transition-shadow duration-300">
@@ -101,10 +97,8 @@ export default function HomePageClient({ initialContent }: HomePageClientProps) 
                 </div>
                 <CardTitle className="font-headline text-lg sm:text-xl">{isLoading ? <Skeleton className="h-7 w-32 mx-auto" /> : content.feature3Title}</CardTitle>
               </CardHeader>
-              <CardContent>
-                <p className="text-muted-foreground text-sm sm:text-base text-center">
-                   {isLoading ? <><Skeleton className="h-4 w-full" /><Skeleton className="h-4 w-3/4 mt-2" /></> : content.feature3Description}
-                </p>
+              <CardContent className="text-muted-foreground text-sm sm:text-base text-center">
+                 {isLoading ? <div className="space-y-2"><Skeleton className="h-4 w-full" /><Skeleton className="h-4 w-3/4 mx-auto" /></div> : <p>{content.feature3Description}</p>}
               </CardContent>
             </Card>
           </div>
@@ -135,13 +129,13 @@ export default function HomePageClient({ initialContent }: HomePageClientProps) 
             <h2 className="text-2xl sm:text-3xl font-headline font-semibold mb-3 sm:mb-4">
               {isLoading ? <Skeleton className="h-10 w-3/4" /> : content.communityTitle}
             </h2>
-            <p className="text-base sm:text-lg text-muted-foreground mb-4 sm:mb-6">
-               {isLoading ? <>
+            <div className="text-base sm:text-lg text-muted-foreground mb-4 sm:mb-6">
+               {isLoading ? <div className="space-y-2">
                 <Skeleton className="h-4 w-full" />
-                <Skeleton className="h-4 w-full mt-2" />
-                <Skeleton className="h-4 w-2/3 mt-2" />
-               </> : content.communityDescription.replace('{APP_NAME}', 'BiciRegistro')}
-            </p>
+                <Skeleton className="h-4 w-full" />
+                <Skeleton className="h-4 w-2/3" />
+               </div> : <p>{content.communityDescription.replace('{APP_NAME}', 'BiciRegistro')}</p>}
+            </div>
             <div className="flex justify-center md:justify-start">
               <Link href="/auth?mode=signup" passHref>
                 <Button size="lg">
