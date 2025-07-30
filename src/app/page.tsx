@@ -41,17 +41,10 @@ const defaultContent: HomepageContent = {
 };
 
 export async function generateMetadata(): Promise<Metadata> {
-  let fetchedContent: HomepageContent | null = null;
-  try {
-    fetchedContent = await getHomepageContentServer();
-  } catch (error) {
-    console.error("Error fetching homepage content for metadata:", error);
-  }
-  const title =
-    fetchedContent?.welcomeTitle ||
-    defaultContent.welcomeTitle.replace("{APP_NAME}", "BiciRegistro");
-  const description =
-    fetchedContent?.welcomeDescription || defaultContent.welcomeDescription;
+  // Since we are moving data fetching to the client, we will use default content for static metadata.
+  // This ensures the server can build without needing the service account key.
+  const title = defaultContent.welcomeTitle.replace('{APP_NAME}', 'BiciRegistro');
+  const description = defaultContent.welcomeDescription;
 
   return {
     title: title,
@@ -67,18 +60,8 @@ export async function generateMetadata(): Promise<Metadata> {
   };
 }
 
-export default async function Page() {
-  let initialContent: HomepageContent;
-  try {
-    const fetchedContent = await getHomepageContentServer();
-    initialContent = fetchedContent || defaultContent;
-  } catch (error) {
-    console.error(
-      "Error fetching homepage content for server component:",
-      error,
-    );
-    initialContent = defaultContent;
-  }
-
-  return <HomePageClient initialContent={initialContent} />;
+export default function Page() {
+  // The page will now initially render with default content,
+  // and the HomePageClient component will fetch the dynamic content on the client-side.
+  return <HomePageClient initialContent={defaultContent} />;
 }
