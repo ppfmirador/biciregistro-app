@@ -32,6 +32,7 @@ import { Dialog, DialogContent as DialogContentCustom, DialogDescription as Dial
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { getHomepageContent } from '@/lib/homepageContent';
+import { Skeleton } from '@/components/ui/skeleton';
 
 
 type TransferAction = 'accepted' | 'rejected' | 'cancelled';
@@ -423,6 +424,11 @@ const TransferRequestsSection: React.FC<TransferRequestsSectionProps> = ({ title
   const [currentRequest, setCurrentRequest] = useState<TransferRequest | null>(null);
   const [currentAction, setCurrentAction] = useState<TransferAction | null>(null);
   const { user } = useAuth();
+  const [isClient, setIsClient] = useState(false);
+
+  useEffect(() => {
+    setIsClient(true);
+  }, []);
 
   const openConfirmationDialog = (request: TransferRequest, action: TransferAction) => {
     setCurrentRequest(request);
@@ -480,7 +486,7 @@ const TransferRequestsSection: React.FC<TransferRequestsSectionProps> = ({ title
                   </>
                 )}
                 <p className="text-xs text-muted-foreground">
-                  {isResolvedList ? "Resuelta" : "Solicitada"}: {formatDistanceToNow(new Date(isResolvedList && req.resolutionDate ? req.resolutionDate : req.requestDate), { addSuffix: true, locale: es })}
+                  {isResolvedList ? "Resuelta" : "Solicitada"}: {isClient ? formatDistanceToNow(new Date(isResolvedList && req.resolutionDate ? req.resolutionDate : req.requestDate), { addSuffix: true, locale: es }) : <Skeleton className="h-4 w-20 inline-block" />}
                 </p>
                 {isResolvedList && req.status !== 'pending' && (
                   <Badge variant={
