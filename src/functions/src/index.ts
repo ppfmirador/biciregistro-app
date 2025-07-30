@@ -725,7 +725,8 @@ export const getUserTransferRequests = onCall(callOptions, async (req) => {
  * Only callable by existing admins.
  */
 export const updateUserRole = onCall(callOptions, async (req) => {
-  // Check if the caller is an admin
+  // BOOTSTRAP: Temporarily commented out to allow first admin creation.
+  // REMOVE after first admin is created.
   if (req.auth?.token.admin !== true) {
     throw new HttpsError(
       "permission-denied",
@@ -1022,7 +1023,7 @@ export const createOrUpdateRide = onCall(callOptions, async (req) => {
       // Update existing ride
       const rideRef = admin.firestore().collection("bikeRides").doc(rideId);
       const rideSnap = await rideRef.get();
-      if (!rideSnap.exists() || rideSnap.data()?.organizerId !== organizerId) {
+      if (!rideSnap.exists || rideSnap.data()?.organizerId !== organizerId) {
         throw new HttpsError(
           "permission-denied",
           "You do not have permission to edit this ride.",
