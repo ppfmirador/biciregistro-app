@@ -1,20 +1,16 @@
-
 // functions/src/index.ts
-import { onCall, HttpsError } from "firebase-functions/v2/https";
+import { onCall, HttpsError, type CallableRequest } from "firebase-functions/v2/https";
 import * as admin from "firebase-admin";
 import { setGlobalOptions } from "firebase-functions/v2";
 import type {
   Bike,
-  BikeRide,
-  BikeRideFormValues,
   BikeShopAdminFormValues,
   NewCustomerDataForShop,
   NgoAdminFormValues,
-  StatusEntry,
-  TheftDetails,
   TransferRequest,
   UserProfileData,
   UserRole,
+  BikeRideFormValues,
 } from "./types";
 
 admin.initializeApp();
@@ -38,17 +34,26 @@ const callOptions = {
   cors: allowedOrigins,
 };
 
-// --- Action Handlers (Internal Logic) ---
+// --- Type definitions for request contexts and data ---
+type AuthContext = CallableRequest['auth'];
+
+interface ActionRequest<T> {
+  action: string;
+  data: T;
+}
+
+// --- Action Handlers (Internal Logic with specific types) ---
 const toISO = (timestamp: admin.firestore.Timestamp | undefined): string | undefined => {
   return timestamp ? timestamp.toDate().toISOString() : undefined;
 };
 
-const handleUpdateUserRole = async (data: any, context: any) => {
-    // IMPORTANT: Temporarily commented out for first admin creation.
-    // if (context.auth?.token.admin !== true) {
+const handleUpdateUserRole = async (data: { uid: string; role: UserRole }, context: AuthContext) => {
+    // IMPORTANT: This check is temporarily commented out for first admin creation.
+    // Make sure to restore it after the first admin is created.
+    // if (context?.token.admin !== true) {
     //     throw new HttpsError("permission-denied", "Only admins can modify user roles.");
     // }
-    const { uid, role } = data as { uid: string; role: UserRole };
+    const { uid, role } = data;
     if (!uid || !role) {
         throw new HttpsError("invalid-argument", "The function must be called with a 'uid' and 'role'.");
     }
@@ -59,11 +64,10 @@ const handleUpdateUserRole = async (data: any, context: any) => {
     return { message: `Success! User ${uid} has been made a(n) ${role}.` };
 };
 
-
-const handleCreateBike = async (data: any, context: any) => {
-  if (!context.auth) throw new HttpsError("unauthenticated", "Debes estar autenticado para crear una bicicleta.");
+const handleCreateBike = async (data: { bikeData: Partial<Bike> & { registeredByShopId?: string | null } }, context: AuthContext) => {
+  if (!context) throw new HttpsError("unauthenticated", "Debes estar autenticado para crear una bicicleta.");
   const { bikeData } = data;
-  const ownerId = context.auth.uid;
+  const ownerId = context.uid;
 
   if (!bikeData || !bikeData.serialNumber || !bikeData.brand || !bikeData.model) {
     throw new HttpsError("invalid-argument", "El número de serie, marca y modelo son obligatorios.");
@@ -79,7 +83,7 @@ const handleCreateBike = async (data: any, context: any) => {
   const ownerProfile = await admin.firestore().collection("users").doc(ownerId).get();
   const ownerData = ownerProfile.exists ? ownerProfile.data() : null;
 
-  if (!context.auth.token.email) {
+  if (!context.token.email) {
     throw new HttpsError("unauthenticated", "Tu token de usuario no tiene una dirección de correo válida.");
   }
 
@@ -90,7 +94,7 @@ const handleCreateBike = async (data: any, context: any) => {
     ownerId,
     ownerFirstName: ownerData?.firstName ?? "",
     ownerLastName: ownerData?.lastName ?? "",
-    ownerEmail: ownerData?.email || context.auth.token.email,
+    ownerEmail: ownerData?.email || context.token.email,
     ownerWhatsappPhone: ownerData?.whatsappPhone ?? "",
     status: "En Regla",
     registrationDate: admin.firestore.Timestamp.now(),
@@ -111,9 +115,9 @@ const handleCreateBike = async (data: any, context: any) => {
   return { bikeId: docRef.id };
 };
 
-const handleGetMyBikes = async (_data: any, context: any) => {
-    if (!context.auth) throw new HttpsError("unauthenticated", "Debes estar autenticado para ver tus bicicletas.");
-    const ownerId = context.auth.uid;
+const handleGetMyBikes = async (_data: unknown, context: AuthContext) => {
+    if (!context) throw new HttpsError("unauthenticated", "Debes estar autenticado para ver tus bicicletas.");
+    const ownerId = context.uid;
     const bikesRef = admin.firestore().collection("bikes");
     const q = bikesRef.where("ownerId", "==", ownerId);
     const querySnapshot = await q.get();
@@ -134,7 +138,7 @@ const handleGetMyBikes = async (_data: any, context: any) => {
     return { bikes };
 };
 
-const handleGetPublicBikeBySerial = async (data: any, context: any) => {
+const handleGetPublicBikeBySerial = async (data: { serialNumber: string }, context: AuthContext) => {
     const { serialNumber } = data;
     if (!serialNumber || typeof serialNumber !== "string") {
         throw new HttpsError("invalid-argument", "El número de serie debe ser una cadena de texto no vacía.");
@@ -147,7 +151,7 @@ const handleGetPublicBikeBySerial = async (data: any, context: any) => {
 
     const bikeDoc = querySnapshot.docs[0];
     const bikeData = bikeDoc.data();
-    const isOwner = context.auth?.uid === bikeData.ownerId;
+    const isOwner = context?.uid === bikeData.ownerId;
 
     const statusHistory = (bikeData.statusHistory || []).map((entry: { timestamp: admin.firestore.Timestamp }) => ({
       ...entry,
@@ -174,10 +178,10 @@ const handleGetPublicBikeBySerial = async (data: any, context: any) => {
     return publicData;
 };
 
-const handleReportBikeStolen = async (data: any, context: any) => {
-    if (!context.auth) throw new HttpsError("unauthenticated", "Debes estar autenticado para reportar un robo.");
+const handleReportBikeStolen = async (data: { bikeId: string, theftData: ReportTheftDialogData }, context: AuthContext) => {
+    if (!context) throw new HttpsError("unauthenticated", "Debes estar autenticado para reportar un robo.");
     const { bikeId, theftData } = data;
-    const { uid } = context.auth;
+    const { uid } = context;
 
     if (!bikeId || typeof bikeId !== "string" || !theftData || typeof theftData !== "object") {
         throw new HttpsError("invalid-argument", "Se requieren bikeId y theftData válidos.");
@@ -196,10 +200,10 @@ const handleReportBikeStolen = async (data: any, context: any) => {
     return { success: true, message: "Bicicleta reportada como robada exitosamente." };
 };
 
-const handleMarkBikeRecovered = async (data: any, context: any) => {
-    if (!context.auth) throw new HttpsError("unauthenticated", "Debes estar autenticado.");
+const handleMarkBikeRecovered = async (data: { bikeId: string }, context: AuthContext) => {
+    if (!context) throw new HttpsError("unauthenticated", "Debes estar autenticado.");
     const { bikeId } = data;
-    const { uid } = context.auth;
+    const { uid } = context;
     if (!bikeId || typeof bikeId !== "string") throw new HttpsError("invalid-argument", "Se requiere un bikeId válido.");
     const bikeRef = admin.firestore().collection("bikes").doc(bikeId);
     const bikeDoc = await bikeRef.get();
@@ -211,10 +215,10 @@ const handleMarkBikeRecovered = async (data: any, context: any) => {
     return { success: true, message: "Bicicleta marcada como recuperada exitosamente." };
 };
 
-const handleInitiateTransferRequest = async (data: any, context: any) => {
-    if (!context.auth || !context.auth.token.email) throw new HttpsError("unauthenticated", "Debes estar autenticado con un correo verificado.");
+const handleInitiateTransferRequest = async (data: { bikeId: string, recipientEmail: string, transferDocumentUrl?: string | null, transferDocumentName?: string | null }, context: AuthContext) => {
+    if (!context || !context.token.email) throw new HttpsError("unauthenticated", "Debes estar autenticado con un correo verificado.");
     const { bikeId, recipientEmail, transferDocumentUrl, transferDocumentName } = data;
-    const { uid } = context.auth;
+    const { uid } = context;
     if (!bikeId || !recipientEmail) throw new HttpsError("invalid-argument", "Se requiere el ID de la bicicleta y el correo del destinatario.");
 
     const bikeRef = admin.firestore().collection("bikes").doc(bikeId);
@@ -228,18 +232,18 @@ const handleInitiateTransferRequest = async (data: any, context: any) => {
 
     const newRequest = {
       bikeId, serialNumber: bikeDoc.data()?.serialNumber, bikeBrand: bikeDoc.data()?.brand, bikeModel: bikeDoc.data()?.model,
-      fromOwnerId: uid, fromOwnerEmail: context.auth.token.email, toUserEmail: recipientEmail.toLowerCase(), status: "pending",
+      fromOwnerId: uid, fromOwnerEmail: context.token.email, toUserEmail: recipientEmail.toLowerCase(), status: "pending",
       requestDate: admin.firestore.Timestamp.now(), transferDocumentUrl: transferDocumentUrl || null, transferDocumentName: transferDocumentName || null,
     };
     await requestsRef.add(newRequest);
     return { success: true, message: "Solicitud de transferencia iniciada." };
 };
 
-const handleRespondToTransferRequest = async (data: any, context: any) => {
-    if (!context.auth || !context.auth.token.email) throw new HttpsError("unauthenticated", "Debes estar autenticado.");
+const handleRespondToTransferRequest = async (data: { requestId: string, action: 'accepted' | 'rejected' | 'cancelled' }, context: AuthContext) => {
+    if (!context || !context.token.email) throw new HttpsError("unauthenticated", "Debes estar autenticado.");
     const { requestId, action } = data;
-    const { uid } = context.auth;
-    const respondingUserEmail = context.auth.token.email;
+    const { uid } = context;
+    const respondingUserEmail = context.token.email;
     if (!requestId || !action || !["accepted", "rejected", "cancelled"].includes(action)) throw new HttpsError("invalid-argument", "Se requiere ID de solicitud y una acción válida.");
 
     const requestRef = admin.firestore().collection("transferRequests").doc(requestId);
@@ -282,10 +286,10 @@ const handleRespondToTransferRequest = async (data: any, context: any) => {
     });
 };
 
-const handleGetUserTransferRequests = async (_data: any, context: any) => {
-    if (!context.auth || !context.auth.token.email) throw new HttpsError("unauthenticated", "Debes estar autenticado.");
-    const uid = context.auth.uid;
-    const email = context.auth.token.email.toLowerCase();
+const handleGetUserTransferRequests = async (_data: unknown, context: AuthContext) => {
+    if (!context || !context.token.email) throw new HttpsError("unauthenticated", "Debes estar autenticado.");
+    const uid = context.uid;
+    const email = context.token.email.toLowerCase();
     const requestsRef = admin.firestore().collection("transferRequests");
     const [sentSnap, receivedSnap] = await Promise.all([
       requestsRef.where("fromOwnerId", "==", uid).get(),
@@ -295,15 +299,16 @@ const handleGetUserTransferRequests = async (_data: any, context: any) => {
     const docs = [...sentSnap.docs, ...receivedSnap.docs];
     const unique = new Map(docs.map((d) => [d.id, d]));
     const requests = Array.from(unique.values()).map(d => ({
-      id: d.id, ...d.data(),
+      id: d.id,
+      ...d.data(),
       requestDate: d.data().requestDate?.toDate().toISOString(),
       resolutionDate: d.data().resolutionDate?.toDate().toISOString(),
     })) as TransferRequest[];
     return { requests };
 };
 
-const handleDeleteUserAccount = async (data: any, context: any) => {
-    if (context.auth?.token.admin !== true) throw new HttpsError("permission-denied", "Solo los administradores pueden eliminar cuentas de usuario.");
+const handleDeleteUserAccount = async (data: { uid: string }, context: AuthContext) => {
+    if (context?.token.admin !== true) throw new HttpsError("permission-denied", "Solo los administradores pueden eliminar cuentas de usuario.");
     const { uid } = data;
     if (!uid) throw new HttpsError("invalid-argument", "La función debe ser llamada con un 'uid'.");
     
@@ -321,8 +326,8 @@ const handleDeleteUserAccount = async (data: any, context: any) => {
     return { message: `Se eliminó exitosamente al usuario ${uid} y sus datos.` };
 };
 
-const handleUpdateHomepageContent = async (data: any, context: any) => {
-    if (context.auth?.token.admin !== true) throw new HttpsError("permission-denied", "Solo los administradores pueden actualizar el contenido de la página principal.");
+const handleUpdateHomepageContent = async (data: DocumentData, context: AuthContext) => {
+    if (context?.token.admin !== true) throw new HttpsError("permission-denied", "Solo los administradores pueden actualizar el contenido de la página principal.");
     if (!data) throw new HttpsError("invalid-argument", "Faltan datos de contenido.");
     const contentRef = admin.firestore().collection("homepage_content").doc("config");
     await contentRef.set({ ...data, lastUpdated: admin.firestore.Timestamp.now() }, { merge: true });
@@ -342,9 +347,9 @@ const handleGetHomepageContent = async () => {
     return null;
 };
 
-const handleCreateAccount = async (data: any, context: any) => {
-    if (context.auth?.token.admin !== true) throw new HttpsError("permission-denied", "Solo los administradores pueden crear nuevas cuentas.");
-    const { accountData, role, creatorId } = data as { accountData: BikeShopAdminFormValues | NgoAdminFormValues | NewCustomerDataForShop; role: "bikeshop" | "ngo" | "cyclist"; creatorId: string; };
+const handleCreateAccount = async (data: { accountData: BikeShopAdminFormValues | NgoAdminFormValues | NewCustomerDataForShop; role: "bikeshop" | "ngo" | "cyclist"; creatorId: string; }, context: AuthContext) => {
+    if (context?.token.admin !== true) throw new HttpsError("permission-denied", "Solo los administradores pueden crear nuevas cuentas.");
+    const { accountData, role, creatorId } = data;
     if (!accountData || !role || !accountData.email) throw new HttpsError("invalid-argument", "Se requieren datos de la cuenta, rol y correo electrónico.");
     
     let userProfileData: UserProfileData;
@@ -368,10 +373,10 @@ const handleCreateAccount = async (data: any, context: any) => {
     return { uid: userRecord.uid, message: `Cuenta para ${displayName} creada. Se ha enviado un correo para establecer la contraseña.` };
 };
 
-const handleCreateOrUpdateRide = async (data: any, context: any) => {
-    if (!context.auth || !context.auth.uid) throw new HttpsError("unauthenticated", "Debes estar autenticado para gestionar eventos.");
-    const { rideData, rideId } = data as { rideData: BikeRideFormValues; rideId?: string; };
-    const organizerId = context.auth.uid;
+const handleCreateOrUpdateRide = async (data: { rideData: BikeRideFormValues; rideId?: string; }, context: AuthContext) => {
+    if (!context || !context.uid) throw new HttpsError("unauthenticated", "Debes estar autenticado para gestionar eventos.");
+    const { rideData, rideId } = data;
+    const organizerId = context.uid;
     if (!rideData) throw new HttpsError("invalid-argument", "Faltan datos del evento.");
 
     const organizerDoc = await admin.firestore().collection("users").doc(organizerId).get();
@@ -403,28 +408,45 @@ const handleCreateOrUpdateRide = async (data: any, context: any) => {
 
 // --- The single dispatching Cloud Function ---
 
-export const api = onCall(callOptions, async (req) => {
+export const api = onCall(callOptions, async (req: CallableRequest<ActionRequest<any>>) => {
   const { action, data } = req.data;
 
   try {
     switch (action) {
-      case "createBike": return await handleCreateBike(req.data, req);
-      case "getMyBikes": return await handleGetMyBikes(req.data, req);
-      case "getPublicBikeBySerial": return await handleGetPublicBikeBySerial(req.data, req);
-      case "reportBikeStolen": return await handleReportBikeStolen(req.data, req);
-      case "markBikeRecovered": return await handleMarkBikeRecovered(req.data, req);
-      case "initiateTransferRequest": return await handleInitiateTransferRequest(req.data, req);
-      case "respondToTransferRequest": return await handleRespondToTransferRequest(req.data, req);
-      case "getUserTransferRequests": return await handleGetUserTransferRequests(req.data, req);
-      case "updateUserRole": return await handleUpdateUserRole(data, req);
-      case "deleteUserAccount": return await handleDeleteUserAccount(data, req);
-      case "updateHomepageContent": return await handleUpdateHomepageContent(data, req);
-      case "getHomepageContent": return await handleGetHomepageContent();
-      case "createAccount": return await handleCreateAccount(data, req);
-      case "createOrUpdateRide": return await handleCreateOrUpdateRide(data, req);
+      case "createBike":
+        return await handleCreateBike(req.data, req.auth);
+      case "getMyBikes":
+        return await handleGetMyBikes(req.data, req.auth);
+      case "getPublicBikeBySerial":
+        return await handleGetPublicBikeBySerial(data, req.auth);
+      case "reportBikeStolen":
+        return await handleReportBikeStolen(data, req.auth);
+      case "markBikeRecovered":
+        return await handleMarkBikeRecovered(data, req.auth);
+      case "initiateTransferRequest":
+        return await handleInitiateTransferRequest(data, req.auth);
+      case "respondToTransferRequest":
+        return await handleRespondToTransferRequest(data, req.auth);
+      case "getUserTransferRequests":
+        return await handleGetUserTransferRequests(req.data, req.auth);
+      case "updateUserRole":
+        return await handleUpdateUserRole(data, req.auth);
+      case "deleteUserAccount":
+        return await handleDeleteUserAccount(data, req.auth);
+      case "updateHomepageContent":
+        return await handleUpdateHomepageContent(data, req.auth);
+      case "getHomepageContent":
+        return await handleGetHomepageContent();
+      case "createAccount":
+        return await handleCreateAccount(data, req.auth);
+      case "createOrUpdateRide":
+        return await handleCreateOrUpdateRide(data, req.auth);
 
       default:
-        throw new HttpsError("not-found", "No se encontró la acción solicitada.");
+        throw new HttpsError(
+          "not-found",
+          "No se encontró la acción solicitada.",
+        );
     }
   } catch (error) {
     console.error(`Error al ejecutar la acción '${action}':`, error);
