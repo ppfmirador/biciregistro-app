@@ -165,19 +165,24 @@ const userProfileFromDoc = (docSnap: DocumentSnapshot): UserProfile => {
     } as UserProfile;
 };
 
+
+// Helper function to call the consolidated API
+const callApi = async <T = any, R = any>(action: string, data?: T): Promise<R> => {
+    const functions = getFunctions(app, "us-central1");
+    const apiCallable = httpsCallable<any, any>(functions, "api");
+    try {
+        const result = await apiCallable({ action, data });
+        return result.data as R;
+    } catch (error) {
+        console.error(`Error calling API action '${action}':`, error);
+        // Re-throw to be handled by the calling function
+        throw error;
+    }
+};
+
+
 export const getBikeBySerialNumber = async (serialNumber: string): Promise<Bike | null> => {
-  const functions = getFunctions(app, "us-central1");
-  const getPublicBikeBySerialCallable = httpsCallable<
-    { serialNumber: string },
-    Bike | null
-  >(functions, "getPublicBikeBySerial");
-  try {
-      const result = await getPublicBikeBySerialCallable({ serialNumber });
-      return result.data;
-  } catch (error) {
-      console.error("Error calling getPublicBikeBySerial function:", error);
-      return null;
-  }
+  return callApi<any, Bike | null>('getPublicBikeBySerial', { serialNumber });
 };
 
 export const getBikeById = async (bikeId: string): Promise<Bike | null> => {
@@ -205,16 +210,10 @@ export const getBikeById = async (bikeId: string): Promise<Bike | null> => {
 };
 
 export const getMyBikes = async (): Promise<Bike[]> => {
-    const functions = getFunctions(app, 'us-central1');
-    const getMyBikesCallable = httpsCallable<void, { bikes: Bike[] }>(functions, 'getMyBikes');
-    try {
-        const result = await getMyBikesCallable();
-        return result.data.bikes;
-    } catch (error: unknown) {
-        console.error("Error calling getMyBikes function:", error);
-        throw error;
-    }
+    const { bikes } = await callApi<void, { bikes: Bike[] }>('getMyBikes');
+    return bikes;
 };
+
 
 /**
  * Adds a new bike document to Firestore. This function is called by a server action
@@ -357,45 +356,16 @@ export const addBike = async (
     ownershipDocumentName: string | null;
   }
 ): Promise<{ bikeId: string }> => {
-  const functions = getFunctions(app, 'us-central1');
-  const createBikeCallable = httpsCallable<{ bikeData: unknown }, { bikeId: string }>(functions, 'createBike');
-
-  try {
-    const result = await createBikeCallable({ bikeData });
-    return result.data;
-  } catch (error: unknown) {
-    const err = error as Error & { details?: { message?: string } };
-    console.error("Error calling createBike function:", err);
-    // Rethrow with a more specific message if available
-    if (err.details && err.details.message) {
-      throw new Error(err.details.message);
-    }
-    throw new Error(err.message || "No se pudo crear la bicicleta.");
-  }
+    return callApi('createBike', { bikeData });
 };
 
 export const markBikeRecovered = async (bikeId: string): Promise<void> => {
-  const functions = getFunctions(app, 'us-central1');
-  const markBikeRecoveredCallable = httpsCallable<{ bikeId: string }, { success: boolean }>(functions, 'markBikeRecovered');
-  try {
-    await markBikeRecoveredCallable({ bikeId });
-  } catch (error: unknown) {
-    const err = error as Error;
-    console.error("Error calling markBikeRecovered function:", err);
-    throw new Error(err.message || "Could not mark bike as recovered.");
-  }
+    await callApi('markBikeRecovered', { bikeId });
 };
 
 export const getUserTransferRequests = async (): Promise<TransferRequest[]> => {
-    const functions = getFunctions(app, 'us-central1');
-    const getUserTransferRequestsCallable = httpsCallable<void, { requests: TransferRequest[] }>(functions, 'getUserTransferRequests');
-    try {
-        const result = await getUserTransferRequestsCallable();
-        return result.data.requests;
-    } catch (error: unknown) {
-        console.error("Error calling getUserTransferRequests function:", error);
-        throw error;
-    }
+    const { requests } = await callApi<void, { requests: TransferRequest[] }>('getUserTransferRequests');
+    return requests;
 };
 
 export const getUserDoc = async (uid: string): Promise<UserProfileData | null> => {
@@ -514,9 +484,7 @@ export const getAllNgos = async (): Promise<(UserProfileData & {id: string})[]> 
 
 
 export const updateUserRoleByAdmin = async (uid: string, role: UserRole): Promise<void> => {
-  const userRef = doc(db, 'users', uid);
-  const isAdmin = role === 'admin';
-  await updateDoc(userRef, { role: role, isAdmin: isAdmin });
+    await callApi('updateUserRole', { uid, role });
 };
 
 type AccountData = BikeShopAdminFormValues | NgoAdminFormValues | NewCustomerDataForShop;
@@ -529,21 +497,7 @@ export const createAccountByAdmin = async (
   role: 'bikeshop' | 'ngo' | 'cyclist',
   creatorId: string
 ): Promise<{ uid: string }> => {
-  const functions = getFunctions(app, 'us-central1');
-  const createAccountCallable = httpsCallable<{
-    accountData: AccountData;
-    role: 'bikeshop' | 'ngo' | 'cyclist';
-    creatorId: string;
-  }, { uid: string }>(functions, 'createAccount');
-
-  try {
-    const result = await createAccountCallable({ accountData, role, creatorId });
-    return result.data;
-  } catch (error) {
-    console.error(`Error calling createAccount function for role ${role}:`, error);
-    // The callable function should throw an HttpsError with a specific message.
-    throw error;
-  }
+    return callApi('createAccount', { accountData, role, creatorId });
 };
 
 
@@ -811,31 +765,7 @@ export const createOrUpdateRide = async (
     organizerProfile: UserProfile,
     rideId?: string,
 ): Promise<string> => {
-    const dataToSave: { [key: string]: unknown } = {
-        ...rideData,
-        rideDate: Timestamp.fromDate(rideData.rideDate),
-        updatedAt: serverTimestamp(),
-    };
-
-    if (rideId) { 
-        const rideRef = doc(db, 'bikeRides', rideId);
-        const rideSnap = await getDoc(rideRef);
-        if (!rideSnap.exists() || rideSnap.data().organizerId !== organizerProfile.uid) {
-            throw new Error("No tienes permiso para editar este evento.");
-        }
-        await updateDoc(rideRef, dataToSave);
-        return rideId;
-    } else { 
-        const newRide = {
-            ...dataToSave,
-            organizerId: organizerProfile.uid,
-            organizerName: organizerProfile.shopName || organizerProfile.ngoName || 'Organizador',
-            organizerLogoUrl: '',
-            createdAt: serverTimestamp(),
-        };
-        const docRef = await addDoc(collection(db, 'bikeRides'), newRide);
-        return docRef.id;
-    }
+    return callApi('createOrUpdateRide', { rideData, rideId });
 };
 
 export const deleteRide = async (rideId: string, currentOrganizerId: string): Promise<void> => {
