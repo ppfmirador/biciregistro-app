@@ -370,7 +370,7 @@ export const reportBikeStolen = onCall(callOptions, async (req) => {
 
   try {
     const bikeDoc = await bikeRef.get();
-    if (!bikeDoc.exists || bikeDoc.data()?.ownerId !== uid) {
+    if (!bikeDoc.exists() || bikeDoc.data()?.ownerId !== uid) {
       throw new HttpsError(
         "permission-denied",
         "You do not own this bike or it does not exist.",
@@ -434,7 +434,7 @@ export const markBikeRecovered = onCall(callOptions, async (req) => {
   const bikeRef = admin.firestore().collection("bikes").doc(bikeId);
   try {
     const bikeDoc = await bikeRef.get();
-    if (!bikeDoc.exists || bikeDoc.data()?.ownerId !== uid) {
+    if (!bikeDoc.exists() || bikeDoc.data()?.ownerId !== uid) {
       throw new HttpsError("permission-denied", "You do not own this bike.");
     }
     if (bikeDoc.data()?.status !== "Robada") {
@@ -497,7 +497,7 @@ export const initiateTransferRequest = onCall(callOptions, async (req) => {
   const bikeRef = admin.firestore().collection("bikes").doc(bikeId);
   try {
     const bikeDoc = await bikeRef.get();
-    if (!bikeDoc.exists || bikeDoc.data()?.ownerId !== uid) {
+    if (!bikeDoc.exists() || bikeDoc.data()?.ownerId !== uid) {
       throw new HttpsError("permission-denied", "You do not own this bike.");
     }
     if (bikeDoc.data()?.status !== "En Regla") {
@@ -581,7 +581,7 @@ export const respondToTransferRequest = onCall(callOptions, async (req) => {
   try {
     return await admin.firestore().runTransaction(async (transaction) => {
       const requestDoc = await transaction.get(requestRef);
-      if (!requestDoc.exists) {
+      if (!requestDoc.exists()) {
         throw new HttpsError("not-found", "Transfer request not found.");
       }
 
@@ -627,7 +627,7 @@ export const respondToTransferRequest = onCall(callOptions, async (req) => {
           .doc(requestData.bikeId);
         const bikeDoc = await transaction.get(bikeRef);
         if (
-          !bikeDoc.exists ||
+          !bikeDoc.exists() ||
           bikeDoc.data()?.ownerId !== requestData.fromOwnerId
         ) {
           throw new HttpsError(
@@ -641,7 +641,7 @@ export const respondToTransferRequest = onCall(callOptions, async (req) => {
           .collection("users")
           .doc(uid)
           .get();
-        if (!newOwnerDoc.exists) {
+        if (!newOwnerDoc.exists()) {
           throw new HttpsError(
             "not-found",
             "The recipient user profile does not exist.",
@@ -991,7 +991,7 @@ export const createOrUpdateRide = onCall(callOptions, async (req) => {
       .collection("users")
       .doc(organizerId)
       .get();
-    if (!organizerDoc.exists) {
+    if (!organizerDoc.exists()) {
       throw new HttpsError("not-found", "Organizer profile not found.");
     }
     const organizerProfile = organizerDoc.data();
@@ -1022,7 +1022,7 @@ export const createOrUpdateRide = onCall(callOptions, async (req) => {
       // Update existing ride
       const rideRef = admin.firestore().collection("bikeRides").doc(rideId);
       const rideSnap = await rideRef.get();
-      if (!rideSnap.exists || rideSnap.data()?.organizerId !== organizerId) {
+      if (!rideSnap.exists() || rideSnap.data()?.organizerId !== organizerId) {
         throw new HttpsError(
           "permission-denied",
           "You do not have permission to edit this ride.",
