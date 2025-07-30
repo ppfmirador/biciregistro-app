@@ -544,4 +544,4 @@ const TransferRequestsSection: React.FC<TransferRequestsSectionProps> = ({ title
       </CardContent>
     </Card>
   );
-}
+};
