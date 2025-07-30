@@ -1,59 +1,91 @@
+
 rules_version = '2';
 
 service cloud.firestore {
   match /databases/{database}/documents {
+
+    // Helper functions
+    function isAuth() {
+      return request.auth != null;
+    }
+
+    function isAdmin() {
+      return request.auth.token.admin == true;
+    }
+
+    function isOwner(userId) {
+      return request.auth.uid == userId;
+    }
     
-    // By default, deny all reads and writes
+    function isRole(role) {
+      return request.auth.token.role == role;
+    }
+    
+    function isBikeShopOrNgo() {
+        return isRole('bikeshop') || isRole('ngo');
+    }
+
+    // Default deny all
     match /{document=**} {
       allow read, write: if false;
     }
 
-    // --- Publicly Readable Collections ---
+    // --- Collections ---
 
-    // Homepage content is readable by anyone, writable only by admins.
-    match /homepage_content/{docId} {
-      allow read: if true;
-      allow write: if request.auth.token.admin == true;
+    // USERS: 
+    // - A user can read/update their own profile.
+    // - Admins can read/write/delete any user.
+    // - Any authenticated user can create a profile (signup).
+    match /users/{userId} {
+      allow get, update: if isOwner(userId);
+      allow create: if isAuth();
+
+      // Temporarily allow any authenticated user to LIST users to assign the first admin.
+      // This should be changed back to isAdmin() after setup.
+      allow list: if isAuth(); 
+      
+      // Full admin access
+      allow get, create, update, delete: if isAdmin();
     }
 
-    // Public bike rides are readable by anyone.
-    match /bikeRides/{rideId} {
-      allow read: if true;
-      allow create: if request.auth != null && (get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role == 'bikeshop' || get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role == 'ngo');
-      allow update, delete: if request.auth != null && (resource.data.organizerId == request.auth.uid || request.auth.token.admin == true);
+    // BIKES:
+    // - Public read for search.
+    // - Authenticated users can create.
+    // - Only owner or admin can update/delete.
+    match /bikes/{bikeId} {
+      allow get: if true;
+      allow create: if isAuth();
+      allow update, delete: if isOwner(resource.data.ownerId) || isAdmin();
     }
     
-    // --- User-Specific Collections ---
-
-    // Users can only read and update their own profile. Admins can do anything.
-    match /users/{userId} {
-      allow read, update: if request.auth.uid == userId || request.auth.token.admin == true;
-      allow create: if request.auth != null; // Anyone can create their own account via signup
-      allow delete: if request.auth.token.admin == true;
-    }
-
-    // --- Core App Logic Collections ---
-
-    // Bikes can be read by anyone (public search).
-    // Write access is restricted.
-    match /bikes/{bikeId} {
-      allow read: if true;
-      allow create: if request.auth != null;
-      allow update, delete: if request.auth.uid == resource.data.ownerId || request.auth.token.admin == true;
-    }
-
-    // Transfer requests have specific access controls.
+    // TRANSFER REQUESTS:
+    // - Owner can create.
+    // - Involved parties (from/to) or admin can read.
+    // - Only recipient can accept/reject a pending request.
+    // - Only sender can cancel a pending request.
     match /transferRequests/{requestId} {
-      allow read: if request.auth != null && 
-                     (request.auth.uid == resource.data.fromOwnerId || 
-                      request.auth.token.email == resource.data.toUserEmail || 
-                      request.auth.token.admin == true);
-      allow create: if request.auth != null && request.auth.uid == request.resource.data.fromOwnerId;
-      allow update: if request.auth != null && 
-                     (request.auth.uid == resource.data.fromOwnerId || 
-                      request.auth.token.email == resource.data.toUserEmail);
-      // No one can delete transfer requests for historical purposes, maybe only admins if needed.
-      allow delete: if false; 
+      allow create: if isOwner(request.resource.data.fromOwnerId);
+      allow get: if isOwner(resource.data.fromOwnerId) || request.auth.token.email == resource.data.toUserEmail || isAdmin();
+      allow update: if ( (isOwner(resource.data.fromOwnerId) && request.resource.data.status == 'cancelled') || 
+                         (request.auth.token.email == resource.data.toUserEmail && (request.resource.data.status == 'accepted' || request.resource.data.status == 'rejected')) 
+                       ) && resource.data.status == 'pending';
+    }
+
+    // HOMEPAGE CONTENT:
+    // - Public read.
+    // - Admin write only.
+    match /homepage_content/config {
+        allow get: if true;
+        allow write: if isAdmin();
+    }
+
+    // BIKE RIDES (EVENTS):
+    // - Public read.
+    // - Create/Update/Delete only by organizer (bikeshop/ngo) or admin.
+    match /bikeRides/{rideId} {
+        allow get: if true;
+        allow create: if isBikeShopOrNgo();
+        allow update, delete: if (isBikeShopOrNgo() && isOwner(resource.data.organizerId)) || isAdmin();
     }
   }
 }
