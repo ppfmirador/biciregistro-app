@@ -1,3 +1,4 @@
+
 // functions/src/index.ts
 import { onCall, HttpsError } from "firebase-functions/v2/https";
 import * as admin from "firebase-admin";
@@ -40,6 +41,22 @@ const callOptions = {
 // --- Action Handlers (Internal Logic) ---
 const toISO = (timestamp: admin.firestore.Timestamp | undefined): string | undefined => {
   return timestamp ? timestamp.toDate().toISOString() : undefined;
+};
+
+const handleUpdateUserRole = async (data: any, context: any) => {
+    // IMPORTANT: Security check is now permanently restored.
+    if (context.auth?.token.admin !== true) {
+        throw new HttpsError("permission-denied", "Only admins can modify user roles.");
+    }
+    const { uid, role } = data as { uid: string; role: UserRole };
+    if (!uid || !role) {
+        throw new HttpsError("invalid-argument", "The function must be called with a 'uid' and 'role'.");
+    }
+    const isAdmin = role === "admin";
+    await admin.auth().setCustomUserClaims(uid, { admin: isAdmin, role });
+    const userRef = admin.firestore().collection("users").doc(uid);
+    await userRef.set({ role, isAdmin }, { merge: true });
+    return { message: `Success! User ${uid} has been made a(n) ${role}.` };
 };
 
 

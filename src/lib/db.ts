@@ -1,3 +1,4 @@
+
 import { db, app } from './firebase';
 import {
   collection,
@@ -27,7 +28,7 @@ import {
 import { getFunctions, httpsCallable } from 'firebase/functions';
 import type {
   Bike, BikeStatus, BikeType, TransferRequest,
-  NewCustomerDataForShop, ShopAnalyticsData, NgoAnalyticsData, BikeRide
+  NewCustomerDataForShop, ShopAnalyticsData, NgoAnalyticsData, BikeRide, ReportTheftDialogData
 } from './types';
 import type { UserProfileData, UserProfile, UserRole } from '@/lib/types';
 import type { BikeShopAdminFormValues, NgoAdminFormValues, BikeRideFormValues } from './schemas';
@@ -238,7 +239,7 @@ export const addBikeToFirestore = async (
       initialStatusNotes
   };
 
-  const { bikeId } = await callApi('createBike', { bikeData: bikePayload });
+  const { bikeId } = await callApi('createBike', { data: { bikeData: bikePayload } });
   return bikeId;
 };
 
@@ -251,10 +252,6 @@ export const updateBike = async (bikeId: string, updates: Partial<Omit<Bike, 'id
     return null;
   }
   return bikeFromDoc(updatedBikeSnap);
-};
-
-export const addBike = async (bikeData: any): Promise<{ bikeId: string }> => {
-    return callApi('createBike', { bikeData });
 };
 
 export const markBikeRecovered = async (bikeId: string): Promise<void> => {
@@ -344,7 +341,7 @@ export const getAllNgos = async (): Promise<(UserProfileData & {id: string})[]> 
 
 
 export const updateUserRoleByAdmin = async (uid: string, role: UserRole): Promise<void> => {
-    await callApi('updateUserRole', { uid, role });
+    await callApi('updateUserRole', { data: { uid, role }});
 };
 
 type AccountData = BikeShopAdminFormValues | NgoAdminFormValues | NewCustomerDataForShop;
@@ -354,7 +351,7 @@ export const createAccountByAdmin = async (
   role: 'bikeshop' | 'ngo' | 'cyclist',
   creatorId: string
 ): Promise<{ uid: string }> => {
-    return callApi('createAccount', { accountData, role, creatorId });
+    return callApi('createAccount', { data: { accountData, role, creatorId } });
 };
 
 
@@ -427,7 +424,7 @@ export const getRideById = async (rideId: string): Promise<BikeRide | null> => {
 };
 
 export const createOrUpdateRide = async (rideData: BikeRideFormValues, organizerProfile: UserProfile, rideId?: string): Promise<string> => {
-    const { rideId: newRideId } = await callApi('createOrUpdateRide', { rideData, rideId });
+    const { rideId: newRideId } = await callApi('createOrUpdateRide', { data: { rideData, rideId } });
     return newRideId;
 };
 
@@ -461,4 +458,17 @@ export const getShopRegisteredBikes = async (shopId: string, searchTerm?: string
   const q = query(bikesRef, ...constraints);
   const querySnapshot = await getDocs(q);
   return querySnapshot.docs.map(bikeFromDoc);
+};
+
+export const reportBikeTheft = async (bikeId: string, theftData: ReportTheftDialogData): Promise<void> => {
+    await callApi('reportBikeStolen', { data: { bikeId, theftData }});
+};
+
+export const initiateTransfer = async (
+    bikeId: string, 
+    recipientEmail: string, 
+    transferDocumentUrl?: string | null,
+    transferDocumentName?: string | null
+): Promise<void> => {
+    await callApi('initiateTransferRequest', { data: { bikeId, recipientEmail, transferDocumentUrl, transferDocumentName }});
 };

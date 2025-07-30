@@ -3,7 +3,7 @@
   "name": "functions",
   "scripts": {
     "lint": "eslint --ext .js,.ts .",
-    "build": "tsc && cp src/cors.json lib/",
+    "build": "rm -rf lib/ && tsc && cp src/cors.json lib/",
     "build:watch": "tsc --watch",
     "serve": "npm run build && firebase emulators:start --only functions",
     "shell": "npm run build && firebase functions:shell",
