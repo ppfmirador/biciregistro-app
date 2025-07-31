@@ -14,15 +14,16 @@ const Footer = () => {
   return (
     <footer className="bg-card shadow-md py-6 mt-auto">
       <div className="container mx-auto px-4 text-center text-muted-foreground">
-        <p>
-          &copy;{" "}
+        {/* Changed <p> to <div> to prevent nesting block-level elements */}
+        <div className="inline-block">
+          <span>&copy; </span>
           {currentYear ? (
-            currentYear
+            <span className="font-semibold">{currentYear}</span>
           ) : (
             <Skeleton className="h-4 w-10 inline-block" />
-          )}{" "}
-          BiciRegistro. Todos los derechos reservados.
-        </p>
+          )}
+          <span> BiciRegistro. Todos los derechos reservados.</span>
+        </div>
       </div>
     </footer>
   );
