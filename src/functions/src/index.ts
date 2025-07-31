@@ -26,8 +26,7 @@ const allowedOrigins = [
   "https://www.biciregistro.mx",
   "https://bike-guardian-hbbg6.firebaseapp.com",
   "https://bike-guardian-staging.web.app",
-  // Allow all Cloud Workstations subdomains
-  /^https:\/\/.*\.cloudworkstations\.dev$/,
+  "https://6000-firebase-studio-1749165459191.cluster-joak5ukfbnbyqspg4tewa33d24.cloudworkstations.dev",
   "http://localhost:3000",
 ];
 
@@ -59,10 +58,12 @@ const handleUpdateUserRole = async (
   data: { uid: string; role: UserRole },
   context: AuthContext,
 ) => {
-  // IMPORTANT: Temporarily commented out for first admin creation.
-  // if (context?.token.admin !== true) {
-  //     throw new HttpsError("permission-denied", "Only admins can modify user roles.");
-  // }
+  if (context?.token.admin !== true) {
+    throw new HttpsError(
+      "permission-denied",
+      "Only admins can modify user roles.",
+    );
+  }
   const { uid, role } = data;
   if (!uid || !role) {
     throw new HttpsError(
@@ -794,7 +795,10 @@ export const api = onCall(
             context,
           );
         case "markBikeRecovered":
-          return await handleMarkBikeRecovered(data as { bikeId: string }, context);
+          return await handleMarkBikeRecovered(
+            data as { bikeId: string },
+            context,
+          );
         case "initiateTransferRequest":
           return await handleInitiateTransferRequest(
             data as {
@@ -823,7 +827,10 @@ export const api = onCall(
         case "deleteUserAccount":
           return await handleDeleteUserAccount(data as { uid: string }, context);
         case "updateHomepageContent":
-          return await handleUpdateHomepageContent(data as DocumentData, context);
+          return await handleUpdateHomepageContent(
+            data as DocumentData,
+            context,
+          );
         case "getHomepageContent":
           return await handleGetHomepageContent();
         case "createAccount":

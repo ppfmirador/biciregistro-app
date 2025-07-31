@@ -6,14 +6,15 @@ import { app } from './firebase';
 import type { HomepageContent } from './types';
 
 /**
- * Fetches homepage content by calling the `getHomepageContent` Cloud Function.
+ * Fetches homepage content by calling the consolidated `api` Cloud Function.
  * This is intended for use in client components.
  */
 export const getHomepageContent = async (): Promise<HomepageContent | null> => {
     try {
         const functions = getFunctions(app, 'us-central1');
-        const getHomepageContentCallable = httpsCallable<void, HomepageContent>(functions, 'getHomepageContent');
-        const result = await getHomepageContentCallable();
+        // Point to the consolidated 'api' function and specify the action
+        const apiCallable = httpsCallable<any, HomepageContent>(functions, 'api');
+        const result = await apiCallable({ action: 'getHomepageContent' });
         return result.data;
     } catch (error) {
         // Errors from the callable function will be caught here.

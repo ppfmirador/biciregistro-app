@@ -221,17 +221,12 @@ interface AdminUser extends UserProfileData {
 type BikeShopWithId = UserProfileData & { id: string };
 type NgoWithId = UserProfileData & { id: string };
 
-interface UpdateUserRoleData {
-  uid: string;
-  role: UserRole;
+interface ApiRequest<T> {
+  action: string;
+  data: T;
 }
-interface UpdateUserRoleResult {
-  message: string;
-}
-interface DeleteUserAccountData {
-  uid: string;
-}
-interface DeleteUserAccountResult {
+
+interface ApiResult {
   message: string;
 }
 
@@ -531,11 +526,12 @@ export default function AdminPage() {
       };
 
       const functionsInstance = getFunctions(app, "us-central1");
-      const updateContentCallable = httpsCallable(
-        functionsInstance,
-        "updateHomepageContent",
-      );
-      await updateContentCallable(homepageDataToSave);
+      const apiCallable = httpsCallable<ApiRequest<unknown>, ApiResult>(functionsInstance, "api");
+      await apiCallable({
+        action: 'updateHomepageContent',
+        data: homepageDataToSave,
+      });
+
 
       toast({
         title: "¡Contenido Actualizado!",
@@ -579,12 +575,15 @@ export default function AdminPage() {
     setIsLoading(true);
     try {
       const functionsInstance = getFunctions(app, "us-central1");
-      const updateUserRoleCallable: HttpsCallable<
-        UpdateUserRoleData,
-        UpdateUserRoleResult
-      > = httpsCallable(functionsInstance, "updateUserRole");
+      const apiCallable: HttpsCallable<
+        ApiRequest<{ uid: string; role: UserRole }>,
+        ApiResult
+      > = httpsCallable(functionsInstance, "api");
 
-      const result = await updateUserRoleCallable({ uid, role });
+      const result = await apiCallable({
+        action: 'updateUserRole',
+        data: { uid, role },
+      });
 
       toast({ title: "Rol Actualizado", description: result.data.message });
 
@@ -612,12 +611,15 @@ export default function AdminPage() {
     setIsLoading(true);
     try {
       const functionsInstance = getFunctions(app, "us-central1");
-      const deleteUserAccountCallable: HttpsCallable<
-        DeleteUserAccountData,
-        DeleteUserAccountResult
-      > = httpsCallable(functionsInstance, "deleteUserAccount");
+      const apiCallable: HttpsCallable<
+        ApiRequest<{ uid: string }>,
+        ApiResult
+      > = httpsCallable(functionsInstance, "api");
 
-      const result = await deleteUserAccountCallable({ uid: userToDelete.id });
+      const result = await apiCallable({
+        action: 'deleteUserAccount',
+        data: { uid: userToDelete.id }
+      });
 
       toast({ title: "Usuario Eliminado", description: result.data.message });
       await fetchAdminPageData();
