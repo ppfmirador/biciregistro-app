@@ -1,4 +1,3 @@
-
 // functions/src/index.ts
 import {
   onCall,
@@ -70,11 +69,25 @@ const handleUpdateUserRole = async (data: { uid: string; role: UserRole }) => {
       "The function must be called with a 'uid' and 'role'.",
     );
   }
+
+  // Robust UID handling as per architect's recommendation
+  let targetUid = uid;
+  if (uid.includes('@')) { // Basic check if it's an email
+    try {
+      const userRecord = await admin.auth().getUserByEmail(uid);
+      targetUid = userRecord.uid;
+    } catch (error) {
+      console.error(`Error looking up user by email ${uid}:`, error);
+      throw new HttpsError('not-found', `User with email ${uid} not found.`);
+    }
+  }
+
+
   const isAdmin = role === "admin";
-  await admin.auth().setCustomUserClaims(uid, { admin: isAdmin, role });
-  const userRef = admin.firestore().collection("users").doc(uid);
+  await admin.auth().setCustomUserClaims(targetUid, { admin: isAdmin, role });
+  const userRef = admin.firestore().collection("users").doc(targetUid);
   await userRef.set({ role, isAdmin }, { merge: true });
-  return { message: `Success! User ${uid} has been made a(n) ${role}.` };
+  return { message: `Success! User ${targetUid} has been made a(n) ${role}.` };
 };
 
 const handleCreateBike = async (
@@ -769,8 +782,6 @@ const handleCreateOrUpdateRide = async (
 export const api = onCall(
   callOptions,
   async (req: CallableRequest<ActionRequest<unknown>>) => {
-    // This log forces Firebase to detect a change on every deploy.
-    console.log("Iniciando función API v2...");
     const { action, data } = req.data;
     const context = req.auth;
 
@@ -870,5 +881,3 @@ export const api = onCall(
     }
   },
 );
-
-    
