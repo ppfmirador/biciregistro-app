@@ -26,8 +26,8 @@ const allowedOrigins = [
   "https://www.biciregistro.mx",
   "https://bike-guardian-hbbg6.firebaseapp.com",
   "https://bike-guardian-staging.web.app",
-  "http://localhost:3000",
   "https://6000-firebase-studio-1749165459191.cluster-joak5ukfbnbyqspg4tewa33d24.cloudworkstations.dev",
+  "http://localhost:3000",
 ];
 
 setGlobalOptions({
@@ -57,7 +57,7 @@ const toISO = (
 
 const handleUpdateUserRole = async (
   data: { uid: string; role: UserRole },
-  context: AuthContext,
+  _context: AuthContext,
 ) => {
   // if (context?.token.admin !== true) {
   //   throw new HttpsError(
@@ -607,10 +607,7 @@ const handleUpdateHomepageContent = async (
   };
 };
 
-const handleGetHomepageContent = async (
-  _data: unknown,
-  _context: AuthContext,
-) => {
+const handleGetHomepageContent = async () => {
   const contentRef = admin
     .firestore()
     .collection("homepage_content")
@@ -774,6 +771,8 @@ const handleCreateOrUpdateRide = async (
 export const api = onCall(
   callOptions,
   async (req: CallableRequest<ActionRequest<unknown>>) => {
+    // This log forces Firebase to detect a change on every deploy.
+    console.log("Iniciando función API v2...");
     const { action, data } = req.data;
     const context = req.auth;
 
@@ -829,14 +828,17 @@ export const api = onCall(
             context,
           );
         case "deleteUserAccount":
-          return await handleDeleteUserAccount(data as { uid: string }, context);
+          return await handleDeleteUserAccount(
+            data as { uid: string },
+            context,
+          );
         case "updateHomepageContent":
           return await handleUpdateHomepageContent(
             data as DocumentData,
             context,
           );
         case "getHomepageContent":
-          return await handleGetHomepageContent(data, context);
+          return await handleGetHomepageContent();
         case "createAccount":
           return await handleCreateAccount(
             data as {
