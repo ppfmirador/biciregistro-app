@@ -11,7 +11,8 @@
     "format": "prettier --write .",
     "format:check": "prettier --check .",
     "validate": "npm run format:check && npm run lint && npm run typecheck",
-    "e2e": "playwright test",
+    "test": "playwright test",
+    "test:ui": "npx playwright test --ui",
     "deploy:staging": "npx dotenv-cli -e .env.staging.local -- next build && firebase deploy -P staging --only functions,firestore,storage,hosting",
     "deploy:prod": "next build && firebase deploy -P default --only functions,firestore,storage,hosting"
   },

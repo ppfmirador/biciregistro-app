@@ -28,7 +28,7 @@ A modern platform for bicycle registration and community-based theft prevention.
 
 - **Framework:** [Next.js 14](https://nextjs.org/) (App Router)
 - **UI:** [React](https://react.dev/), [ShadCN UI](https://ui.shadcn.com/), [Tailwind CSS](https://tailwindcss.com/)
-- **Backend:** [Firebase Cloud Functions v2](https://firebase.google.com/docs/functions) (Callable Functions)
+- **Backend:** [Firebase Cloud Functions v2](https://firebase.google.com/docs/functions) (Callable & HTTP Functions)
 - **Database:** [Cloud Firestore](https://firebase.google.com/docs/firestore) (NoSQL)
 - **Storage:** [Firebase Cloud Storage](https://firebase.google.com/docs/storage) for images and documents.
 - **Authentication:** [Firebase Authentication](https://firebase.google.com/docs/auth) (Email/Password, Google)
@@ -49,7 +49,7 @@ This diagram explains the high-level interaction between the system components.
         v
 +-------+----------------+      +------------------+
 | Firebase Cloud Functions |<---->|    Firestore     |
-|    (v2 Callable)       |      | (Database)       |
+|    (v2 Callable/HTTP)    |      | (Database)       |
 +------------------------+      +------------------+
         |
         v
@@ -76,7 +76,7 @@ This diagram explains the high-level interaction between the system components.
 | 11  | **QR Code Management**   | Cyclist (Owner)        | Generate and download a QR code that links to the bike's public verification page.                                                                       | `src/app/bike/[serialNumber]/qr/page.tsx`, `src/components/bike/QrCodeDisplay.tsx`                                              |
 | 12  | **File Uploads**         | All (where applicable) | Securely upload images (JPG, PNG) and documents (PDF) to Firebase Storage.                                                                               | `src/lib/storage.ts`                                                                                                            |
 | 13  | **Referral System**      | Cyclist, NGO           | Users can invite others via a unique referral link (`?ref=...`). NGO dashboards provide easy access to this.                                             | `src/context/AuthContext.tsx` (signUp), `lib/db.ts` (incrementReferralCount)                                                    |
-| 14  | **First Admin Creation** | Manual (initial setup) | A one-time callable function to elevate the first user to an admin role.                                                                                 | `functions/src/index.ts` (updateUserRole)                                                                                       |
+| 14  | **First Admin Creation** | Manual (initial setup) | A one-time **HTTP** function to elevate the first user to an admin role via a `gcloud` command.                                                            | `functions/src/setAdmin.ts` (`setAdminHttp`)                                                                                       |
 | 15  | **Org Account Creation** | Admin                  | Admins can create Bike Shop or NGO accounts via a centralized function (`createAccount`).                                                                | `src/app/admin/page.tsx`, `functions/src/index.ts` (createAccount)                                                              |
 
 ## Permissions Matrix
@@ -113,6 +113,7 @@ Follow these steps to get the project running locally.
 - [Node.js](https://nodejs.org/) (v20 or higher)
 - [npm](https://www.npmjs.com/) (comes with Node.js)
 - [Firebase CLI](https://firebase.google.com/docs/cli#install_the_firebase_cli) (v13.0.0 or higher)
+- [gcloud CLI](https://cloud.google.com/sdk/docs/install) (for initial admin setup)
 
 **1. Clone the Repository**
 
@@ -145,13 +146,20 @@ _Note: This command also installs dependencies for the `functions` directory._
 - **Set up your environment variables:** Create a file named `.env.local` in the **root** of the project. Copy the contents of `.env.example` into it and fill in your Firebase project's web configuration. See the **Environment Configuration** section below for details on each variable.
 
 **4. Create the First Admin User (One-Time Setup)**
-To manage the platform, you need an administrator account. This is done through the app's Admin Panel.
+To manage the platform, you need an administrator account. This is a manual, one-time process using a secure HTTP Cloud Function.
 
-- **Deploy the project:** `npm run deploy:staging` or `npm run deploy:prod`.
-- **Create the user:** Register a new user account through the app's signup form. This user will be the first administrator.
-- **Navigate to the Admin Panel:** Log in as the user you just created and go to `/admin`.
-- **Assign Admin Role:** In the user management section, find your user and change their role to "Admin". You may need to log out and log back in for the changes to take effect.
-- **IMPORTANT:** Ensure that your Firestore security rules are configured to only allow existing admins to modify user roles.
+- **Create the User in the App:** Register a new user account through the app's standard signup form. This user will become the first administrator. **Use a real email address you control.**
+- **Deploy the Project:** Deploy all services to your staging or production environment. This will create the necessary `setAdminHttp` function.
+  ```bash
+  # Example for staging
+  npm run deploy:staging
+  ```
+- **Set the Admin Role via gcloud:** Open a terminal where you have the `gcloud` CLI authenticated to the same Google Cloud project as your Firebase project. Run the following command, replacing `<YOUR_EMAIL>` with the email you just registered.
+  ```bash
+  gcloud functions call setAdminHttp --region=us-central1 --data '{"data": {"email": "<YOUR_EMAIL>"}}'
+  ```
+- **Verification:** You should see a success message. Log in to the app with that user account. You should now have access to the `/admin` panel in the navigation bar.
+- **IMPORTANT:** Once the first admin is created, consider deleting or securing the `setAdminHttp` function to prevent misuse.
 
 **5. Run the Development Server**
 
@@ -186,11 +194,11 @@ This project uses [Playwright](https://playwright.dev/) for end-to-end (E2E) tes
 
 - **Run all E2E tests:**
   ```bash
-  npm run e2e
+  npm test
   ```
 - **Run E2E tests in UI mode:**
   ```bash
-  npx playwright test --ui
+  npm run test:ui
   ```
 - **Linting & Type Checking:**
 
