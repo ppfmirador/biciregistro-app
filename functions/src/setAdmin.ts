@@ -10,7 +10,7 @@ import * as admin from "firebase-admin";
  * @param response The HTTP response object.
  */
 export const setAdmin = onRequest(
-  { cors: true, allowAnonymous: true }, // Allow public access and CORS
+  { cors: true, invoker: "public" }, // Allow public access for this specific utility
   async (request, response) => {
     // Basic check to ensure it's a POST request for some level of protection
     if (request.method !== "POST") {
