@@ -55,10 +55,10 @@ const toISO = (
   return timestamp ? timestamp.toDate().toISOString() : undefined;
 };
 
-const handleUpdateUserRole = async (
-  data: { uid: string; role: UserRole },
-  _context: AuthContext,
-) => {
+const handleUpdateUserRole = async (data: {
+  uid: string;
+  role: UserRole;
+}) => {
   // if (context?.token.admin !== true) {
   //   throw new HttpsError(
   //     "permission-denied",
