@@ -24,7 +24,7 @@ export const setAdminHttp = onRequest(
       if (!email || typeof email !== "string") {
         throw new HttpsError(
           "invalid-argument",
-          'The function must be called with a JSON body like: { "data": { "email": "user@example.com" } }',
+          "The function must be called with a JSON body like: { \"data\": { \"email\": \"user@example.com\" } }",
         );
       }
 
