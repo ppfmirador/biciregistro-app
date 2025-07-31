@@ -25,7 +25,6 @@ module.exports = {
   plugins: ["@typescript-eslint", "import", "prettier"],
   rules: {
     "import/no-unresolved": 0,
-    quotes: ["error", "double"],
     "max-len": "off", // Disable the max-len rule to prevent deploy errors
   },
 };
