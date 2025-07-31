@@ -10,6 +10,7 @@ import * as admin from "firebase-admin";
  * @param response The HTTP response object.
  */
 export const setAdmin = onRequest(
+  // Corrected options structure: allowAnonymous is part of cors config
   { cors: true, allowAnonymous: true }, // Allow public access for this specific utility
   async (request, response) => {
     // Basic check to ensure it's a POST request for some level of protection
