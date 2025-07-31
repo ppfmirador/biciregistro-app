@@ -10,8 +10,7 @@ import * as admin from "firebase-admin";
  * @param response The HTTP response object.
  */
 export const setAdminHttp = onRequest(
-  // Correct options structure for a public HTTP function as per architect's feedback.
-  { cors: true, invoker: "public" },
+  { cors: true, invoker: "public" }, // Use invoker: 'public' for HTTP v2 functions
   async (request, response) => {
     // Basic check to ensure it's a POST request for some level of protection
     if (request.method !== "POST") {
