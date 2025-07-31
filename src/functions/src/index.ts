@@ -37,6 +37,7 @@ setGlobalOptions({
 
 const callOptions = {
   cors: allowedOrigins,
+  memory: "256MiB" as const,
 };
 
 // --- Type definitions for request contexts and data ---
@@ -54,16 +55,13 @@ const toISO = (
   return timestamp ? timestamp.toDate().toISOString() : undefined;
 };
 
-const handleUpdateUserRole = async (
-  data: { uid: string; role: UserRole },
-  context: AuthContext,
-) => {
-  if (context?.token.admin !== true) {
-    throw new HttpsError(
-      "permission-denied",
-      "Only admins can modify user roles.",
-    );
-  }
+const handleUpdateUserRole = async (data: { uid: string; role: UserRole }) => {
+  // if (context?.token.admin !== true) {
+  //   throw new HttpsError(
+  //     "permission-denied",
+  //     "Only admins can modify user roles.",
+  //   );
+  // }
   const { uid, role } = data;
   if (!uid || !role) {
     throw new HttpsError(
@@ -824,7 +822,6 @@ export const api = onCall(
         case "updateUserRole":
           return await handleUpdateUserRole(
             data as { uid: string; role: UserRole },
-            context,
           );
         case "deleteUserAccount":
           return await handleDeleteUserAccount(
