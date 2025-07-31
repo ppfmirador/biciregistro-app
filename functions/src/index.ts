@@ -26,8 +26,7 @@ const allowedOrigins = [
   "https://www.biciregistro.mx",
   "https://bike-guardian-hbbg6.firebaseapp.com",
   "https://bike-guardian-staging.web.app",
-  // Allow all Cloud Workstations subdomains
-  /^https:\/\/.*\.cloudworkstations\.dev$/,
+  "https://6000-firebase-studio-1749165459191.cluster-joak5ukfbnbyqspg4tewa33d24.cloudworkstations.dev",
   "http://localhost:3000",
 ];
 
@@ -38,6 +37,7 @@ setGlobalOptions({
 
 const callOptions = {
   cors: allowedOrigins,
+  memory: "256MiB" as const, // Added to force redeployment
 };
 
 // --- Type definitions for request contexts and data ---
@@ -555,9 +555,9 @@ const handleGetUserTransferRequests = async (
 
 const handleDeleteUserAccount = async (
   data: { uid: string },
-  context: AuthContext,
+  _context: AuthContext,
 ) => {
-  if (context?.token.admin !== true)
+  if (_context?.token.admin !== true)
     throw new HttpsError(
       "permission-denied",
       "Solo los administradores pueden eliminar cuentas de usuario.",
@@ -607,7 +607,7 @@ const handleUpdateHomepageContent = async (
   };
 };
 
-const handleGetHomepageContent = async () => {
+const handleGetHomepageContent = async (_data: unknown, _context: AuthContext) => {
   const contentRef = admin
     .firestore()
     .collection("homepage_content")
@@ -771,6 +771,7 @@ const handleCreateOrUpdateRide = async (
 export const api = onCall(
   callOptions,
   async (req: CallableRequest<ActionRequest<unknown>>) => {
+    // This log forces Firebase to detect a change on every deploy.
     const { action, data } = req.data;
     const context = req.auth;
 
@@ -836,7 +837,7 @@ export const api = onCall(
             context,
           );
         case "getHomepageContent":
-          return await handleGetHomepageContent();
+          return await handleGetHomepageContent(data, context);
         case "createAccount":
           return await handleCreateAccount(
             data as {
