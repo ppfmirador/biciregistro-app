@@ -13,6 +13,7 @@ import type {
   BikeShopAdminFormValues,
   NewCustomerDataForShop,
   NgoAdminFormValues,
+  TheftReportData,
   TransferRequest,
   UserProfileData,
   UserRole,
@@ -58,10 +59,12 @@ const handleUpdateUserRole = async (
   data: { uid: string; role: UserRole },
   context: AuthContext,
 ) => {
-  // IMPORTANT: Temporarily commented out for first admin creation.
-  // if (context?.token.admin !== true) {
-  //     throw new HttpsError("permission-denied", "Only admins can modify user roles.");
-  // }
+  if (context?.token.admin !== true) {
+    throw new HttpsError(
+      "permission-denied",
+      "Only admins can modify user roles.",
+    );
+  }
   const { uid, role } = data;
   if (!uid || !role) {
     throw new HttpsError(
@@ -128,10 +131,7 @@ const handleCreateBike = async (
     );
   }
 
-  const dataToSave: Omit<Bike, "id" | "registrationDate"> & {
-    registrationDate: admin.firestore.Timestamp;
-    statusHistory: admin.firestore.FieldValue;
-  } = {
+  const dataToSave = {
     serialNumber: bikeData.serialNumber.trim(),
     brand: bikeData.brand.trim(),
     model: bikeData.model.trim(),
@@ -142,19 +142,21 @@ const handleCreateBike = async (
     ownerWhatsappPhone: ownerData?.whatsappPhone ?? "",
     status: "En Regla",
     registrationDate: admin.firestore.Timestamp.now(),
-    statusHistory: admin.firestore.FieldValue.arrayUnion({
-      status: "En Regla",
-      timestamp: admin.firestore.Timestamp.now(),
-      notes: bikeData.registeredByShopId
-        ? `Registrada por tienda: ${ownerData?.shopName || "Tienda"}`
-        : "Registro inicial por ciclista",
-    }),
+    statusHistory: [
+      {
+        status: "En Regla",
+        timestamp: admin.firestore.Timestamp.now(),
+        notes: bikeData.registeredByShopId
+          ? `Registrada por tienda: ${ownerData?.shopName || "Tienda"}`
+          : "Registro inicial por ciclista",
+      },
+    ],
     theftDetails: null,
-    color: bikeData.color ?? undefined,
-    description: bikeData.description ?? undefined,
-    country: bikeData.country ?? undefined,
-    state: bikeData.state ?? undefined,
-    bikeType: bikeData.bikeType ?? undefined,
+    color: bikeData.color ?? null,
+    description: bikeData.description ?? null,
+    country: bikeData.country ?? null,
+    state: bikeData.state ?? null,
+    bikeType: bikeData.bikeType ?? null,
     photoUrls: Array.isArray(bikeData.photoUrls) ? bikeData.photoUrls : [],
     ownershipDocumentUrl: bikeData.ownershipDocumentUrl ?? null,
     ownershipDocumentName: bikeData.ownershipDocumentName ?? null,
@@ -229,7 +231,7 @@ const handleGetPublicBikeBySerial = async (
       }
     : null;
 
-  const publicData: Partial<Bike> = {
+  const publicData = {
     id: bikeDoc.id,
     serialNumber: bikeData.serialNumber,
     brand: bikeData.brand,
@@ -263,16 +265,7 @@ const handleGetPublicBikeBySerial = async (
 };
 
 const handleReportBikeStolen = async (
-  data: {
-    bikeId: string;
-    theftData: {
-      theftLocationState: string;
-      theftLocationCountry?: string;
-      theftPerpetratorDetails?: string;
-      theftIncidentDetails: string;
-      generalNotes?: string;
-    };
-  },
+  data: { bikeId: string; theftData: TheftReportData },
   context: AuthContext,
 ) => {
   if (!context)
@@ -777,40 +770,90 @@ const handleCreateOrUpdateRide = async (
 
 export const api = onCall(
   callOptions,
-  async (req: CallableRequest<ActionRequest<any>>) => {
+  async (req: CallableRequest<ActionRequest<unknown>>) => {
     const { action, data } = req.data;
     const context = req.auth;
 
     try {
       switch (action) {
         case "createBike":
-          return await handleCreateBike({ data }, context);
+          return await handleCreateBike(
+            data as {
+              bikeData: Partial<Bike> & { registeredByShopId?: string | null };
+            },
+            context,
+          );
         case "getMyBikes":
           return await handleGetMyBikes(data, context);
         case "getPublicBikeBySerial":
-          return await handleGetPublicBikeBySerial(data, context);
+          return await handleGetPublicBikeBySerial(
+            data as { serialNumber: string },
+            context,
+          );
         case "reportBikeStolen":
-          return await handleReportBikeStolen(data, context);
+          return await handleReportBikeStolen(
+            data as { bikeId: string; theftData: TheftReportData },
+            context,
+          );
         case "markBikeRecovered":
-          return await handleMarkBikeRecovered(data, context);
+          return await handleMarkBikeRecovered(
+            data as { bikeId: string },
+            context,
+          );
         case "initiateTransferRequest":
-          return await handleInitiateTransferRequest(data, context);
+          return await handleInitiateTransferRequest(
+            data as {
+              bikeId: string;
+              recipientEmail: string;
+              transferDocumentUrl?: string | null;
+              transferDocumentName?: string | null;
+            },
+            context,
+          );
         case "respondToTransferRequest":
-          return await handleRespondToTransferRequest(data, context);
+          return await handleRespondToTransferRequest(
+            data as {
+              requestId: string;
+              action: "accepted" | "rejected" | "cancelled";
+            },
+            context,
+          );
         case "getUserTransferRequests":
           return await handleGetUserTransferRequests(data, context);
         case "updateUserRole":
-          return await handleUpdateUserRole(data, context);
+          return await handleUpdateUserRole(
+            data as { uid: string; role: UserRole },
+            context,
+          );
         case "deleteUserAccount":
-          return await handleDeleteUserAccount(data, context);
+          return await handleDeleteUserAccount(
+            data as { uid: string },
+            context,
+          );
         case "updateHomepageContent":
-          return await handleUpdateHomepageContent(data, context);
+          return await handleUpdateHomepageContent(
+            data as DocumentData,
+            context,
+          );
         case "getHomepageContent":
           return await handleGetHomepageContent();
         case "createAccount":
-          return await handleCreateAccount(data, context);
+          return await handleCreateAccount(
+            data as {
+              accountData:
+                | BikeShopAdminFormValues
+                | NgoAdminFormValues
+                | NewCustomerDataForShop;
+              role: "bikeshop" | "ngo" | "cyclist";
+              creatorId: string;
+            },
+            context,
+          );
         case "createOrUpdateRide":
-          return await handleCreateOrUpdateRide(data, context);
+          return await handleCreateOrUpdateRide(
+            data as { rideData: BikeRideFormValues; rideId?: string },
+            context,
+          );
 
         default:
           throw new HttpsError(

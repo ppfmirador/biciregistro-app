@@ -29,7 +29,7 @@ import {
 import { getFunctions, httpsCallable } from 'firebase/functions';
 import type {
   Bike, BikeStatus, BikeType, TransferRequest,
-  NewCustomerDataForShop, ShopAnalyticsData, NgoAnalyticsData, BikeRide, TheftReportData, StatusEntry
+  NewCustomerDataForShop, ShopAnalyticsData, NgoAnalyticsData, BikeRide, TheftReportData
 } from './types';
 import type { UserProfileData, UserProfile, UserRole } from '@/lib/types';
 import type { BikeShopAdminFormValues, NgoAdminFormValues, BikeRideFormValues } from './schemas';
@@ -169,7 +169,7 @@ const userProfileFromDoc = (docSnap: DocumentSnapshot): UserProfile => {
 
 
 // Helper function to call the consolidated API
-const callApi = async <T = any, R = any>(action: string, data?: T): Promise<R> => {
+const callApi = async <T = unknown, R = any>(action: string, data?: T): Promise<R> => {
     const functions = getFunctions(app, "us-central1");
     const apiCallable = httpsCallable<any, any>(functions, "api");
     try {
