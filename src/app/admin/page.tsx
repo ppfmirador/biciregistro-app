@@ -526,12 +526,14 @@ export default function AdminPage() {
       };
 
       const functionsInstance = getFunctions(app, "us-central1");
-      const apiCallable = httpsCallable<ApiRequest<unknown>, ApiResult>(functionsInstance, "api");
+      const apiCallable = httpsCallable<ApiRequest<unknown>, ApiResult>(
+        functionsInstance,
+        "api",
+      );
       await apiCallable({
-        action: 'updateHomepageContent',
+        action: "updateHomepageContent",
         data: homepageDataToSave,
       });
-
 
       toast({
         title: "¡Contenido Actualizado!",
@@ -581,7 +583,7 @@ export default function AdminPage() {
       > = httpsCallable(functionsInstance, "api");
 
       const result = await apiCallable({
-        action: 'updateUserRole',
+        action: "updateUserRole",
         data: { uid, role },
       });
 
@@ -617,8 +619,8 @@ export default function AdminPage() {
       > = httpsCallable(functionsInstance, "api");
 
       const result = await apiCallable({
-        action: 'deleteUserAccount',
-        data: { uid: userToDelete.id }
+        action: "deleteUserAccount",
+        data: { uid: userToDelete.id },
       });
 
       toast({ title: "Usuario Eliminado", description: result.data.message });

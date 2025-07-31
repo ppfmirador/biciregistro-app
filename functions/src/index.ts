@@ -555,9 +555,9 @@ const handleGetUserTransferRequests = async (
 
 const handleDeleteUserAccount = async (
   data: { uid: string },
-  _context: AuthContext,
+  context: AuthContext,
 ) => {
-  if (_context?.token.admin !== true)
+  if (context?.token.admin !== true)
     throw new HttpsError(
       "permission-denied",
       "Solo los administradores pueden eliminar cuentas de usuario.",
@@ -607,7 +607,7 @@ const handleUpdateHomepageContent = async (
   };
 };
 
-const handleGetHomepageContent = async (_data: unknown, _context: AuthContext) => {
+const handleGetHomepageContent = async () => {
   const contentRef = admin
     .firestore()
     .collection("homepage_content")
@@ -772,6 +772,7 @@ export const api = onCall(
   callOptions,
   async (req: CallableRequest<ActionRequest<unknown>>) => {
     // This log forces Firebase to detect a change on every deploy.
+    console.log("Iniciando función API v2...");
     const { action, data } = req.data;
     const context = req.auth;
 
@@ -837,7 +838,7 @@ export const api = onCall(
             context,
           );
         case "getHomepageContent":
-          return await handleGetHomepageContent(data, context);
+          return await handleGetHomepageContent();
         case "createAccount":
           return await handleCreateAccount(
             data as {
