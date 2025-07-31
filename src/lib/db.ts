@@ -1,4 +1,5 @@
 
+
 import { db, app } from './firebase';
 import {
   collection,
@@ -28,7 +29,7 @@ import {
 import { getFunctions, httpsCallable } from 'firebase/functions';
 import type {
   Bike, BikeStatus, BikeType, TransferRequest,
-  NewCustomerDataForShop, ShopAnalyticsData, NgoAnalyticsData, BikeRide, ReportTheftDialogData
+  NewCustomerDataForShop, ShopAnalyticsData, NgoAnalyticsData, BikeRide, TheftReportData, StatusEntry
 } from './types';
 import type { UserProfileData, UserProfile, UserRole } from '@/lib/types';
 import type { BikeShopAdminFormValues, NgoAdminFormValues, BikeRideFormValues } from './schemas';
@@ -245,13 +246,26 @@ export const addBikeToFirestore = async (
 
 
 export const updateBike = async (bikeId: string, updates: Partial<Omit<Bike, 'id' | 'registrationDate' | 'statusHistory' | 'ownerFirstName' | 'ownerLastName' | 'ownerEmail' | 'ownerWhatsappPhone'>> & { status?: BikeStatus, newStatusNote?: string, bikeType?: BikeType }): Promise<Bike | null> => {
-  const bikeRef = doc(db, 'bikes', bikeId);
-  await updateDoc(bikeRef, updates);
-  const updatedBikeSnap = await getDoc(bikeRef);
-  if (!updatedBikeSnap.exists()) {
-    return null;
-  }
-  return bikeFromDoc(updatedBikeSnap);
+    const bikeRef = doc(db, 'bikes', bikeId);
+
+    const updatePayload: DocumentData = { ...updates };
+    
+    // If the status is changing, we also need to add a new entry to the status history.
+    if (updates.status && updates.newStatusNote) {
+        updatePayload.statusHistory = arrayUnion({
+            status: updates.status,
+            timestamp: serverTimestamp(),
+            notes: updates.newStatusNote,
+        });
+        delete updatePayload.newStatusNote; 
+    }
+
+    await updateDoc(bikeRef, updatePayload);
+    const updatedBikeSnap = await getDoc(bikeRef);
+    if (!updatedBikeSnap.exists()) {
+        return null;
+    }
+    return bikeFromDoc(updatedBikeSnap);
 };
 
 export const markBikeRecovered = async (bikeId: string): Promise<void> => {
@@ -455,7 +469,7 @@ export const getShopRegisteredBikes = async (shopId: string, searchTerm?: string
   return querySnapshot.docs.map(bikeFromDoc);
 };
 
-export const reportBikeTheft = async (bikeId: string, theftData: ReportTheftDialogData): Promise<void> => {
+export const reportBikeTheft = async (bikeId: string, theftData: TheftReportData): Promise<void> => {
     await callApi('reportBikeStolen', { bikeId, theftData });
 };
 

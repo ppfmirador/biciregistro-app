@@ -176,14 +176,11 @@ export interface HomepageContent {
 }
 
 // Type for new customer data collected by the shop
-export interface NewCustomerDataForShop {
+export interface NewCustomerDataForShop extends Omit<UserProfileData, "role" | "isAdmin" | "firstName" | "lastName" | "country" | "profileState"> {
     firstName: string;
     lastName: string;
     country: string;
     profileState: string;
-    whatsappPhone?: string;
-    postalCode?: string;
-    gender?: UserProfileData['gender'];
 }
 
 export interface ShopAnalyticsData {

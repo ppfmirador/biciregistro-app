@@ -1,16 +1,19 @@
+
 // functions/src/index.ts
 import { onCall, HttpsError, type CallableRequest } from "firebase-functions/v2/https";
 import * as admin from "firebase-admin";
 import { setGlobalOptions } from "firebase-functions/v2";
+import type { DocumentData } from "firebase-admin/firestore";
 import type {
   Bike,
+  BikeRideFormValues,
   BikeShopAdminFormValues,
   NewCustomerDataForShop,
   NgoAdminFormValues,
+  TheftReportData,
   TransferRequest,
   UserProfileData,
   UserRole,
-  BikeRideFormValues,
 } from "./types";
 
 admin.initializeApp();
@@ -48,11 +51,9 @@ const toISO = (timestamp: admin.firestore.Timestamp | undefined): string | undef
 };
 
 const handleUpdateUserRole = async (data: { uid: string; role: UserRole }, context: AuthContext) => {
-    // IMPORTANT: This check is temporarily commented out for first admin creation.
-    // Make sure to restore it after the first admin is created.
-    // if (context?.token.admin !== true) {
-    //     throw new HttpsError("permission-denied", "Only admins can modify user roles.");
-    // }
+    if (context?.token.admin !== true) {
+        throw new HttpsError("permission-denied", "Only admins can modify user roles.");
+    }
     const { uid, role } = data;
     if (!uid || !role) {
         throw new HttpsError("invalid-argument", "The function must be called with a 'uid' and 'role'.");
@@ -178,7 +179,7 @@ const handleGetPublicBikeBySerial = async (data: { serialNumber: string }, conte
     return publicData;
 };
 
-const handleReportBikeStolen = async (data: { bikeId: string, theftData: ReportTheftDialogData }, context: AuthContext) => {
+const handleReportBikeStolen = async (data: { bikeId: string, theftData: TheftReportData }, context: AuthContext) => {
     if (!context) throw new HttpsError("unauthenticated", "Debes estar autenticado para reportar un robo.");
     const { bikeId, theftData } = data;
     const { uid } = context;

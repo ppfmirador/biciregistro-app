@@ -102,4 +102,56 @@ export interface UserProfileData {
   createdBy?: string;
 }
 
+export interface Bike {
+  id: string; // Firestore document ID
+  serialNumber: string;
+  brand: string;
+  model: string;
+  ownerId: string | null;
+  status: BikeStatus;
+  registrationDate: string; // ISO date string
+  statusHistory: Array<{
+    status: BikeStatus;
+    timestamp: string; // ISO date string
+    notes?: string;
+  }>;
+  photoUrls?: string[];
+  color?: string;
+  description?: string;
+  country?: string; // Country of bike's location
+  state?: string; // State/Province of bike's location
+  bikeType?: BikeType; // New field for bike type
+  ownershipDocumentUrl?: string | null; // URL of the uploaded ownership document
+  ownershipDocumentName?: string |null; // Original name of the uploaded document
+  theftDetails?: {
+    theftLocationState: string;
+    theftLocationCountry?: string;
+    theftPerpetratorDetails?: string;
+    theftIncidentDetails: string;
+    reportedAt: string; // ISO date string for when the theft was reported
+  } | null; // Details specific to a theft report
+  registeredByShopId?: string | null; // UID of the bike shop that registered this bike
+  pendingCustomerEmail?: string | null; // Email of the customer if they don't have an account yet (potentially deprecated if pre-accounts are always created)
+  ownerFirstName?: string;
+  ownerLastName?: string;
+  ownerEmail?: string;
+  ownerWhatsappPhone?: string; // Added for bikeshop owner contact view
+}
+
 export type NewCustomerDataForShop = Omit<UserProfileData, "role" | "isAdmin">;
+
+export interface TransferRequest {
+  id:string;
+  bikeId: string;
+  serialNumber: string;
+  bikeBrand?: string;
+  bikeModel?: string;
+  fromOwnerId: string;
+  fromOwnerEmail?: string;
+  toUserEmail: string;
+  status: 'pending' | 'accepted' | 'rejected' | 'cancelled';
+  requestDate: string;
+  resolutionDate?: string;
+  transferDocumentUrl?: string | null;
+  transferDocumentName?: string | null;
+}
