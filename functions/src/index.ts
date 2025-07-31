@@ -1,3 +1,4 @@
+
 // functions/src/index.ts
 import {
   onCall,
@@ -69,11 +70,24 @@ const handleUpdateUserRole = async (data: { uid: string; role: UserRole }) => {
       "The function must be called with a 'uid' and 'role'.",
     );
   }
+
+  // --- Fallback email -> uid (fase bootstrap) ---
+  let targetUid = uid;
+  if (uid.includes('@')) {
+    try {
+      const userRec = await admin.auth().getUserByEmail(uid);
+      targetUid = userRec.uid;
+    } catch (error) {
+       console.error(`Error looking up user by email ${uid}:`, error);
+      throw new HttpsError('not-found', `User with email ${uid} not found`);
+    }
+  }
+
   const isAdmin = role === "admin";
-  await admin.auth().setCustomUserClaims(uid, { admin: isAdmin, role });
-  const userRef = admin.firestore().collection("users").doc(uid);
+  await admin.auth().setCustomUserClaims(targetUid, { admin: isAdmin, role });
+  const userRef = admin.firestore().collection("users").doc(targetUid);
   await userRef.set({ role, isAdmin }, { merge: true });
-  return { message: `Success! User ${uid} has been made a(n) ${role}.` };
+  return { message: `Success! User ${targetUid} has been made a(n) ${role}.` };
 };
 
 const handleCreateBike = async (
@@ -631,11 +645,12 @@ const handleCreateAccount = async (
   },
   context: AuthContext,
 ) => {
-  if (context?.token.admin !== true)
+  if (context?.token.admin !== true) {
     throw new HttpsError(
       "permission-denied",
       "Solo los administradores pueden crear nuevas cuentas.",
     );
+  }
   const { accountData, role, creatorId } = data;
   if (!accountData || !role || !accountData.email)
     throw new HttpsError(
@@ -867,3 +882,5 @@ export const api = onCall(
     }
   },
 );
+
+    
