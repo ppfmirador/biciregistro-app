@@ -768,8 +768,6 @@ const handleCreateOrUpdateRide = async (
 export const api = onCall(
   callOptions,
   async (req: CallableRequest<ActionRequest<unknown>>) => {
-    // This log forces Firebase to detect a change on every deploy.
-    console.log("Iniciando función API v2...");
     const { action, data } = req.data;
     const context = req.auth;
 
