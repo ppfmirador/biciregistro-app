@@ -822,7 +822,6 @@ export const api = onCall(
         case "updateUserRole":
           return await handleUpdateUserRole(
             data as { uid: string; role: UserRole },
-            context,
           );
         case "deleteUserAccount":
           return await handleDeleteUserAccount(
