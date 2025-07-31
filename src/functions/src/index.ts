@@ -770,6 +770,8 @@ const handleCreateOrUpdateRide = async (
 export const api = onCall(
   callOptions,
   async (req: CallableRequest<ActionRequest<unknown>>) => {
+    // This log forces Firebase to detect a change on every deploy.
+    console.log("Iniciando función API v2...");
     const { action, data } = req.data;
     const context = req.auth;
 
@@ -825,7 +827,10 @@ export const api = onCall(
             context,
           );
         case "deleteUserAccount":
-          return await handleDeleteUserAccount(data as { uid: string }, context);
+          return await handleDeleteUserAccount(
+            data as { uid: string },
+            context,
+          );
         case "updateHomepageContent":
           return await handleUpdateHomepageContent(
             data as DocumentData,
