@@ -51,13 +51,13 @@ export default function HomePageClient({
               content.welcomeTitle.replace("{APP_NAME}", "BiciRegistro")
             )}
           </h1>
-          <div className="text-md sm:text-lg md:text-xl text-primary-foreground/90 mb-6 sm:mb-8 max-w-xl sm:max-w-2xl mx-auto">
-            {isLoading ? (
-              <Skeleton className="h-6 w-full mx-auto" />
-            ) : (
-              <p>{content.welcomeDescription}</p>
-            )}
-          </div>
+          {isLoading ? (
+            <Skeleton className="h-6 w-full max-w-xl sm:max-w-2xl mx-auto" />
+          ) : (
+            <p className="text-md sm:text-lg md:text-xl text-primary-foreground/90 mb-6 sm:mb-8 max-w-xl sm:max-w-2xl mx-auto">
+              {content.welcomeDescription}
+            </p>
+          )}
           <div className="max-w-md sm:max-w-lg mx-auto mb-8">
             <SearchBikeForm />
             <p className="mt-2 sm:mt-3 text-xs sm:text-sm text-primary-foreground/80">
@@ -191,22 +191,20 @@ export default function HomePageClient({
                 content.communityTitle
               )}
             </h2>
-            <div className="text-base sm:text-lg text-muted-foreground mb-4 sm:mb-6">
-              {isLoading ? (
-                <div className="space-y-2">
-                  <Skeleton className="h-4 w-full" />
-                  <Skeleton className="h-4 w-full" />
-                  <Skeleton className="h-4 w-2/3" />
-                </div>
-              ) : (
-                <p>
-                  {content.communityDescription.replace(
-                    "{APP_NAME}",
-                    "BiciRegistro",
-                  )}
-                </p>
-              )}
-            </div>
+            {isLoading ? (
+              <div className="space-y-2">
+                <Skeleton className="h-4 w-full" />
+                <Skeleton className="h-4 w-full" />
+                <Skeleton className="h-4 w-2/3" />
+              </div>
+            ) : (
+              <p className="text-base sm:text-lg text-muted-foreground mb-4 sm:mb-6">
+                {content.communityDescription.replace(
+                  "{APP_NAME}",
+                  "BiciRegistro",
+                )}
+              </p>
+            )}
             <div className="flex justify-center md:justify-start">
               <Link href="/auth?mode=signup" passHref>
                 <Button size="lg">
