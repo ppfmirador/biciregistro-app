@@ -9,8 +9,9 @@ import * as admin from "firebase-admin";
  * @param request The HTTP request object.
  * @param response The HTTP response object.
  */
-export const setAdmin = onRequest(
-  { cors: true, invoker: "public" }, // Allow public access for this specific utility
+export const setAdminHttp = onRequest(
+  // Correct options structure for a public HTTP function as per architect's feedback.
+  { cors: true, invoker: "public" },
   async (request, response) => {
     // Basic check to ensure it's a POST request for some level of protection
     if (request.method !== "POST") {
@@ -23,7 +24,7 @@ export const setAdmin = onRequest(
       if (!email || typeof email !== "string") {
         throw new HttpsError(
           "invalid-argument",
-          "The function must be called with a JSON body like: { data: { email: 'user@example.com' } }",
+          'The function must be called with a JSON body like: { "data": { "email": "user@example.com" } }',
         );
       }
 

@@ -70,15 +70,16 @@ const handleUpdateUserRole = async (data: { uid: string; role: UserRole }) => {
     );
   }
 
-  // --- Fallback email -> uid (fase bootstrap) ---
+  // Robust UID handling as per architect's recommendation
   let targetUid = uid;
   if (uid.includes("@")) {
+    // Basic check if it's an email
     try {
-      const userRec = await admin.auth().getUserByEmail(uid);
-      targetUid = userRec.uid;
+      const userRecord = await admin.auth().getUserByEmail(uid);
+      targetUid = userRecord.uid;
     } catch (error) {
       console.error(`Error looking up user by email ${uid}:`, error);
-      throw new HttpsError("not-found", `User with email ${uid} not found`);
+      throw new HttpsError("not-found", `User with email ${uid} not found.`);
     }
   }
 
@@ -777,7 +778,7 @@ const handleCreateOrUpdateRide = async (
 };
 
 // --- Export of the new one-off function ---
-export { setAdmin } from "./setAdmin";
+export { setAdminHttp } from "./setAdmin";
 
 /**
  * Main dispatcher for all callable Cloud Functions.
