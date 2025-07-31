@@ -122,7 +122,7 @@ export interface Bike {
   state?: string; // State/Province of bike's location
   bikeType?: BikeType; // New field for bike type
   ownershipDocumentUrl?: string | null; // URL of the uploaded ownership document
-  ownershipDocumentName?: string |null; // Original name of the uploaded document
+  ownershipDocumentName?: string | null; // Original name of the uploaded document
   theftDetails?: {
     theftLocationState: string;
     theftLocationCountry?: string;
@@ -141,7 +141,7 @@ export interface Bike {
 export type NewCustomerDataForShop = Omit<UserProfileData, "role" | "isAdmin">;
 
 export interface TransferRequest {
-  id:string;
+  id: string;
   bikeId: string;
   serialNumber: string;
   bikeBrand?: string;
@@ -149,7 +149,7 @@ export interface TransferRequest {
   fromOwnerId: string;
   fromOwnerEmail?: string;
   toUserEmail: string;
-  status: 'pending' | 'accepted' | 'rejected' | 'cancelled';
+  status: "pending" | "accepted" | "rejected" | "cancelled";
   requestDate: string;
   resolutionDate?: string;
   transferDocumentUrl?: string | null;

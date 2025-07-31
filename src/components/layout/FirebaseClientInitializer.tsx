@@ -1,7 +1,7 @@
 "use client";
 
-import { useEffect } from 'react';
-import { initializeClientSideFirebase } from '@/lib/firebase-client';
+import { useEffect } from "react";
+import { initializeClientSideFirebase } from "@/lib/firebase-client";
 
 /**
  * A client-side component whose sole purpose is to initialize

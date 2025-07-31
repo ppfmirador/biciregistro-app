@@ -1,7 +1,6 @@
-
 "use client";
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect } from "react";
 import {
   Dialog,
   DialogContent,
@@ -11,54 +10,72 @@ import {
   DialogTitle,
   DialogTrigger,
   DialogClose,
-} from '@/components/ui/dialog';
-import { Button } from '@/components/ui/button';
-import { Label } from '@/components/ui/label';
-import { Textarea } from '@/components/ui/textarea';
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { AlertTriangle, Loader2 } from 'lucide-react';
-import type { Bike, ReportTheftDialogData } from '@/lib/types';
-import { LAT_AM_LOCATIONS } from '@/constants';
+} from "@/components/ui/dialog";
+import { Button } from "@/components/ui/button";
+import { Label } from "@/components/ui/label";
+import { Textarea } from "@/components/ui/textarea";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
+import { AlertTriangle, Loader2 } from "lucide-react";
+import type { Bike, ReportTheftDialogData } from "@/lib/types";
+import { LAT_AM_LOCATIONS } from "@/constants";
 
 interface ReportTheftDialogProps {
   bike: Bike;
-  onReportTheft: (bikeId: string, theftData: ReportTheftDialogData) => Promise<void>;
-  children: React.ReactNode; 
+  onReportTheft: (
+    bikeId: string,
+    theftData: ReportTheftDialogData,
+  ) => Promise<void>;
+  children: React.ReactNode;
 }
 
-const ReportTheftDialog: React.FC<ReportTheftDialogProps> = ({ bike, onReportTheft, children }) => {
-  const [theftLocationCountry, setTheftLocationCountry] = useState('');
-  const [theftLocationState, setTheftLocationState] = useState('');
-  const [theftPerpetratorDetails, setTheftPerpetratorDetails] = useState('');
-  const [theftIncidentDetails, setTheftIncidentDetails] = useState('');
-  const [generalNotes, setGeneralNotes] = useState('');
+const ReportTheftDialog: React.FC<ReportTheftDialogProps> = ({
+  bike,
+  onReportTheft,
+  children,
+}) => {
+  const [theftLocationCountry, setTheftLocationCountry] = useState("");
+  const [theftLocationState, setTheftLocationState] = useState("");
+  const [theftPerpetratorDetails, setTheftPerpetratorDetails] = useState("");
+  const [theftIncidentDetails, setTheftIncidentDetails] = useState("");
+  const [generalNotes, setGeneralNotes] = useState("");
   const [isLoading, setIsLoading] = useState(false);
   const [isOpen, setIsOpen] = useState(false);
-  const [errors, setErrors] = useState<Partial<Record<keyof ReportTheftDialogData, string>>>({});
+  const [errors, setErrors] = useState<
+    Partial<Record<keyof ReportTheftDialogData, string>>
+  >({});
 
   useEffect(() => {
     if (isOpen) {
       // Reset form when dialog opens
-      setTheftLocationCountry('');
-      setTheftLocationState('');
-      setTheftPerpetratorDetails('');
-      setTheftIncidentDetails('');
-      setGeneralNotes('');
+      setTheftLocationCountry("");
+      setTheftLocationState("");
+      setTheftPerpetratorDetails("");
+      setTheftIncidentDetails("");
+      setGeneralNotes("");
       setErrors({});
     }
   }, [isOpen]);
-  
+
   // Clear state error when country changes
   useEffect(() => {
-      setTheftLocationState('');
+    setTheftLocationState("");
   }, [theftLocationCountry]);
-
 
   const validateForm = () => {
     const newErrors: Partial<Record<keyof ReportTheftDialogData, string>> = {};
-    if (!theftLocationCountry) newErrors.theftLocationCountry = "El país es obligatorio.";
-    if (!theftLocationState) newErrors.theftLocationState = "El estado/provincia es obligatorio.";
-    if (!theftIncidentDetails.trim()) newErrors.theftIncidentDetails = "Los detalles del incidente son obligatorios.";
+    if (!theftLocationCountry)
+      newErrors.theftLocationCountry = "El país es obligatorio.";
+    if (!theftLocationState)
+      newErrors.theftLocationState = "El estado/provincia es obligatorio.";
+    if (!theftIncidentDetails.trim())
+      newErrors.theftIncidentDetails =
+        "Los detalles del incidente son obligatorios.";
     setErrors(newErrors);
     return Object.keys(newErrors).length === 0;
   };
@@ -76,7 +93,7 @@ const ReportTheftDialog: React.FC<ReportTheftDialogProps> = ({ bike, onReportThe
     };
     await onReportTheft(bike.id, theftData);
     setIsLoading(false);
-    setIsOpen(false); 
+    setIsOpen(false);
   };
 
   return (
@@ -89,54 +106,105 @@ const ReportTheftDialog: React.FC<ReportTheftDialogProps> = ({ bike, onReportThe
             Reportar Bicicleta Robada
           </DialogTitle>
           <DialogDescription>
-            Reportar tu {bike.brand} {bike.model} (N/S: {bike.serialNumber}) como robada. Proporciona los detalles del incidente.
+            Reportar tu {bike.brand} {bike.model} (N/S: {bike.serialNumber})
+            como robada. Proporciona los detalles del incidente.
           </DialogDescription>
         </DialogHeader>
         <div className="grid gap-4 py-4 max-h-[60vh] overflow-y-auto pr-2">
           <div className="space-y-2">
-            <Label htmlFor="theftLocationCountry">País donde ocurrió el robo</Label>
-            <Select value={theftLocationCountry} onValueChange={setTheftLocationCountry}>
-                <SelectTrigger id="theftLocationCountry" className={errors.theftLocationCountry ? 'border-destructive' : ''}>
-                    <SelectValue placeholder="Selecciona un país" />
-                </SelectTrigger>
-                <SelectContent>
-                    {LAT_AM_LOCATIONS.map(loc => (
-                    <SelectItem key={loc.country} value={loc.country}>{loc.country}</SelectItem>
-                    ))}
-                </SelectContent>
-            </Select>
-            {errors.theftLocationCountry && <p className="text-sm text-destructive">{errors.theftLocationCountry}</p>}
-          </div>
-
-          <div className="space-y-2">
-            <Label htmlFor="theftLocationState">Estado/Provincia donde ocurrió el robo</Label>
-            <Select value={theftLocationState} onValueChange={setTheftLocationState} disabled={!theftLocationCountry}>
-              <SelectTrigger id="theftLocationState" className={errors.theftLocationState ? 'border-destructive' : ''}>
-                <SelectValue placeholder={!theftLocationCountry ? "Selecciona un país primero" : "Selecciona un estado/provincia"} />
+            <Label htmlFor="theftLocationCountry">
+              País donde ocurrió el robo
+            </Label>
+            <Select
+              value={theftLocationCountry}
+              onValueChange={setTheftLocationCountry}
+            >
+              <SelectTrigger
+                id="theftLocationCountry"
+                className={
+                  errors.theftLocationCountry ? "border-destructive" : ""
+                }
+              >
+                <SelectValue placeholder="Selecciona un país" />
               </SelectTrigger>
               <SelectContent>
-                {theftLocationCountry && LAT_AM_LOCATIONS.find(c => c.country === theftLocationCountry)?.states.map(stateName => (
-                  <SelectItem key={stateName} value={stateName}>{stateName}</SelectItem>
+                {LAT_AM_LOCATIONS.map((loc) => (
+                  <SelectItem key={loc.country} value={loc.country}>
+                    {loc.country}
+                  </SelectItem>
                 ))}
               </SelectContent>
             </Select>
-            {errors.theftLocationState && <p className="text-sm text-destructive">{errors.theftLocationState}</p>}
+            {errors.theftLocationCountry && (
+              <p className="text-sm text-destructive">
+                {errors.theftLocationCountry}
+              </p>
+            )}
           </div>
 
           <div className="space-y-2">
-            <Label htmlFor="theftIncidentDetails">Detalles del incidente (Obligatorio)</Label>
+            <Label htmlFor="theftLocationState">
+              Estado/Provincia donde ocurrió el robo
+            </Label>
+            <Select
+              value={theftLocationState}
+              onValueChange={setTheftLocationState}
+              disabled={!theftLocationCountry}
+            >
+              <SelectTrigger
+                id="theftLocationState"
+                className={
+                  errors.theftLocationState ? "border-destructive" : ""
+                }
+              >
+                <SelectValue
+                  placeholder={
+                    !theftLocationCountry
+                      ? "Selecciona un país primero"
+                      : "Selecciona un estado/provincia"
+                  }
+                />
+              </SelectTrigger>
+              <SelectContent>
+                {theftLocationCountry &&
+                  LAT_AM_LOCATIONS.find(
+                    (c) => c.country === theftLocationCountry,
+                  )?.states.map((stateName) => (
+                    <SelectItem key={stateName} value={stateName}>
+                      {stateName}
+                    </SelectItem>
+                  ))}
+              </SelectContent>
+            </Select>
+            {errors.theftLocationState && (
+              <p className="text-sm text-destructive">
+                {errors.theftLocationState}
+              </p>
+            )}
+          </div>
+
+          <div className="space-y-2">
+            <Label htmlFor="theftIncidentDetails">
+              Detalles del incidente (Obligatorio)
+            </Label>
             <Textarea
               id="theftIncidentDetails"
               value={theftIncidentDetails}
               onChange={(e) => setTheftIncidentDetails(e.target.value)}
-              className={`min-h-[80px] ${errors.theftIncidentDetails ? 'border-destructive' : ''}`}
+              className={`min-h-[80px] ${errors.theftIncidentDetails ? "border-destructive" : ""}`}
               placeholder="Describe cómo, cuándo y dónde ocurrió el robo, características específicas de la bici al momento del robo, etc."
             />
-            {errors.theftIncidentDetails && <p className="text-sm text-destructive">{errors.theftIncidentDetails}</p>}
+            {errors.theftIncidentDetails && (
+              <p className="text-sm text-destructive">
+                {errors.theftIncidentDetails}
+              </p>
+            )}
           </div>
-          
+
           <div className="space-y-2">
-            <Label htmlFor="theftPerpetratorDetails">Detalles del perpetrador (Opcional)</Label>
+            <Label htmlFor="theftPerpetratorDetails">
+              Detalles del perpetrador (Opcional)
+            </Label>
             <Textarea
               id="theftPerpetratorDetails"
               value={theftPerpetratorDetails}
@@ -147,7 +215,9 @@ const ReportTheftDialog: React.FC<ReportTheftDialogProps> = ({ bike, onReportThe
           </div>
 
           <div className="space-y-2">
-            <Label htmlFor="generalNotes">Notas generales adicionales (Opcional)</Label>
+            <Label htmlFor="generalNotes">
+              Notas generales adicionales (Opcional)
+            </Label>
             <Textarea
               id="generalNotes"
               value={generalNotes}
@@ -159,9 +229,16 @@ const ReportTheftDialog: React.FC<ReportTheftDialogProps> = ({ bike, onReportThe
         </div>
         <DialogFooter>
           <DialogClose asChild>
-            <Button variant="outline" disabled={isLoading}>Cancelar</Button>
+            <Button variant="outline" disabled={isLoading}>
+              Cancelar
+            </Button>
           </DialogClose>
-          <Button type="button" onClick={handleSubmit} disabled={isLoading} variant="destructive">
+          <Button
+            type="button"
+            onClick={handleSubmit}
+            disabled={isLoading}
+            variant="destructive"
+          >
             {isLoading && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
             Confirmar Reporte de Robo
           </Button>

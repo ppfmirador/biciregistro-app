@@ -1,7 +1,6 @@
-
 "use client";
 
-import { useState, useRef } from 'react';
+import { useState, useRef } from "react";
 import {
   Dialog,
   DialogContent,
@@ -11,31 +10,34 @@ import {
   DialogTitle,
   DialogTrigger,
   DialogClose,
-} from '@/components/ui/dialog';
-import { Button } from '@/components/ui/button';
-import { Label } from '@/components/ui/label';
-import { Input } from '@/components/ui/input';
-import { ArrowRightLeft, Loader2, Paperclip } from 'lucide-react';
-import type { Bike } from '@/lib/types';
-import { useToast } from '@/hooks/use-toast';
-import { uploadFileToStorage } from '@/lib/storage';
-import { useAuth } from '@/context/AuthContext';
-import { FirebaseError } from 'firebase/app';
-
+} from "@/components/ui/dialog";
+import { Button } from "@/components/ui/button";
+import { Label } from "@/components/ui/label";
+import { Input } from "@/components/ui/input";
+import { ArrowRightLeft, Loader2, Paperclip } from "lucide-react";
+import type { Bike } from "@/lib/types";
+import { useToast } from "@/hooks/use-toast";
+import { uploadFileToStorage } from "@/lib/storage";
+import { useAuth } from "@/context/AuthContext";
+import { FirebaseError } from "firebase/app";
 
 interface TransferOwnershipDialogProps {
   bike: Bike;
   onInitiateTransfer: (
-    bikeId: string, 
+    bikeId: string,
     recipientEmail: string,
     transferDocumentUrl?: string | null,
-    transferDocumentName?: string | null
+    transferDocumentName?: string | null,
   ) => Promise<void>;
-  children: React.ReactNode; 
+  children: React.ReactNode;
 }
 
-const TransferOwnershipDialog: React.FC<TransferOwnershipDialogProps> = ({ bike, onInitiateTransfer, children }) => {
-  const [recipientEmail, setRecipientEmail] = useState('');
+const TransferOwnershipDialog: React.FC<TransferOwnershipDialogProps> = ({
+  bike,
+  onInitiateTransfer,
+  children,
+}) => {
+  const [recipientEmail, setRecipientEmail] = useState("");
   const [transferDocument, setTransferDocument] = useState<File | null>(null);
   const [isLoading, setIsLoading] = useState(false);
   const [isOpen, setIsOpen] = useState(false);
@@ -53,7 +55,11 @@ const TransferOwnershipDialog: React.FC<TransferOwnershipDialogProps> = ({ bike,
 
   const handleSubmit = async () => {
     if (!recipientEmail || !user) {
-      toast({ title: "Error", description: "El correo del destinatario es obligatorio.", variant: "destructive" });
+      toast({
+        title: "Error",
+        description: "El correo del destinatario es obligatorio.",
+        variant: "destructive",
+      });
       return;
     }
     setIsLoading(true);
@@ -67,33 +73,49 @@ const TransferOwnershipDialog: React.FC<TransferOwnershipDialogProps> = ({ bike,
         uploadedDocName = transferDocument.name;
       }
 
-      await onInitiateTransfer(bike.id, recipientEmail, uploadedDocUrl, uploadedDocName);
-      
-      setIsOpen(false); 
-      setRecipientEmail(''); 
+      await onInitiateTransfer(
+        bike.id,
+        recipientEmail,
+        uploadedDocUrl,
+        uploadedDocName,
+      );
+
+      setIsOpen(false);
+      setRecipientEmail("");
       setTransferDocument(null);
       if (fileInputRef.current) {
-        fileInputRef.current.value = '';
+        fileInputRef.current.value = "";
       }
     } catch (error: unknown) {
-      const errorMessage = error instanceof FirebaseError ? error.message : "No se pudo procesar la transferencia.";
-      toast({ title: 'Error en Transferencia', description: errorMessage, variant: 'destructive' });
+      const errorMessage =
+        error instanceof FirebaseError
+          ? error.message
+          : "No se pudo procesar la transferencia.";
+      toast({
+        title: "Error en Transferencia",
+        description: errorMessage,
+        variant: "destructive",
+      });
     } finally {
       setIsLoading(false);
     }
   };
 
   return (
-    <Dialog open={isOpen} onOpenChange={(open) => {
-      setIsOpen(open);
-      if (!open) { // Reset state when dialog closes
-        setRecipientEmail('');
-        setTransferDocument(null);
-        if (fileInputRef.current) {
-          fileInputRef.current.value = '';
+    <Dialog
+      open={isOpen}
+      onOpenChange={(open) => {
+        setIsOpen(open);
+        if (!open) {
+          // Reset state when dialog closes
+          setRecipientEmail("");
+          setTransferDocument(null);
+          if (fileInputRef.current) {
+            fileInputRef.current.value = "";
+          }
         }
-      }
-    }}>
+      }}
+    >
       <DialogTrigger asChild>{children}</DialogTrigger>
       <DialogContent className="sm:max-w-md">
         <DialogHeader>
@@ -102,9 +124,10 @@ const TransferOwnershipDialog: React.FC<TransferOwnershipDialogProps> = ({ bike,
             Transferir Propiedad de Bicicleta
           </DialogTitle>
           <DialogDescription>
-            Iniciar transferencia para: {bike.brand} {bike.model} (N/S: {bike.serialNumber}).
-            Ingresa el correo del nuevo propietario. Debe tener una cuenta en BiciRegistro.
-            Opcionalmente, adjunta un documento de transferencia (ej. contrato).
+            Iniciar transferencia para: {bike.brand} {bike.model} (N/S:{" "}
+            {bike.serialNumber}). Ingresa el correo del nuevo propietario. Debe
+            tener una cuenta en BiciRegistro. Opcionalmente, adjunta un
+            documento de transferencia (ej. contrato).
           </DialogDescription>
         </DialogHeader>
         <div className="grid gap-4 py-4">
@@ -120,8 +143,8 @@ const TransferOwnershipDialog: React.FC<TransferOwnershipDialogProps> = ({ bike,
           </div>
           <div className="space-y-2">
             <Label htmlFor="transferDocumentFile" className="flex items-center">
-                <Paperclip className="h-4 w-4 mr-2 text-muted-foreground" />
-                Documento de Transferencia (Opcional)
+              <Paperclip className="h-4 w-4 mr-2 text-muted-foreground" />
+              Documento de Transferencia (Opcional)
             </Label>
             <Input
               id="transferDocumentFile"
@@ -132,15 +155,23 @@ const TransferOwnershipDialog: React.FC<TransferOwnershipDialogProps> = ({ bike,
               className="text-sm"
             />
             {transferDocument && (
-                <p className="text-xs text-muted-foreground mt-1">Archivo seleccionado: {transferDocument.name}</p>
+              <p className="text-xs text-muted-foreground mt-1">
+                Archivo seleccionado: {transferDocument.name}
+              </p>
             )}
           </div>
         </div>
         <DialogFooter>
           <DialogClose asChild>
-            <Button variant="outline" disabled={isLoading}>Cancelar</Button>
+            <Button variant="outline" disabled={isLoading}>
+              Cancelar
+            </Button>
           </DialogClose>
-          <Button type="submit" onClick={handleSubmit} disabled={isLoading || !recipientEmail}>
+          <Button
+            type="submit"
+            onClick={handleSubmit}
+            disabled={isLoading || !recipientEmail}
+          >
             {isLoading && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
             Iniciar Transferencia
           </Button>

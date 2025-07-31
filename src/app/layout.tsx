@@ -1,15 +1,15 @@
-import type { Metadata } from 'next';
-import { Inter } from 'next/font/google';
-import './globals.css';
-import { Toaster } from '@/components/ui/toaster';
-import { AuthProvider } from '@/context/AuthContext';
-import AppShell from '@/components/layout/AppShell';
-import FirebaseClientInitializer from '@/components/layout/FirebaseClientInitializer';
+import type { Metadata } from "next";
+import { Inter } from "next/font/google";
+import "./globals.css";
+import { Toaster } from "@/components/ui/toaster";
+import { AuthProvider } from "@/context/AuthContext";
+import AppShell from "@/components/layout/AppShell";
+import FirebaseClientInitializer from "@/components/layout/FirebaseClientInitializer";
 
-const inter = Inter({ 
-  subsets: ['latin'],
-  display: 'swap',
-  variable: '--font-inter',
+const inter = Inter({
+  subsets: ["latin"],
+  display: "swap",
+  variable: "--font-inter",
 });
 
 export const metadata: Metadata = {
@@ -18,7 +18,17 @@ export const metadata: Metadata = {
     template: `%s | BiciRegistro`,
   },
   description: `Registra tu bicicleta, reporta robos y consulta el historial. Únete a la comunidad BiciRegistro para proteger tu rodada y fomentar un ciclismo más seguro en México.`,
-  keywords: ['registro de bicicletas', 'reportar robo bicicleta', 'seguridad ciclista', 'BiciRegistro', 'consultar número de serie bicicleta', 'México', 'bike registration', 'report stolen bike', 'bike security'],
+  keywords: [
+    "registro de bicicletas",
+    "reportar robo bicicleta",
+    "seguridad ciclista",
+    "BiciRegistro",
+    "consultar número de serie bicicleta",
+    "México",
+    "bike registration",
+    "report stolen bike",
+    "bike security",
+  ],
 };
 
 export default function RootLayout({
@@ -33,9 +43,7 @@ export default function RootLayout({
       </head>
       <body className="font-body antialiased">
         <AuthProvider>
-          <AppShell>
-            {children}
-          </AppShell>
+          <AppShell>{children}</AppShell>
           <Toaster />
         </AuthProvider>
         <FirebaseClientInitializer />

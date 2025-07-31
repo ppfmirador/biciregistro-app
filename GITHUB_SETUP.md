@@ -3,6 +3,7 @@
 Esta guía te llevará paso a paso para inicializar un repositorio Git local, conectarlo con un repositorio remoto en GitHub y subir tu código por primera vez.
 
 **Requisitos Previos:**
+
 - Tener una cuenta de [GitHub](https://github.com/).
 - Tener [Git](https://git-scm.com/downloads) instalado en tu máquina.
 - Haber configurado tus credenciales de Git localmente.
@@ -23,16 +24,20 @@ GitHub te mostrará una página con varias instrucciones. Nos interesan los coma
 Ahora, en la terminal de tu entorno de desarrollo, ejecuta los siguientes comandos uno por uno.
 
 1.  **Inicializa Git en tu proyecto:**
+
     ```bash
     git init
     ```
-    *Esto crea un repositorio Git local en la carpeta actual.*
+
+    _Esto crea un repositorio Git local en la carpeta actual._
 
 2.  **Añade todos los archivos al área de "staging":**
+
     ```bash
     git add .
     ```
-    *El `.` significa "todos los archivos y carpetas en el directorio actual".*
+
+    _El `.` significa "todos los archivos y carpetas en el directorio actual"._
 
 3.  **Crea tu primer "commit":**
     Un commit es como una instantánea guardada de tu código. Es una buena práctica que el primer commit sea descriptivo.
@@ -44,6 +49,7 @@ Ahora, en la terminal de tu entorno de desarrollo, ejecuta los siguientes comand
 
 1.  **Define la rama principal como `main`:**
     Este es el estándar moderno para nombrar la rama principal.
+
     ```bash
     git branch -M main
     ```
@@ -53,7 +59,7 @@ Ahora, en la terminal de tu entorno de desarrollo, ejecuta los siguientes comand
     ```bash
     git remote add origin https://github.com/TU_USUARIO/TU_REPOSITORIO.git
     ```
-    *`origin` es el nombre por defecto para tu repositorio remoto.*
+    _`origin` es el nombre por defecto para tu repositorio remoto._
 
 ### **Paso 4: Subir tu Código a GitHub**
 
@@ -67,9 +73,9 @@ Ahora, en la terminal de tu entorno de desarrollo, ejecuta los siguientes comand
 
 ¡Y listo! Si refrescas la página de tu repositorio en GitHub, verás todos los archivos de tu proyecto. A partir de ahora, tu flujo de trabajo será:
 
--   Hacer cambios en el código.
--   Usar `git add .` para añadirlos.
--   Usar `git commit -m "Mensaje descriptivo"` para guardarlos.
--   Usar `git push` para subirlos a GitHub.
+- Hacer cambios en el código.
+- Usar `git add .` para añadirlos.
+- Usar `git commit -m "Mensaje descriptivo"` para guardarlos.
+- Usar `git push` para subirlos a GitHub.
 
 Espero que esta guía te sea de gran ayuda. ¡Sigamos construyendo!

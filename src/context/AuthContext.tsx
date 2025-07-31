@@ -1,10 +1,16 @@
-
 "use client";
 
-import type { UserProfile, UserProfileData, UserRole } from '@/lib/types';
-import React, { createContext, useContext, useState, useEffect, ReactNode, useCallback } from 'react';
-import { useRouter } from 'next/navigation';
-import { auth } from '@/lib/firebase';
+import type { UserProfile, UserProfileData, UserRole } from "@/lib/types";
+import React, {
+  createContext,
+  useContext,
+  useState,
+  useEffect,
+  ReactNode,
+  useCallback,
+} from "react";
+import { useRouter } from "next/navigation";
+import { auth } from "@/lib/firebase";
 import {
   onAuthStateChanged,
   signInWithEmailAndPassword,
@@ -18,22 +24,27 @@ import {
   getIdTokenResult,
   GoogleAuthProvider,
   signInWithPopup,
-  getAdditionalUserInfo
-} from 'firebase/auth';
-import { getUserDoc, updateUserDoc, incrementReferralCount, createUserDoc } from '@/lib/db';
-import { useToast } from '@/hooks/use-toast';
-import { FirebaseError } from 'firebase/app';
-import { initializeClientSideFirebase } from '@/lib/firebase-client';
+  getAdditionalUserInfo,
+} from "firebase/auth";
+import {
+  getUserDoc,
+  updateUserDoc,
+  incrementReferralCount,
+  createUserDoc,
+} from "@/lib/db";
+import { useToast } from "@/hooks/use-toast";
+import { FirebaseError } from "firebase/app";
+import { initializeClientSideFirebase } from "@/lib/firebase-client";
 
 interface SignUpData {
-    email: string;
-    password: string;
-    firstName: string;
-    lastName: string;
-    country: string;
-    profileState: string;
-    role?: UserRole;
-    referrerId?: string | null;
+  email: string;
+  password: string;
+  firstName: string;
+  lastName: string;
+  country: string;
+  profileState: string;
+  role?: UserRole;
+  referrerId?: string | null;
 }
 
 interface AuthContextType {
@@ -55,83 +66,88 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
   const [user, setUser] = useState<UserProfile | null>(null);
   const [loading, setLoading] = useState(true);
   const { toast } = useToast();
-  const router = useRouter(); 
+  const router = useRouter();
 
   useEffect(() => {
     initializeClientSideFirebase();
   }, []);
 
-  const fetchAndUpdateUserProfile = useCallback(async (firebaseUser: FirebaseUser) => {
-    setLoading(true);
-    let userProfileBase: UserProfile = {
-      uid: firebaseUser.uid,
-      email: firebaseUser.email,
-      displayName: firebaseUser.displayName,
-      isAnonymous: firebaseUser.isAnonymous,
-      emailVerified: firebaseUser.emailVerified,
-      role: 'cyclist',
-      isAdmin: false,
-      referralCount: 0,
-    };
+  const fetchAndUpdateUserProfile = useCallback(
+    async (firebaseUser: FirebaseUser) => {
+      setLoading(true);
+      let userProfileBase: UserProfile = {
+        uid: firebaseUser.uid,
+        email: firebaseUser.email,
+        displayName: firebaseUser.displayName,
+        isAnonymous: firebaseUser.isAnonymous,
+        emailVerified: firebaseUser.emailVerified,
+        role: "cyclist",
+        isAdmin: false,
+        referralCount: 0,
+      };
 
-    try {
-      const idTokenResult = await getIdTokenResult(firebaseUser, true);
-      const isAdminClaim = idTokenResult.claims.admin === true;
-      userProfileBase.isAdmin = isAdminClaim;
+      try {
+        const idTokenResult = await getIdTokenResult(firebaseUser, true);
+        const isAdminClaim = idTokenResult.claims.admin === true;
+        userProfileBase.isAdmin = isAdminClaim;
 
-      if (isAdminClaim) {
-        userProfileBase.role = 'admin';
-      }
+        if (isAdminClaim) {
+          userProfileBase.role = "admin";
+        }
 
-      const userDocData = await getUserDoc(firebaseUser.uid);
-      if (userDocData) {
-        userProfileBase = {
+        const userDocData = await getUserDoc(firebaseUser.uid);
+        if (userDocData) {
+          userProfileBase = {
             ...userProfileBase,
             ...userDocData,
-            role: isAdminClaim ? 'admin' : (userDocData.role || 'cyclist'),
+            role: isAdminClaim ? "admin" : userDocData.role || "cyclist",
             isAdmin: isAdminClaim,
             referralCount: userDocData.referralCount || 0,
-        };
-      } else if (!firebaseUser.isAnonymous) {
-        // This case is primarily for new Google Sign-In users.
-        const roleToSet = isAdminClaim ? 'admin' : 'cyclist';
-        const displayName = firebaseUser.displayName || '';
-        const nameParts = displayName.split(' ');
-        const firstName = nameParts[0] || '';
-        const lastName = nameParts.slice(1).join(' ') || '';
+          };
+        } else if (!firebaseUser.isAnonymous) {
+          // This case is primarily for new Google Sign-In users.
+          const roleToSet = isAdminClaim ? "admin" : "cyclist";
+          const displayName = firebaseUser.displayName || "";
+          const nameParts = displayName.split(" ");
+          const firstName = nameParts[0] || "";
+          const lastName = nameParts.slice(1).join(" ") || "";
 
-        await createUserDoc(firebaseUser.uid, { 
-          role: roleToSet, 
-          email: firebaseUser.email, 
-          isAdmin: isAdminClaim, 
-          referralCount: 0, 
-          firstName, 
-          lastName, 
-          country: '', 
-          profileState: '' 
-        });
-        
-        userProfileBase.role = roleToSet;
-        userProfileBase.firstName = firstName;
-        userProfileBase.lastName = lastName;
+          await createUserDoc(firebaseUser.uid, {
+            role: roleToSet,
+            email: firebaseUser.email,
+            isAdmin: isAdminClaim,
+            referralCount: 0,
+            firstName,
+            lastName,
+            country: "",
+            profileState: "",
+          });
+
+          userProfileBase.role = roleToSet;
+          userProfileBase.firstName = firstName;
+          userProfileBase.lastName = lastName;
+        }
+      } catch (error) {
+        console.error("Error fetching/creating user profile or claims:", error);
       }
-
-    } catch (error) {
-      console.error("Error fetching/creating user profile or claims:", error);
-    }
-    setUser(userProfileBase);
-    setLoading(false);
-  }, []);
+      setUser(userProfileBase);
+      setLoading(false);
+    },
+    [],
+  );
 
   useEffect(() => {
-    const unsubscribe = onAuthStateChanged(auth, async (firebaseUser: FirebaseUser | null) => {
-      if (firebaseUser) {
-        await fetchAndUpdateUserProfile(firebaseUser);
-      } else {
-        setUser(null);
-        setLoading(false);
-      }
-    });
+    const unsubscribe = onAuthStateChanged(
+      auth,
+      async (firebaseUser: FirebaseUser | null) => {
+        if (firebaseUser) {
+          await fetchAndUpdateUserProfile(firebaseUser);
+        } else {
+          setUser(null);
+          setLoading(false);
+        }
+      },
+    );
 
     return () => unsubscribe();
   }, [fetchAndUpdateUserProfile]);
@@ -146,29 +162,52 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
     setLoading(true);
     try {
       await signInWithEmailAndPassword(auth, email, pass);
-    } catch (error: unknown) { 
-      const authError = error as FirebaseError; 
+    } catch (error: unknown) {
+      const authError = error as FirebaseError;
       console.warn("Authentication error during signIn:", authError.code);
       setUser(null);
       setLoading(false);
-      if (authError.code === 'auth/invalid-credential' || authError.code === 'auth/user-not-found' || authError.code === 'auth/wrong-password') {
-        throw new Error('Correo electrónico o contraseña incorrectos. Por favor, verifica tus datos.');
-      } else if (authError.code === 'auth/network-request-failed') {
-          throw new Error('Error de red. Verifica tu conexión a internet o la configuración del entorno (CORS, App Check).');
+      if (
+        authError.code === "auth/invalid-credential" ||
+        authError.code === "auth/user-not-found" ||
+        authError.code === "auth/wrong-password"
+      ) {
+        throw new Error(
+          "Correo electrónico o contraseña incorrectos. Por favor, verifica tus datos.",
+        );
+      } else if (authError.code === "auth/network-request-failed") {
+        throw new Error(
+          "Error de red. Verifica tu conexión a internet o la configuración del entorno (CORS, App Check).",
+        );
       } else {
-        throw new Error('Ocurrió un error inesperado. Por favor, inténtalo de nuevo.');
+        throw new Error(
+          "Ocurrió un error inesperado. Por favor, inténtalo de nuevo.",
+        );
       }
     }
   };
 
   const signUp = async (data: SignUpData): Promise<void> => {
-    const { email, password, firstName, lastName, country, profileState, role = 'cyclist', referrerId } = data;
+    const {
+      email,
+      password,
+      firstName,
+      lastName,
+      country,
+      profileState,
+      role = "cyclist",
+      referrerId,
+    } = data;
     setLoading(true);
     try {
-      const userCredential = await createUserWithEmailAndPassword(auth, email, password);
+      const userCredential = await createUserWithEmailAndPassword(
+        auth,
+        email,
+        password,
+      );
       const firebaseUser = userCredential.user;
 
-      const roleToSet = role === 'admin' ? 'cyclist' : role;
+      const roleToSet = role === "admin" ? "cyclist" : role;
 
       const initialProfileData: UserProfileData = {
         email: firebaseUser.email?.toLowerCase(),
@@ -180,19 +219,19 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
         isAdmin: false,
         referralCount: 0,
       };
-      
+
       // Conditionally add referrerId to avoid Firestore 'undefined' error
       if (referrerId) {
         initialProfileData.referrerId = referrerId;
         await incrementReferralCount(referrerId);
       }
-      
+
       await createUserDoc(firebaseUser.uid, initialProfileData);
-      
+
       if (!firebaseUser.isAnonymous) {
         await sendEmailVerification(firebaseUser);
       }
-      
+
       // Manually update the user state with the data from the form
       // to ensure the edit profile page is pre-filled correctly.
       setUser({
@@ -203,16 +242,23 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
         emailVerified: firebaseUser.emailVerified,
         ...initialProfileData,
       });
-
-    } catch (error: unknown) { 
-      const authError = error as FirebaseError; 
-      console.warn("Authentication error during signUp:", authError.message, error);
+    } catch (error: unknown) {
+      const authError = error as FirebaseError;
+      console.warn(
+        "Authentication error during signUp:",
+        authError.message,
+        error,
+      );
       setUser(null);
       setLoading(false);
-      if (authError.code === 'auth/email-already-in-use') {
-        throw new Error('Este correo electrónico ya está registrado. Por favor, intenta iniciar sesión.');
-      } else if (authError.code === 'auth/weak-password') {
-        throw new Error('La contraseña es demasiado débil. Debe tener al menos 6 caracteres.');
+      if (authError.code === "auth/email-already-in-use") {
+        throw new Error(
+          "Este correo electrónico ya está registrado. Por favor, intenta iniciar sesión.",
+        );
+      } else if (authError.code === "auth/weak-password") {
+        throw new Error(
+          "La contraseña es demasiado débil. Debe tener al menos 6 caracteres.",
+        );
       } else {
         throw new Error(`Ocurrió un error inesperado.`);
       }
@@ -222,12 +268,11 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
     }
   };
 
-
   const signOut = async (): Promise<void> => {
     try {
       await firebaseSignOut(auth);
-      router.push('/'); 
-    } catch (error: unknown) { 
+      router.push("/");
+    } catch (error: unknown) {
       const firebaseError = error as FirebaseError;
       console.error("Error al cerrar sesión:", firebaseError.message);
       setLoading(false);
@@ -250,7 +295,9 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
     }
   };
 
-  const signInWithGoogle = async (referrerId?: string | null): Promise<void> => {
+  const signInWithGoogle = async (
+    referrerId?: string | null,
+  ): Promise<void> => {
     const provider = new GoogleAuthProvider();
     try {
       const result = await signInWithPopup(auth, provider);
@@ -259,22 +306,23 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
 
       if (isNewUser) {
         toast({
-          title: '¡Bienvenido!',
-          description: 'Tu cuenta ha sido creada. Por favor, completa tu perfil.'
+          title: "¡Bienvenido!",
+          description:
+            "Tu cuenta ha sido creada. Por favor, completa tu perfil.",
         });
 
-        const displayName = firebaseUser.displayName || '';
-        const nameParts = displayName.split(' ');
-        const firstName = nameParts[0] || '';
-        const lastName = nameParts.slice(1).join(' ') || '';
+        const displayName = firebaseUser.displayName || "";
+        const nameParts = displayName.split(" ");
+        const firstName = nameParts[0] || "";
+        const lastName = nameParts.slice(1).join(" ") || "";
 
         const initialProfileData: UserProfileData = {
           email: firebaseUser.email?.toLowerCase(),
           firstName,
           lastName,
-          country: '',
-          profileState: '',
-          role: 'cyclist',
+          country: "",
+          profileState: "",
+          role: "cyclist",
           isAdmin: false,
           referralCount: 0,
         };
@@ -286,33 +334,44 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
 
         await createUserDoc(firebaseUser.uid, initialProfileData);
       }
-    } catch (error: unknown) { 
+    } catch (error: unknown) {
       const authError = error as FirebaseError;
-      if (authError.code === 'auth/popup-closed-by-user') {
+      if (authError.code === "auth/popup-closed-by-user") {
         console.log("Google sign-in pop-up closed by user.");
-      } else if (authError.code === 'auth/unauthorized-domain') {
-        console.error("Google Sign-In Error: This domain is not authorized in the Firebase console. Please add it to the list of authorized domains in the Authentication settings.", {
-          currentLocation: window.location.hostname
-        });
+      } else if (authError.code === "auth/unauthorized-domain") {
+        console.error(
+          "Google Sign-In Error: This domain is not authorized in the Firebase console. Please add it to the list of authorized domains in the Authentication settings.",
+          {
+            currentLocation: window.location.hostname,
+          },
+        );
         toast({
-          title: 'Error de Dominio No Autorizado',
-          description: 'Este sitio no está autorizado para usar la autenticación de Google. Contacta al administrador.',
-          variant: 'destructive',
+          title: "Error de Dominio No Autorizado",
+          description:
+            "Este sitio no está autorizado para usar la autenticación de Google. Contacta al administrador.",
+          variant: "destructive",
           duration: 9000,
         });
-      } else if (authError.message && authError.message.includes("Missing project support email")){
-           console.error("Google Sign-In Error: Missing project support email in Firebase console. Please set it in Project Settings -> General.");
-           toast({
-             title: 'Error de Configuración del Proyecto',
-             description: 'Falta configurar el correo de asistencia en Firebase para poder usar Google Sign-In.',
-             variant: 'destructive',
-             duration: 9000,
-           });
+      } else if (
+        authError.message &&
+        authError.message.includes("Missing project support email")
+      ) {
+        console.error(
+          "Google Sign-In Error: Missing project support email in Firebase console. Please set it in Project Settings -> General.",
+        );
+        toast({
+          title: "Error de Configuración del Proyecto",
+          description:
+            "Falta configurar el correo de asistencia en Firebase para poder usar Google Sign-In.",
+          variant: "destructive",
+          duration: 9000,
+        });
       } else {
         toast({
-          title: 'Error de Autenticación con Google',
-          description: 'No se pudo iniciar sesión. Por favor, inténtalo de nuevo.',
-          variant: 'destructive',
+          title: "Error de Autenticación con Google",
+          description:
+            "No se pudo iniciar sesión. Por favor, inténtalo de nuevo.",
+          variant: "destructive",
         });
         console.error("Error signing in with Google:", error);
       }
@@ -334,20 +393,39 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
     }
     try {
       await firebaseUpdatePassword(auth.currentUser, newPassword);
-    } catch (error: unknown) { 
+    } catch (error: unknown) {
       const authError = error as FirebaseError;
       console.warn("Error updating password:", error);
-      if (authError.code === 'auth/weak-password') {
-        throw new Error('La nueva contraseña es demasiado débil. Debe tener al menos 6 caracteres.');
-      } else if (authError.code === 'auth/requires-recent-login') {
-        throw new Error('Esta operación es sensible y requiere autenticación reciente. Por favor, cierra sesión y vuelve a iniciarla antes de cambiar tu contraseña.');
+      if (authError.code === "auth/weak-password") {
+        throw new Error(
+          "La nueva contraseña es demasiado débil. Debe tener al menos 6 caracteres.",
+        );
+      } else if (authError.code === "auth/requires-recent-login") {
+        throw new Error(
+          "Esta operación es sensible y requiere autenticación reciente. Por favor, cierra sesión y vuelve a iniciarla antes de cambiar tu contraseña.",
+        );
       }
-      throw new Error(authError.message || 'No se pudo actualizar la contraseña.');
+      throw new Error(
+        authError.message || "No se pudo actualizar la contraseña.",
+      );
     }
   };
 
   return (
-    <AuthContext.Provider value={{ user, loading, signIn, signUp, signOut, signInAnonymously, sendPasswordReset, updateUserPassword, refreshUserProfile, signInWithGoogle }}>
+    <AuthContext.Provider
+      value={{
+        user,
+        loading,
+        signIn,
+        signUp,
+        signOut,
+        signInAnonymously,
+        sendPasswordReset,
+        updateUserPassword,
+        refreshUserProfile,
+        signInWithGoogle,
+      }}
+    >
       {children}
     </AuthContext.Provider>
   );
@@ -356,7 +434,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
 export const useAuth = (): AuthContextType => {
   const context = useContext(AuthContext);
   if (context === undefined) {
-    throw new Error('useAuth debe ser utilizado dentro de un AuthProvider');
+    throw new Error("useAuth debe ser utilizado dentro de un AuthProvider");
   }
   return context;
 };

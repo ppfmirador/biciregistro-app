@@ -1,4 +1,3 @@
-
 // No "use client" here
 import type { Metadata } from "next";
 import { getHomepageContentServer } from "@/lib/homepageContentServer"; // Corrected import
@@ -43,7 +42,10 @@ const defaultContent: HomepageContent = {
 export async function generateMetadata(): Promise<Metadata> {
   // Since we are moving data fetching to the client, we will use default content for static metadata.
   // This ensures the server can build without needing the service account key.
-  const title = defaultContent.welcomeTitle.replace('{APP_NAME}', 'BiciRegistro');
+  const title = defaultContent.welcomeTitle.replace(
+    "{APP_NAME}",
+    "BiciRegistro",
+  );
   const description = defaultContent.welcomeDescription;
 
   return {
