@@ -42,7 +42,7 @@ export const setAdmin = onRequest(
       console.log(successMessage);
       response.status(200).send({ data: { message: successMessage } });
     } catch (error: unknown) {
-      console.error(`Error setting admin for email:`, error);
+      console.error("Error setting admin for email:", error);
       if (error instanceof HttpsError) {
         response.status(error.httpErrorCode.status).send({
           error: { message: error.message, code: error.code },
@@ -54,11 +54,11 @@ export const setAdmin = onRequest(
       if (err.code === "auth/user-not-found") {
         response
           .status(404)
-          .send({ error: { message: `User with email not found.` } });
+          .send({ error: { message: "User with email not found." } });
       } else {
-        response
-          .status(500)
-          .send({ error: { message: "An unexpected internal error occurred." } });
+        response.status(500).send({
+          error: { message: "An unexpected internal error occurred." },
+        });
       }
     }
   },
