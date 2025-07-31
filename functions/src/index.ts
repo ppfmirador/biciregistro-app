@@ -659,13 +659,11 @@ const handleCreateAccount = async (
     (accountData as NgoAdminFormValues).ngoName ||
     `${(accountData as NewCustomerDataForShop).firstName} ${(accountData as NewCustomerDataForShop).lastName} (Cliente)`;
 
-  const userRecord = await admin
-    .auth()
-    .createUser({
-      email: accountData.email,
-      emailVerified: false,
-      displayName,
-    });
+  const userRecord = await admin.auth().createUser({
+    email: accountData.email,
+    emailVerified: false,
+    displayName,
+  });
   await admin.auth().setCustomUserClaims(userRecord.uid, { role });
 
   if (role === "bikeshop" || role === "ngo") {

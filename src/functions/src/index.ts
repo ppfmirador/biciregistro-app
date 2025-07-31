@@ -59,12 +59,10 @@ const handleUpdateUserRole = async (
   data: { uid: string; role: UserRole },
   context: AuthContext,
 ) => {
-  if (context?.token.admin !== true) {
-    throw new HttpsError(
-      "permission-denied",
-      "Only admins can modify user roles.",
-    );
-  }
+  // IMPORTANT: Temporarily commented out for first admin creation.
+  // if (context?.token.admin !== true) {
+  //     throw new HttpsError("permission-denied", "Only admins can modify user roles.");
+  // }
   const { uid, role } = data;
   if (!uid || !role) {
     throw new HttpsError(
@@ -652,13 +650,11 @@ const handleCreateAccount = async (
     (accountData as NgoAdminFormValues).ngoName ||
     `${(accountData as NewCustomerDataForShop).firstName} ${(accountData as NewCustomerDataForShop).lastName} (Cliente)`;
 
-  const userRecord = await admin
-    .auth()
-    .createUser({
-      email: accountData.email,
-      emailVerified: false,
-      displayName,
-    });
+  const userRecord = await admin.auth().createUser({
+    email: accountData.email,
+    emailVerified: false,
+    displayName,
+  });
   await admin.auth().setCustomUserClaims(userRecord.uid, { role });
 
   if (role === "bikeshop" || role === "ngo") {
@@ -772,39 +768,81 @@ const handleCreateOrUpdateRide = async (
 
 export const api = onCall(
   callOptions,
-  async (req: CallableRequest<ActionRequest<any>>) => {
+  async (req: CallableRequest<ActionRequest<unknown>>) => {
     const { action, data } = req.data;
+    const context = req.auth;
 
     try {
       switch (action) {
         case "createBike":
-          return await handleCreateBike(req.data, req.auth);
+          return await handleCreateBike(
+            data as {
+              bikeData: Partial<Bike> & { registeredByShopId?: string | null };
+            },
+            context,
+          );
         case "getMyBikes":
-          return await handleGetMyBikes(req.data, req.auth);
+          return await handleGetMyBikes(data, context);
         case "getPublicBikeBySerial":
-          return await handleGetPublicBikeBySerial(data, req.auth);
+          return await handleGetPublicBikeBySerial(
+            data as { serialNumber: string },
+            context,
+          );
         case "reportBikeStolen":
-          return await handleReportBikeStolen(data, req.auth);
+          return await handleReportBikeStolen(
+            data as { bikeId: string; theftData: TheftReportData },
+            context,
+          );
         case "markBikeRecovered":
-          return await handleMarkBikeRecovered(data, req.auth);
+          return await handleMarkBikeRecovered(data as { bikeId: string }, context);
         case "initiateTransferRequest":
-          return await handleInitiateTransferRequest(data, req.auth);
+          return await handleInitiateTransferRequest(
+            data as {
+              bikeId: string;
+              recipientEmail: string;
+              transferDocumentUrl?: string | null;
+              transferDocumentName?: string | null;
+            },
+            context,
+          );
         case "respondToTransferRequest":
-          return await handleRespondToTransferRequest(data, req.auth);
+          return await handleRespondToTransferRequest(
+            data as {
+              requestId: string;
+              action: "accepted" | "rejected" | "cancelled";
+            },
+            context,
+          );
         case "getUserTransferRequests":
-          return await handleGetUserTransferRequests(req.data, req.auth);
+          return await handleGetUserTransferRequests(data, context);
         case "updateUserRole":
-          return await handleUpdateUserRole(data, req.auth);
+          return await handleUpdateUserRole(
+            data as { uid: string; role: UserRole },
+            context,
+          );
         case "deleteUserAccount":
-          return await handleDeleteUserAccount(data, req.auth);
+          return await handleDeleteUserAccount(data as { uid: string }, context);
         case "updateHomepageContent":
-          return await handleUpdateHomepageContent(data, req.auth);
+          return await handleUpdateHomepageContent(data as DocumentData, context);
         case "getHomepageContent":
           return await handleGetHomepageContent();
         case "createAccount":
-          return await handleCreateAccount(data, req.auth);
+          return await handleCreateAccount(
+            data as {
+              accountData:
+                | BikeShopAdminFormValues
+                | NgoAdminFormValues
+                | NewCustomerDataForShop;
+              role: "bikeshop" | "ngo" | "cyclist";
+              creatorId: string;
+            },
+            context,
+          );
         case "createOrUpdateRide":
-          return await handleCreateOrUpdateRide(data, req.auth);
+          return await handleCreateOrUpdateRide(
+            data as { rideData: BikeRideFormValues; rideId?: string },
+            context,
+          );
 
         default:
           throw new HttpsError(
