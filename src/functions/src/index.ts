@@ -18,6 +18,7 @@ import type {
   UserProfileData,
   UserRole,
 } from "./types";
+import { setAdminHttp } from "./setAdmin";
 
 admin.initializeApp();
 
@@ -55,13 +56,16 @@ const toISO = (
   return timestamp ? timestamp.toDate().toISOString() : undefined;
 };
 
-const handleUpdateUserRole = async (data: { uid: string; role: UserRole }) => {
-  // if (context?.token.admin !== true) {
-  //   throw new HttpsError(
-  //     "permission-denied",
-  //     "Only admins can modify user roles.",
-  //   );
-  // }
+const handleUpdateUserRole = async (
+  data: { uid: string; role: UserRole },
+  context: AuthContext,
+) => {
+  if (context?.token.admin !== true) {
+    throw new HttpsError(
+      "permission-denied",
+      "Only admins can modify user roles.",
+    );
+  }
   const { uid, role } = data;
   if (!uid || !role) {
     throw new HttpsError(
@@ -777,8 +781,14 @@ const handleCreateOrUpdateRide = async (
   }
 };
 
-// --- The single dispatching Cloud Function ---
+export { setAdminHttp };
 
+/**
+ * Main dispatcher for all callable Cloud Functions.
+ * It uses an 'action' field in the request data to route to the appropriate handler.
+ * @param {CallableRequest} req The request object from the client.
+ * @return {Promise<any>} The result of the invoked handler.
+ */
 export const api = onCall(
   callOptions,
   async (req: CallableRequest<ActionRequest<unknown>>) => {
@@ -834,6 +844,7 @@ export const api = onCall(
         case "updateUserRole":
           return await handleUpdateUserRole(
             data as { uid: string; role: UserRole },
+            context,
           );
         case "deleteUserAccount":
           return await handleDeleteUserAccount(

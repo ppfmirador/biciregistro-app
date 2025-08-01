@@ -1,4 +1,3 @@
-
 // functions/src/index.ts
 import {
   onCall,
@@ -893,4 +892,3 @@ export const api = onCall(
     }
   },
 );
-
