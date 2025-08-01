@@ -33,7 +33,8 @@ const allowedOrigins = [
 
 setGlobalOptions({
   region: "us-central1",
-  enforceAppCheck: true,
+  // Only enforce App Check when not running in the emulator
+  enforceAppCheck: process.env.FUNCTIONS_EMULATOR !== "true",
 });
 
 const callOptions = {
