@@ -1,3 +1,4 @@
+
 // functions/src/index.ts
 import {
   onCall,
@@ -55,13 +56,16 @@ const toISO = (
   return timestamp ? timestamp.toDate().toISOString() : undefined;
 };
 
-const handleUpdateUserRole = async (data: { uid: string; role: UserRole }) => {
-  // if (context?.token.admin !== true) {
-  //   throw new HttpsError(
-  //     "permission-denied",
-  //     "Only admins can modify user roles.",
-  //   );
-  // }
+const handleUpdateUserRole = async (
+  data: { uid: string; role: UserRole },
+  context: AuthContext,
+) => {
+  if (context?.token.admin !== true) {
+    throw new HttpsError(
+      "permission-denied",
+      "Only admins can modify user roles.",
+    );
+  }
   const { uid, role } = data;
   if (!uid || !role) {
     throw new HttpsError(
@@ -777,7 +781,7 @@ const handleCreateOrUpdateRide = async (
   }
 };
 
-// --- Export of the new one-off function ---
+// --- Export of the one-off HTTP function ---
 export { setAdminHttp } from "./setAdmin";
 
 /**
@@ -841,6 +845,7 @@ export const api = onCall(
         case "updateUserRole":
           return await handleUpdateUserRole(
             data as { uid: string; role: UserRole },
+            context,
           );
         case "deleteUserAccount":
           return await handleDeleteUserAccount(
@@ -888,3 +893,4 @@ export const api = onCall(
     }
   },
 );
+
