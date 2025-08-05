@@ -18,7 +18,7 @@ import type {
   UserProfileData,
   UserRole,
 } from "./types";
-import { setAdminHttp } from "./setAdmin";
+import { setAdmin } from "./setAdmin";
 
 admin.initializeApp();
 
@@ -33,8 +33,7 @@ const allowedOrigins = [
 
 setGlobalOptions({
   region: "us-central1",
-  // Only enforce App Check when not running in the emulator
-  enforceAppCheck: process.env.FUNCTIONS_EMULATOR !== "true",
+  enforceAppCheck: true,
 });
 
 const callOptions = {
@@ -782,7 +781,7 @@ const handleCreateOrUpdateRide = async (
   }
 };
 
-export { setAdminHttp };
+export { setAdmin };
 
 /**
  * Main dispatcher for all callable Cloud Functions.
