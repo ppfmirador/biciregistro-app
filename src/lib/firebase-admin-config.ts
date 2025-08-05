@@ -24,9 +24,10 @@ export async function getAdminDb(): Promise<admin.firestore.Firestore | null> {
   }
 
   try {
-    // Firebase Admin SDK expects a plain JSON object, not a stringified version.
-    // The environment variable should be the JSON object itself.
-    const serviceAccount = JSON.parse(serviceAccountKey);
+    // Handle both stringified JSON and object formats for the service account key.
+    const serviceAccount = typeof serviceAccountKey === 'string'
+      ? JSON.parse(serviceAccountKey)
+      : serviceAccountKey;
     
     admin.initializeApp({
       credential: admin.credential.cert(serviceAccount),
@@ -36,7 +37,7 @@ export async function getAdminDb(): Promise<admin.firestore.Firestore | null> {
     return adminDb;
 
   } catch (error) {
-    console.error("Error initializing Firebase Admin SDK. Make sure FIREBASE_SERVICE_ACCOUNT_KEY is a valid JSON object.", error);
+    console.error("Error initializing Firebase Admin SDK. Make sure FIREBASE_SERVICE_ACCOUNT_KEY is a valid JSON object or string.", error);
     return null;
   }
 }
