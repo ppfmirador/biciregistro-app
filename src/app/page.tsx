@@ -1,6 +1,6 @@
-// No "use client" here
+
 import type { Metadata } from "next";
-import { getHomepageContentServer } from "@/lib/homepageContentServer"; // Corrected import
+import { getHomepageContentServer } from "@/lib/homepageContentServer";
 import type { HomepageContent } from "@/lib/types";
 import HomePageClient from "@/components/pageSpecific/HomePageClient";
 
@@ -40,13 +40,13 @@ const defaultContent: HomepageContent = {
 };
 
 export async function generateMetadata(): Promise<Metadata> {
-  // Since we are moving data fetching to the client, we will use default content for static metadata.
-  // This ensures the server can build without needing the service account key.
-  const title = defaultContent.welcomeTitle.replace(
+  // Fetching content for metadata. Fallback to default if needed.
+  const content = await getHomepageContentServer() || defaultContent;
+  const title = content.welcomeTitle.replace(
     "{APP_NAME}",
     "BiciRegistro",
   );
-  const description = defaultContent.welcomeDescription;
+  const description = content.welcomeDescription;
 
   return {
     title: title,
@@ -62,8 +62,12 @@ export async function generateMetadata(): Promise<Metadata> {
   };
 }
 
-export default function Page() {
-  // The page will now initially render with default content,
-  // and the HomePageClient component will fetch the dynamic content on the client-side.
-  return <HomePageClient initialContent={defaultContent} />;
+// This is a React Server Component (RSC)
+export default async function Page() {
+  // Fetch data on the server. If it fails (returns null), use defaultContent.
+  const serverContent = await getHomepageContentServer();
+  const content = serverContent || defaultContent;
+
+  // Pass the fetched (or default) content to the client component.
+  return <HomePageClient initialContent={content} />;
 }
