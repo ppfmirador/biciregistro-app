@@ -9,9 +9,8 @@ import * as admin from "firebase-admin";
  * @param request The HTTP request object.
  * @param response The HTTP response object.
  */
-export const setAdmin = onRequest(
-  // Corrected options structure: allowAnonymous is nested within cors options
-  { cors: { allowAnonymous: true } }, // Allow public access for this specific utility
+export const setAdminHttp = onRequest(
+  { invoker: "public" }, // Removed conflicting 'cors: true'
   async (request, response) => {
     // Basic check to ensure it's a POST request for some level of protection
     if (request.method !== "POST") {
@@ -24,7 +23,7 @@ export const setAdmin = onRequest(
       if (!email || typeof email !== "string") {
         throw new HttpsError(
           "invalid-argument",
-          "The function must be called with a JSON body like: { data: { email: 'user@example.com' } }",
+          'The function must be called with a JSON body like: { "data": { "email": "user@example.com" } }',
         );
       }
 

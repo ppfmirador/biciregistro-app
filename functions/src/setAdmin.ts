@@ -9,8 +9,8 @@ import * as admin from "firebase-admin";
  * @param request The HTTP request object.
  * @param response The HTTP response object.
  */
-export const setAdmin = onRequest(
-  { cors: true, invoker: "public" },
+export const setAdminHttp = onRequest(
+  { invoker: "public" }, // Removed conflicting 'cors: true'
   async (request, response) => {
     // Basic check to ensure it's a POST request for some level of protection
     if (request.method !== "POST") {

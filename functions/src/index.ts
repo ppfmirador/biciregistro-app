@@ -18,7 +18,7 @@ import type {
   UserProfileData,
   UserRole,
 } from "./types";
-import { setAdmin } from "./setAdmin";
+import { setAdminHttp } from "./setAdmin";
 
 admin.initializeApp();
 
@@ -781,7 +781,7 @@ const handleCreateOrUpdateRide = async (
   }
 };
 
-export { setAdmin };
+export { setAdminHttp };
 
 /**
  * Main dispatcher for all callable Cloud Functions.
