@@ -9,7 +9,7 @@ let adminDb: admin.firestore.Firestore | null = null;
  * It uses a singleton pattern to ensure that initialization only happens once.
  * This function is robust against multiple imports and calls across the server.
  */
-export function getAdminDb(): admin.firestore.Firestore | null {
+export async function getAdminDb(): Promise<admin.firestore.Firestore | null> {
   // If the instance already exists, return it immediately.
   if (adminDb) {
     return adminDb;
